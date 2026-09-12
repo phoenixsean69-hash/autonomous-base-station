@@ -469,6 +469,120 @@
                       "attrs":  {
                                     "text":  "LEFT: STOPPED   RIGHT: RUNNING"
                                 }
+                  },
+                  {
+                      "type":  "wokwi-text",
+                      "id":  "operatingHeading",
+                      "top":  1980,
+                      "left":  820,
+                      "attrs":  {
+                                    "text":  "OPERATING CONDITIONS / LOCAL EQUIPMENT"
+                                }
+                  },
+                  {
+                      "type":  "wokwi-lcd1602",
+                      "id":  "lcdTrafficLoad",
+                      "top":  2050,
+                      "left":  650,
+                      "attrs":  {
+                                    "pins":  "i2c",
+                                    "i2cAddress":  "0x3D",
+                                    "background":  "blue",
+                                    "color":  "white"
+                                }
+                  },
+                  {
+                      "type":  "wokwi-potentiometer",
+                      "id":  "trafficLoad",
+                      "top":  2180,
+                      "left":  715,
+                      "attrs":  {
+                                    "value":  "350"
+                                }
+                  },
+                  {
+                      "type":  "wokwi-text",
+                      "id":  "fanLabel",
+                      "top":  2050,
+                      "left":  965,
+                      "attrs":  {
+                                    "text":  "COOLING FAN"
+                                }
+                  },
+                  {
+                      "type":  "wokwi-slide-switch",
+                      "id":  "fanSwitch",
+                      "top":  2110,
+                      "left":  1020,
+                      "attrs":  {
+                                    "value":  "1",
+                                    "bounce":  "0"
+                                }
+                  },
+                  {
+                      "type":  "wokwi-text",
+                      "id":  "fanDirection",
+                      "top":  2175,
+                      "left":  935,
+                      "attrs":  {
+                                    "text":  "LEFT: FAILED   RIGHT: OPERATIONAL"
+                                }
+                  },
+                  {
+                      "type":  "wokwi-text",
+                      "id":  "rectifierLabel",
+                      "top":  2050,
+                      "left":  1220,
+                      "attrs":  {
+                                    "text":  "RECTIFIER"
+                                }
+                  },
+                  {
+                      "type":  "wokwi-slide-switch",
+                      "id":  "rectifierSwitch",
+                      "top":  2110,
+                      "left":  1270,
+                      "attrs":  {
+                                    "value":  "1",
+                                    "bounce":  "0"
+                                }
+                  },
+                  {
+                      "type":  "wokwi-text",
+                      "id":  "rectifierDirection",
+                      "top":  2175,
+                      "left":  1180,
+                      "attrs":  {
+                                    "text":  "LEFT: FAULT   RIGHT: NORMAL"
+                                }
+                  },
+                  {
+                      "type":  "wokwi-text",
+                      "id":  "radioLabel",
+                      "top":  2310,
+                      "left":  1000,
+                      "attrs":  {
+                                    "text":  "RADIO SUBSYSTEM"
+                                }
+                  },
+                  {
+                      "type":  "wokwi-slide-switch",
+                      "id":  "radioSwitch",
+                      "top":  2370,
+                      "left":  1060,
+                      "attrs":  {
+                                    "value":  "1",
+                                    "bounce":  "0"
+                                }
+                  },
+                  {
+                      "type":  "wokwi-text",
+                      "id":  "radioDirection",
+                      "top":  2435,
+                      "left":  970,
+                      "attrs":  {
+                                    "text":  "LEFT: FAULT   RIGHT: OPERATIONAL"
+                                }
                   }
               ],
     "connections":  [
@@ -1188,6 +1302,134 @@
                             "esp32:RX0",
                             "$serialMonitor:TX",
                             "",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "trafficLoad:VCC",
+                            "esp32:3V3",
+                            "red",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "trafficLoad:GND",
+                            "esp32:GND.1",
+                            "black",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "trafficLoad:SIG",
+                            "esp32:VN",
+                            "purple",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "fanSwitch:1",
+                            "esp32:GND.1",
+                            "black",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "fanSwitch:2",
+                            "esp32:D18",
+                            "green",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "fanSwitch:3",
+                            "esp32:3V3",
+                            "red",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "rectifierSwitch:1",
+                            "esp32:GND.1",
+                            "black",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "rectifierSwitch:2",
+                            "esp32:D19",
+                            "green",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "rectifierSwitch:3",
+                            "esp32:3V3",
+                            "red",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "radioSwitch:1",
+                            "esp32:GND.1",
+                            "black",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "radioSwitch:2",
+                            "esp32:D23",
+                            "green",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "radioSwitch:3",
+                            "esp32:3V3",
+                            "red",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "lcdTrafficLoad:VCC",
+                            "esp32:VIN",
+                            "red",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "lcdTrafficLoad:GND",
+                            "esp32:GND.2",
+                            "black",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "lcdTrafficLoad:SDA",
+                            "esp32:D21",
+                            "green",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "lcdTrafficLoad:SCL",
+                            "esp32:D22",
+                            "blue",
                             [
 
                             ]

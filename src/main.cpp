@@ -34,6 +34,12 @@
 #define GRID_AVAILABLE_PIN 16
 #define GENERATOR_RUNNING_PIN 17
 
+// Digital-twin operating-condition inputs
+#define TRAFFIC_LOAD_PIN 39
+#define FAN_OPERATIONAL_PIN 18
+#define RECTIFIER_NORMAL_PIN 19
+#define RADIO_OPERATIONAL_PIN 23
+
 // ====================================================
 // TIMING
 // ====================================================
@@ -133,6 +139,12 @@ LiquidCrystal_I2C lcdEnergySource(
     2
 );
 
+LiquidCrystal_I2C lcdTrafficLoad(
+    0x3D,
+    16,
+    2
+);
+
 // ====================================================
 // GLOBAL MEASUREMENTS
 // ====================================================
@@ -195,6 +207,13 @@ bool generatorRunning = false;
 String activePowerSource = "UNKNOWN";
 String energyAction = "UNKNOWN";
 
+// Digital-twin operating conditions
+float trafficLoad = 0.0;
+
+bool fanOperational = true;
+bool rectifierNormal = true;
+bool radioOperational = true;
+
 // ====================================================
 // TIMERS
 // ====================================================
@@ -226,6 +245,7 @@ String lastPacketLossLCD = "";
 String lastRssiLCD = "";
 
 String lastEnergySourceLCD = "";
+String lastTrafficLoadLCD = "";
 
 // ====================================================
 // LCD HELPERS
@@ -792,6 +812,17 @@ void recalculateSystemState()
           dynamicVibration
       );
 
+  // Explicit local-equipment faults.
+  // These are ground-truth digital-twin states.
+  if (
+      !fanOperational ||
+      !rectifierNormal ||
+      !radioOperational)
+  {
+    localSiteStatus =
+        "FAULT";
+  }
+
   faultCandidate =
       determineFaultCandidate(
           localSiteStatus,
@@ -843,6 +874,11 @@ void readFastInputs()
   int rssiRaw =
       analogRead(
           BACKHAUL_RSSI_PIN
+      );
+
+  int trafficLoadRaw =
+      analogRead(
+          TRAFFIC_LOAD_PIN
       );
 
   // --------------------------------------------------
@@ -916,6 +952,13 @@ void readFastInputs()
       ) *
       75.0;
 
+  trafficLoad =
+      (
+          trafficLoadRaw /
+          4095.0
+      ) *
+      100.0;
+
   // --------------------------------------------------
   // DIGITAL INPUTS
   // --------------------------------------------------
@@ -941,6 +984,24 @@ void readFastInputs()
   generatorRunning =
       digitalRead(
           GENERATOR_RUNNING_PIN
+      ) ==
+      HIGH;
+
+  fanOperational =
+      digitalRead(
+          FAN_OPERATIONAL_PIN
+      ) ==
+      HIGH;
+
+  rectifierNormal =
+      digitalRead(
+          RECTIFIER_NORMAL_PIN
+      ) ==
+      HIGH;
+
+  radioOperational =
+      digitalRead(
+          RADIO_OPERATIONAL_PIN
       ) ==
       HIGH;
 
@@ -1086,6 +1147,7 @@ void initialiseLCDs()
   lcdRssi.init();
 
   lcdEnergySource.init();
+  lcdTrafficLoad.init();
 
   lcdDcVoltage.backlight();
   lcdDcCurrent.backlight();
@@ -1100,6 +1162,7 @@ void initialiseLCDs()
   lcdRssi.backlight();
 
   lcdEnergySource.backlight();
+  lcdTrafficLoad.backlight();
 
   // Labels are static: write them only once.
   setLCDLabel(
@@ -1150,6 +1213,11 @@ void initialiseLCDs()
   setLCDLabel(
       lcdEnergySource,
       "POWER SOURCE"
+  );
+
+  setLCDLabel(
+      lcdTrafficLoad,
+      "TRAFFIC LOAD"
   );
 
   // Initial value rows.
@@ -1209,6 +1277,12 @@ void initialiseLCDs()
 
   writeLCDLine(
       lcdEnergySource,
+      1,
+      "Starting..."
+  );
+
+  writeLCDLine(
+      lcdTrafficLoad,
       1,
       "Starting..."
   );
@@ -1282,6 +1356,13 @@ void refreshLCDs(
       ) +
       " dBm";
 
+  String trafficLoadText =
+      String(
+          trafficLoad,
+          1
+      ) +
+      " %";
+
   updateLCDValueIfChanged(
       lcdDcVoltage,
       dcVoltageText,
@@ -1349,6 +1430,13 @@ void refreshLCDs(
       lcdEnergySource,
       activePowerSource,
       lastEnergySourceLCD,
+      force
+  );
+
+  updateLCDValueIfChanged(
+      lcdTrafficLoad,
+      trafficLoadText,
+      lastTrafficLoadLCD,
       force
   );
 }
@@ -1682,6 +1770,52 @@ void printTelemetry()
   );
 
   // --------------------------------------------------
+  // OPERATING CONDITIONS / LOCAL EQUIPMENT
+  // --------------------------------------------------
+
+  Serial.println();
+
+  Serial.println(
+      "[ OPERATING CONDITIONS / LOCAL EQUIPMENT ]"
+  );
+
+  Serial.print(
+      "Traffic Load        : "
+  );
+  Serial.print(
+      trafficLoad,
+      1
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "Cooling Fan         : "
+  );
+  Serial.println(
+      fanOperational
+          ? "OPERATIONAL"
+          : "FAILED"
+  );
+
+  Serial.print(
+      "Rectifier           : "
+  );
+  Serial.println(
+      rectifierNormal
+          ? "NORMAL"
+          : "FAULT"
+  );
+
+  Serial.print(
+      "Radio Subsystem     : "
+  );
+  Serial.println(
+      radioOperational
+          ? "OPERATIONAL"
+          : "FAULT"
+  );
+
+  // --------------------------------------------------
   // ENERGY
   // --------------------------------------------------
 
@@ -1907,6 +2041,26 @@ void setup()
 
   pinMode(
       GENERATOR_RUNNING_PIN,
+      INPUT
+  );
+
+  pinMode(
+      TRAFFIC_LOAD_PIN,
+      INPUT
+  );
+
+  pinMode(
+      FAN_OPERATIONAL_PIN,
+      INPUT
+  );
+
+  pinMode(
+      RECTIFIER_NORMAL_PIN,
+      INPUT
+  );
+
+  pinMode(
+      RADIO_OPERATIONAL_PIN,
       INPUT
   );
 
