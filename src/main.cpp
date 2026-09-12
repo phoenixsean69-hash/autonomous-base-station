@@ -145,6 +145,12 @@ LiquidCrystal_I2C lcdTrafficLoad(
     2
 );
 
+LiquidCrystal_I2C lcdOperatingMode(
+    0x3C,
+    16,
+    2
+);
+
 // ====================================================
 // GLOBAL MEASUREMENTS
 // ====================================================
@@ -214,6 +220,14 @@ bool fanOperational = true;
 bool rectifierNormal = true;
 bool radioOperational = true;
 
+// Baseline energy-management state
+String operatingMode = "UNKNOWN";
+String operatingModeReason = "STARTING";
+
+float baselineSitePowerKW = 0.0;
+float managedSitePowerKW = 0.0;
+float estimatedEnergySavingPct = 0.0;
+
 // ====================================================
 // TIMERS
 // ====================================================
@@ -246,6 +260,7 @@ String lastRssiLCD = "";
 
 String lastEnergySourceLCD = "";
 String lastTrafficLoadLCD = "";
+String lastOperatingModeLCD = "";
 
 // ====================================================
 // LCD HELPERS
@@ -730,6 +745,149 @@ String determineEnergyAction(
 }
 
 // ====================================================
+// BASELINE OPERATING MODE
+// ====================================================
+
+String determineOperatingMode()
+{
+  // Critical backup-energy condition.
+  if (
+      !gridAvailable &&
+      !generatorRunning &&
+      batterySOC <= 25.0)
+  {
+    operatingModeReason =
+        "CRITICAL BACKUP ENERGY";
+
+    return "EMERGENCY";
+  }
+
+  // Major faults prioritise stability and recovery.
+  bool majorFault =
+      (
+          rfHealth == "FAULT" ||
+          rfHealth == "SEVERE FAULT" ||
+          electricalHealth == "FAULT" ||
+          backhaulCondition == "CRITICAL" ||
+          backhaulCondition == "OUTAGE" ||
+          !fanOperational ||
+          !rectifierNormal ||
+          !radioOperational
+      );
+
+  if (majorFault)
+  {
+    operatingModeReason =
+        "FAULT / RECOVERY PRIORITY";
+
+    return "FULL";
+  }
+
+  // If the site is running from battery, conserve energy
+  // while sufficient reserve still exists.
+  if (
+      !gridAvailable &&
+      !generatorRunning)
+  {
+    operatingModeReason =
+        "BATTERY CONSERVATION";
+
+    return "ECO";
+  }
+
+  // High traffic requires full capacity.
+  if (trafficLoad >= 65.0)
+  {
+    operatingModeReason =
+        "HIGH TRAFFIC";
+
+    return "FULL";
+  }
+
+  // Moderate load: normal energy-saving mode.
+  if (trafficLoad >= 20.0)
+  {
+    operatingModeReason =
+        "MODERATE TRAFFIC";
+
+    return "ECO";
+  }
+
+  // Very low healthy traffic.
+  operatingModeReason =
+      "LOW TRAFFIC";
+
+  return "REDUCED";
+}
+
+float getOperatingModePowerFactor(
+    const String &mode)
+{
+  // Simulation assumptions for the first baseline.
+  //
+  // FULL      = 100% of baseline load
+  // ECO       = 82%
+  // REDUCED   = 65%
+  // EMERGENCY = 50%
+  //
+  // These values are not production NetOne figures.
+  // They are digital-twin assumptions used to compare
+  // relative energy consumption.
+
+  if (mode == "ECO")
+  {
+    return 0.82;
+  }
+
+  if (mode == "REDUCED")
+  {
+    return 0.65;
+  }
+
+  if (mode == "EMERGENCY")
+  {
+    return 0.50;
+  }
+
+  return 1.00;
+}
+
+void updateEnergyModeMetrics()
+{
+  operatingMode =
+      determineOperatingMode();
+
+  // Current DC power is used as the first simulated
+  // site-power baseline/proxy.
+  baselineSitePowerKW =
+      dcPower /
+      1000.0;
+
+  float modeFactor =
+      getOperatingModePowerFactor(
+          operatingMode
+      );
+
+  managedSitePowerKW =
+      baselineSitePowerKW *
+      modeFactor;
+
+  if (baselineSitePowerKW > 0.0001)
+  {
+    estimatedEnergySavingPct =
+        (
+            1.0 -
+            modeFactor
+        ) *
+        100.0;
+  }
+  else
+  {
+    estimatedEnergySavingPct =
+        0.0;
+  }
+}
+// ====================================================
 // DERIVED STATUS CALCULATIONS
 // ====================================================
 
@@ -812,9 +970,10 @@ void recalculateSystemState()
           dynamicVibration
       );
 
-  // Explicit local-equipment faults.
+  // Explicit local-equipment and site-power faults.
   // These are ground-truth digital-twin states.
   if (
+      !gridAvailable ||
       !fanOperational ||
       !rectifierNormal ||
       !radioOperational)
@@ -828,6 +987,8 @@ void recalculateSystemState()
           localSiteStatus,
           backhaulCondition
       );
+
+  updateEnergyModeMetrics();
 }
 
 // ====================================================
@@ -1148,6 +1309,7 @@ void initialiseLCDs()
 
   lcdEnergySource.init();
   lcdTrafficLoad.init();
+  lcdOperatingMode.init();
 
   lcdDcVoltage.backlight();
   lcdDcCurrent.backlight();
@@ -1163,6 +1325,7 @@ void initialiseLCDs()
 
   lcdEnergySource.backlight();
   lcdTrafficLoad.backlight();
+  lcdOperatingMode.backlight();
 
   // Labels are static: write them only once.
   setLCDLabel(
@@ -1213,6 +1376,11 @@ void initialiseLCDs()
   setLCDLabel(
       lcdEnergySource,
       "POWER SOURCE"
+  );
+
+  setLCDLabel(
+      lcdOperatingMode,
+      "OPERATING MODE"
   );
 
   setLCDLabel(
@@ -1283,6 +1451,12 @@ void initialiseLCDs()
 
   writeLCDLine(
       lcdTrafficLoad,
+      1,
+      "Starting..."
+  );
+
+  writeLCDLine(
+      lcdOperatingMode,
       1,
       "Starting..."
   );
@@ -1437,6 +1611,13 @@ void refreshLCDs(
       lcdTrafficLoad,
       trafficLoadText,
       lastTrafficLoadLCD,
+      force
+  );
+
+  updateLCDValueIfChanged(
+      lcdOperatingMode,
+      operatingMode,
+      lastOperatingModeLCD,
       force
   );
 }
@@ -1861,6 +2042,57 @@ void printTelemetry()
       "Action Source       : RULE-BASED ENERGY GROUND TRUTH"
   );
 
+  Serial.println();
+
+  Serial.println(
+      "[ OPERATING MODE / ENERGY BASELINE ]"
+  );
+
+  Serial.print(
+      "Operating Mode      : "
+  );
+  Serial.println(
+      operatingMode
+  );
+
+  Serial.print(
+      "Mode Reason         : "
+  );
+  Serial.println(
+      operatingModeReason
+  );
+
+  Serial.print(
+      "Baseline Site Power : "
+  );
+  Serial.print(
+      baselineSitePowerKW,
+      3
+  );
+  Serial.println(" kW");
+
+  Serial.print(
+      "Managed Site Power  : "
+  );
+  Serial.print(
+      managedSitePowerKW,
+      3
+  );
+  Serial.println(" kW");
+
+  Serial.print(
+      "Estimated Saving    : "
+  );
+  Serial.print(
+      estimatedEnergySavingPct,
+      1
+  );
+  Serial.println(" %");
+
+  Serial.println(
+      "Mode Source         : RULE-BASED BASELINE POLICY"
+  );
+
   // --------------------------------------------------
   // FAULT DIFFERENTIATION
   // --------------------------------------------------
@@ -2268,3 +2500,4 @@ void loop()
   // No delay().
   // Loop remains free to service fast controls.
 }
+

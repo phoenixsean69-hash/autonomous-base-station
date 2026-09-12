@@ -583,6 +583,18 @@
                       "attrs":  {
                                     "text":  "LEFT: FAULT   RIGHT: OPERATIONAL"
                                 }
+                  },
+                  {
+                      "type":  "wokwi-lcd1602",
+                      "id":  "lcdOperatingMode",
+                      "top":  1590,
+                      "left":  650,
+                      "attrs":  {
+                                    "pins":  "i2c",
+                                    "i2cAddress":  "0x3C",
+                                    "background":  "blue",
+                                    "color":  "white"
+                                }
                   }
               ],
     "connections":  [
@@ -1428,6 +1440,38 @@
                         ],
                         [
                             "lcdTrafficLoad:SCL",
+                            "esp32:D22",
+                            "blue",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "lcdOperatingMode:VCC",
+                            "esp32:VIN",
+                            "red",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "lcdOperatingMode:GND",
+                            "esp32:GND.2",
+                            "black",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "lcdOperatingMode:SDA",
+                            "esp32:D21",
+                            "green",
+                            [
+
+                            ]
+                        ],
+                        [
+                            "lcdOperatingMode:SCL",
                             "esp32:D22",
                             "blue",
                             [
