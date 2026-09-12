@@ -1,4 +1,4 @@
-#include <Arduino.h>
+﻿#include <Arduino.h>
 #include <Wire.h>
 #include <DHT.h>
 #include <Adafruit_MPU6050.h>
@@ -717,6 +717,10 @@ void setup()
   Serial.println(
       "======================================"
   );
+
+  // Explicitly lock ESP32 ADC reads to 12-bit:
+  // raw range 0..4095 used by every analogue scale below.
+  analogReadResolution(12);
 
   dht.begin();
 
