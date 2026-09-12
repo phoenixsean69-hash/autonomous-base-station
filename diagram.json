@@ -428,6 +428,91 @@
       "attrs": {
         "text": "LEFT: NO   RIGHT: YES"
       }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "energyHeading",
+      "top": 1530,
+      "left": 850,
+      "attrs": {
+        "text": "POWER SOURCE / ENERGY MANAGEMENT"
+      }
+    },
+
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcdEnergySource",
+      "top": 1590,
+      "left": 930,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x3E",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "gridLabel",
+      "top": 1740,
+      "left": 745,
+      "attrs": {
+        "text": "GRID / MAINS STATE"
+      }
+    },
+
+    {
+      "type": "wokwi-slide-switch",
+      "id": "gridSwitch",
+      "top": 1790,
+      "left": 810,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "gridDirection",
+      "top": 1855,
+      "left": 720,
+      "attrs": {
+        "text": "LEFT: FAILED   RIGHT: AVAILABLE"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "generatorLabel",
+      "top": 1740,
+      "left": 1065,
+      "attrs": {
+        "text": "GENERATOR STATE"
+      }
+    },
+
+    {
+      "type": "wokwi-slide-switch",
+      "id": "generatorSwitch",
+      "top": 1790,
+      "left": 1125,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "generatorDirection",
+      "top": 1855,
+      "left": 1030,
+      "attrs": {
+        "text": "LEFT: STOPPED   RIGHT: RUNNING"
+      }
     }
   ],
 
@@ -488,6 +573,14 @@
     [ "reachableSwitch:2", "esp32:D13", "green", [] ],
     [ "reachableSwitch:3", "esp32:3V3", "red", [] ],
 
+    [ "gridSwitch:1", "esp32:GND.1", "black", [] ],
+    [ "gridSwitch:2", "esp32:D16", "green", [] ],
+    [ "gridSwitch:3", "esp32:3V3", "red", [] ],
+
+    [ "generatorSwitch:1", "esp32:GND.1", "black", [] ],
+    [ "generatorSwitch:2", "esp32:D17", "green", [] ],
+    [ "generatorSwitch:3", "esp32:3V3", "red", [] ],
+
     [ "lcdDcVoltage:VCC", "esp32:VIN", "red", [] ],
     [ "lcdDcVoltage:GND", "esp32:GND.2", "black", [] ],
     [ "lcdDcVoltage:SDA", "esp32:D21", "green", [] ],
@@ -532,6 +625,11 @@
     [ "lcdRssi:GND", "esp32:GND.2", "black", [] ],
     [ "lcdRssi:SDA", "esp32:D21", "green", [] ],
     [ "lcdRssi:SCL", "esp32:D22", "blue", [] ],
+
+    [ "lcdEnergySource:VCC", "esp32:VIN", "red", [] ],
+    [ "lcdEnergySource:GND", "esp32:GND.2", "black", [] ],
+    [ "lcdEnergySource:SDA", "esp32:D21", "green", [] ],
+    [ "lcdEnergySource:SCL", "esp32:D22", "blue", [] ],
 
     [ "esp32:TX0", "$serialMonitor:RX", "", [] ],
     [ "esp32:RX0", "$serialMonitor:TX", "", [] ]

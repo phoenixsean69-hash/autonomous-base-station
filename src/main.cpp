@@ -31,6 +31,10 @@
 #define BACKHAUL_LINK_PIN 14
 #define UPSTREAM_REACHABLE_PIN 13
 
+// Energy-management inputs
+#define GRID_AVAILABLE_PIN 16
+#define GENERATOR_RUNNING_PIN 17
+
 const float GRAVITY = 9.80665;
 
 // ====================================================
@@ -56,7 +60,6 @@ DallasTemperature paTemperatureSensor(
 // LCD DISPLAYS
 // ====================================================
 
-// DC power
 LiquidCrystal_I2C lcdDcVoltage(
     0x20,
     16,
@@ -75,7 +78,6 @@ LiquidCrystal_I2C lcdBattery(
     2
 );
 
-// RF
 LiquidCrystal_I2C lcdRfForward(
     0x23,
     16,
@@ -88,14 +90,12 @@ LiquidCrystal_I2C lcdRfReflected(
     2
 );
 
-// Backhaul overall status
 LiquidCrystal_I2C lcdBackhaul(
     0x25,
     16,
     2
 );
 
-// Independent backhaul metrics
 LiquidCrystal_I2C lcdLatency(
     0x26,
     16,
@@ -110,6 +110,13 @@ LiquidCrystal_I2C lcdPacketLoss(
 
 LiquidCrystal_I2C lcdRssi(
     0x3F,
+    16,
+    2
+);
+
+// Energy source display
+LiquidCrystal_I2C lcdEnergySource(
+    0x3E,
     16,
     2
 );
@@ -284,7 +291,6 @@ String determineElectricalHealth(
     float power,
     float rfForwardPower)
 {
-  // Severe voltage fault
   if (
       voltage < 40.0 ||
       voltage > 58.0)
@@ -292,20 +298,16 @@ String determineElectricalHealth(
     return "FAULT";
   }
 
-  // Severe overcurrent
   if (current > 25.0)
   {
     return "FAULT";
   }
 
-  // Severe power overload
   if (power > 1200.0)
   {
     return "FAULT";
   }
 
-  // Transmitter appears active but DC current is
-  // extremely low.
   if (
       rfForwardPower > 20.0 &&
       current < 1.0)
@@ -313,7 +315,6 @@ String determineElectricalHealth(
     return "FAULT";
   }
 
-  // Degraded voltage
   if (
       voltage < 44.0 ||
       voltage > 55.0)
@@ -321,13 +322,11 @@ String determineElectricalHealth(
     return "DEGRADED";
   }
 
-  // High current
   if (current > 20.0)
   {
     return "DEGRADED";
   }
 
-  // High power
   if (power > 900.0)
   {
     return "DEGRADED";
@@ -337,7 +336,7 @@ String determineElectricalHealth(
 }
 
 // ====================================================
-// BACKHAUL FUNCTIONS
+// BACKHAUL
 // ====================================================
 
 float calculateLinkQuality(
@@ -366,20 +365,12 @@ String determineBackhaulCondition(
     float packetLoss,
     float rssi)
 {
-  // ==================================================
-  // OUTAGE
-  // ==================================================
-
   if (
       !linkUp ||
       !upstreamReachable)
   {
     return "OUTAGE";
   }
-
-  // ==================================================
-  // CRITICAL
-  // ==================================================
 
   if (
       latency >= 600.0 ||
@@ -388,10 +379,6 @@ String determineBackhaulCondition(
   {
     return "CRITICAL";
   }
-
-  // ==================================================
-  // DEGRADED
-  // ==================================================
 
   if (
       latency >= 200.0 ||
@@ -415,10 +402,6 @@ String determineLocalSiteStatus(
     float batterySOC,
     float dynamicVibration)
 {
-  // ==================================================
-  // FAULT
-  // ==================================================
-
   if (
       rfHealth == "FAULT" ||
       rfHealth == "SEVERE FAULT")
@@ -446,10 +429,6 @@ String determineLocalSiteStatus(
   {
     return "FAULT";
   }
-
-  // ==================================================
-  // DEGRADED
-  // ==================================================
 
   if (
       rfHealth ==
@@ -536,6 +515,85 @@ String determineFaultCandidate(
 }
 
 // ====================================================
+// ENERGY MANAGEMENT
+// ====================================================
+
+String determineActivePowerSource(
+    bool gridAvailable,
+    bool generatorRunning,
+    float batterySOC)
+{
+  // Grid takes priority whenever available.
+  if (gridAvailable)
+  {
+    return "GRID";
+  }
+
+  // Grid unavailable but generator running.
+  if (generatorRunning)
+  {
+    return "GENERATOR";
+  }
+
+  // Neither grid nor generator:
+  // use battery if usable energy remains.
+  if (batterySOC > 5.0)
+  {
+    return "BATTERY";
+  }
+
+  return "NO POWER";
+}
+
+String determineEnergyAction(
+    bool gridAvailable,
+    bool generatorRunning,
+    float batterySOC)
+{
+  // Grid available and generator also running:
+  // generator is wasting fuel/energy.
+  if (
+      gridAvailable &&
+      generatorRunning)
+  {
+    return "STOP_GENERATOR";
+  }
+
+  // Normal mains operation.
+  if (gridAvailable)
+  {
+    return "NORMAL_OPERATION";
+  }
+
+  // Grid failed, generator already running.
+  if (generatorRunning)
+  {
+    return "GENERATOR_SUPPLY";
+  }
+
+  // Grid failed and generator is stopped.
+  // Site is therefore on battery.
+  if (batterySOC > 30.0)
+  {
+    return "BATTERY_BACKUP";
+  }
+
+  // Battery is becoming low.
+  if (batterySOC > 10.0)
+  {
+    return "START_GENERATOR";
+  }
+
+  // Battery nearly exhausted.
+  if (batterySOC > 5.0)
+  {
+    return "LOAD_SHEDDING";
+  }
+
+  return "POWER_CRITICAL";
+}
+
+// ====================================================
 // LCD INITIALISATION
 // ====================================================
 
@@ -549,10 +607,11 @@ void initialiseLCDs()
   lcdRfReflected.init();
 
   lcdBackhaul.init();
-
   lcdLatency.init();
   lcdPacketLoss.init();
   lcdRssi.init();
+
+  lcdEnergySource.init();
 
   lcdDcVoltage.backlight();
   lcdDcCurrent.backlight();
@@ -562,10 +621,11 @@ void initialiseLCDs()
   lcdRfReflected.backlight();
 
   lcdBackhaul.backlight();
-
   lcdLatency.backlight();
   lcdPacketLoss.backlight();
   lcdRssi.backlight();
+
+  lcdEnergySource.backlight();
 
   updateLCD(
       lcdDcVoltage,
@@ -620,6 +680,12 @@ void initialiseLCDs()
       "RSSI",
       "Starting..."
   );
+
+  updateLCD(
+      lcdEnergySource,
+      "POWER SOURCE",
+      "Starting..."
+  );
 }
 
 // ====================================================
@@ -652,24 +718,12 @@ void setup()
       "======================================"
   );
 
-  // ==================================================
-  // ENVIRONMENT
-  // ==================================================
-
   dht.begin();
-
-  // ==================================================
-  // I2C
-  // ==================================================
 
   Wire.begin(
       21,
       22
   );
-
-  // ==================================================
-  // MPU6050
-  // ==================================================
 
   if (!mpu.begin())
   {
@@ -687,10 +741,6 @@ void setup()
       "MPU6050 detected."
   );
 
-  // ==================================================
-  // DS18B20
-  // ==================================================
-
   paTemperatureSensor.begin();
 
   Serial.print(
@@ -702,19 +752,7 @@ void setup()
           .getDeviceCount()
   );
 
-  // ==================================================
-  // LCDS
-  // ==================================================
-
   initialiseLCDs();
-
-  Serial.println(
-      "LCD diagnostic panel ready."
-  );
-
-  // ==================================================
-  // ANALOG INPUTS
-  // ==================================================
 
   pinMode(
       DC_VOLTAGE_PIN,
@@ -756,10 +794,6 @@ void setup()
       INPUT
   );
 
-  // ==================================================
-  // DIGITAL BACKHAUL INPUTS
-  // ==================================================
-
   pinMode(
       BACKHAUL_LINK_PIN,
       INPUT
@@ -770,8 +804,22 @@ void setup()
       INPUT
   );
 
+  pinMode(
+      GRID_AVAILABLE_PIN,
+      INPUT
+  );
+
+  pinMode(
+      GENERATOR_RUNNING_PIN,
+      INPUT
+  );
+
   Serial.println(
-      "Independent backhaul inputs ready."
+      "Fault sensing inputs ready."
+  );
+
+  Serial.println(
+      "Energy management inputs ready."
   );
 
   Serial.println(
@@ -780,7 +828,7 @@ void setup()
 }
 
 // ====================================================
-// LOOP
+// MAIN LOOP
 // ====================================================
 
 void loop()
@@ -879,7 +927,7 @@ void loop()
       );
 
   // ==================================================
-  // RF SYSTEM
+  // RF
   // ==================================================
 
   float rfForwardPower =
@@ -933,10 +981,6 @@ void loop()
           vswr
       );
 
-  // ==================================================
-  // ELECTRICAL HEALTH
-  // ==================================================
-
   String electricalHealth =
       determineElectricalHealth(
           dcBusVoltage,
@@ -946,7 +990,7 @@ void loop()
       );
 
   // ==================================================
-  // INDEPENDENT BACKHAUL INPUTS
+  // BACKHAUL
   // ==================================================
 
   int latencyRaw =
@@ -964,7 +1008,6 @@ void loop()
           BACKHAUL_RSSI_PIN
       );
 
-  // 10 ms to 1000 ms
   float latency =
       10.0 +
       (
@@ -973,7 +1016,6 @@ void loop()
       ) *
       990.0;
 
-  // 0% to 100%
   float packetLoss =
       (
           packetLossRaw /
@@ -981,7 +1023,6 @@ void loop()
       ) *
       100.0;
 
-  // -45 dBm to -120 dBm
   float rssi =
       -45.0 -
       (
@@ -989,10 +1030,6 @@ void loop()
           4095.0
       ) *
       75.0;
-
-  // ==================================================
-  // DIGITAL BACKHAUL STATES
-  // ==================================================
 
   bool linkUp =
       digitalRead(
@@ -1005,10 +1042,6 @@ void loop()
           UPSTREAM_REACHABLE_PIN
       ) ==
       HIGH;
-
-  // ==================================================
-  // DERIVED BACKHAUL VALUES
-  // ==================================================
 
   float linkQuality =
       calculateLinkQuality(
@@ -1025,7 +1058,37 @@ void loop()
       );
 
   // ==================================================
-  // FINAL FAULT STATUS
+  // GRID + GENERATOR
+  // ==================================================
+
+  bool gridAvailable =
+      digitalRead(
+          GRID_AVAILABLE_PIN
+      ) ==
+      HIGH;
+
+  bool generatorRunning =
+      digitalRead(
+          GENERATOR_RUNNING_PIN
+      ) ==
+      HIGH;
+
+  String activePowerSource =
+      determineActivePowerSource(
+          gridAvailable,
+          generatorRunning,
+          batterySOC
+      );
+
+  String energyAction =
+      determineEnergyAction(
+          gridAvailable,
+          generatorRunning,
+          batterySOC
+      );
+
+  // ==================================================
+  // FAULT DIFFERENTIATION
   // ==================================================
 
   String localSiteStatus =
@@ -1044,7 +1107,7 @@ void loop()
       );
 
   // ==================================================
-  // DC POWER LCDS
+  // LCDS
   // ==================================================
 
   updateLCD(
@@ -1082,10 +1145,6 @@ void loop()
           "%"
   );
 
-  // ==================================================
-  // RF LCDS
-  // ==================================================
-
   updateLCD(
       lcdRfForward,
       "FORWARD RF",
@@ -1106,19 +1165,11 @@ void loop()
           " W"
   );
 
-  // ==================================================
-  // BACKHAUL STATUS LCD
-  // ==================================================
-
   updateLCD(
       lcdBackhaul,
       "BACKHAUL STATUS",
       backhaulCondition
   );
-
-  // ==================================================
-  // INDEPENDENT BACKHAUL METRIC LCDS
-  // ==================================================
 
   updateLCD(
       lcdLatency,
@@ -1150,6 +1201,12 @@ void loop()
           " dBm"
   );
 
+  updateLCD(
+      lcdEnergySource,
+      "POWER SOURCE",
+      activePowerSource
+  );
+
   // ==================================================
   // SERIAL TELEMETRY
   // ==================================================
@@ -1168,10 +1225,6 @@ void loop()
       "================================================"
   );
 
-  // ==================================================
-  // ENVIRONMENT
-  // ==================================================
-
   Serial.println();
 
   Serial.println(
@@ -1181,45 +1234,31 @@ void loop()
   Serial.print(
       "Shelter Temperature : "
   );
-
   Serial.print(
       shelterTemperature,
       2
   );
-
-  Serial.println(
-      " C"
-  );
+  Serial.println(" C");
 
   Serial.print(
       "Humidity            : "
   );
-
   Serial.print(
       humidity,
       2
   );
-
-  Serial.println(
-      " %"
-  );
+  Serial.println(" %");
 
   Serial.print(
       "PA Temperature      : "
   );
-
   Serial.print(
       paTemperature,
       2
   );
+  Serial.println(" C");
 
-  Serial.println(
-      " C"
-  );
-
-  // ==================================================
-  // VIBRATION
-  // ==================================================
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1230,71 +1269,49 @@ void loop()
   Serial.print(
       "Acceleration X      : "
   );
-
   Serial.print(
       accel.acceleration.x,
       2
   );
-
-  Serial.println(
-      " m/s^2"
-  );
+  Serial.println(" m/s^2");
 
   Serial.print(
       "Acceleration Y      : "
   );
-
   Serial.print(
       accel.acceleration.y,
       2
   );
-
-  Serial.println(
-      " m/s^2"
-  );
+  Serial.println(" m/s^2");
 
   Serial.print(
       "Acceleration Z      : "
   );
-
   Serial.print(
       accel.acceleration.z,
       2
   );
-
-  Serial.println(
-      " m/s^2"
-  );
+  Serial.println(" m/s^2");
 
   Serial.print(
       "Total Accel         : "
   );
-
   Serial.print(
       totalAcceleration,
       2
   );
-
-  Serial.println(
-      " m/s^2"
-  );
+  Serial.println(" m/s^2");
 
   Serial.print(
       "Dynamic Vibration   : "
   );
-
   Serial.print(
       dynamicVibration,
       3
   );
+  Serial.println(" m/s^2");
 
-  Serial.println(
-      " m/s^2"
-  );
-
-  // ==================================================
-  // DC POWER
-  // ==================================================
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1305,53 +1322,38 @@ void loop()
   Serial.print(
       "DC Bus Voltage      : "
   );
-
   Serial.print(
       dcBusVoltage,
       2
   );
-
-  Serial.println(
-      " V"
-  );
+  Serial.println(" V");
 
   Serial.print(
       "DC Bus Current      : "
   );
-
   Serial.print(
       dcBusCurrent,
       2
   );
-
-  Serial.println(
-      " A"
-  );
+  Serial.println(" A");
 
   Serial.print(
       "DC Power            : "
   );
-
   Serial.print(
       dcPower,
       2
   );
-
-  Serial.println(
-      " W"
-  );
+  Serial.println(" W");
 
   Serial.print(
       "Electrical Health   : "
   );
-
   Serial.println(
       electricalHealth
   );
 
-  // ==================================================
-  // BATTERY
-  // ==================================================
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1362,32 +1364,22 @@ void loop()
   Serial.print(
       "Battery Voltage     : "
   );
-
   Serial.print(
       batteryVoltage,
       2
   );
-
-  Serial.println(
-      " V"
-  );
+  Serial.println(" V");
 
   Serial.print(
       "Battery SoC         : "
   );
-
   Serial.print(
       batterySOC,
       1
   );
+  Serial.println(" %");
 
-  Serial.println(
-      " %"
-  );
-
-  // ==================================================
-  // RF SYSTEM
-  // ==================================================
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1398,35 +1390,26 @@ void loop()
   Serial.print(
       "Forward Power       : "
   );
-
   Serial.print(
       rfForwardPower,
       2
   );
-
-  Serial.println(
-      " W"
-  );
+  Serial.println(" W");
 
   Serial.print(
       "Reflected Power     : "
   );
-
   Serial.print(
       rfReflectedPower,
       2
   );
-
-  Serial.println(
-      " W"
-  );
+  Serial.println(" W");
 
   if (rfValid)
   {
     Serial.print(
         "VSWR                : "
     );
-
     Serial.println(
         vswr,
         2
@@ -1435,15 +1418,11 @@ void loop()
     Serial.print(
         "Return Loss         : "
     );
-
     Serial.print(
         returnLoss,
         2
     );
-
-    Serial.println(
-        " dB"
-    );
+    Serial.println(" dB");
 
     Serial.println(
         "RF Measurement      : VALID"
@@ -1462,23 +1441,6 @@ void loop()
     Serial.println(
         "RF Measurement      : INVALID"
     );
-
-    if (
-        rfForwardPower <=
-        0.01)
-    {
-      Serial.println(
-          "RF Reason           : NO FORWARD POWER"
-      );
-    }
-    else if (
-        rfReflectedPower >=
-        rfForwardPower)
-    {
-      Serial.println(
-          "RF Reason           : REFLECTED POWER >= FORWARD POWER"
-      );
-    }
   }
 
   Serial.print(
@@ -1489,9 +1451,7 @@ void loop()
       rfHealth
   );
 
-  // ==================================================
-  // BACKHAUL
-  // ==================================================
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1502,7 +1462,6 @@ void loop()
   Serial.print(
       "Physical Link       : "
   );
-
   Serial.println(
       linkUp
           ? "UP"
@@ -1512,7 +1471,6 @@ void loop()
   Serial.print(
       "Upstream Reachable  : "
   );
-
   Serial.println(
       upstreamReachable
           ? "YES"
@@ -1522,66 +1480,95 @@ void loop()
   Serial.print(
       "Latency             : "
   );
-
   Serial.print(
       latency,
       1
   );
-
-  Serial.println(
-      " ms"
-  );
+  Serial.println(" ms");
 
   Serial.print(
       "Packet Loss         : "
   );
-
   Serial.print(
       packetLoss,
       1
   );
-
-  Serial.println(
-      " %"
-  );
+  Serial.println(" %");
 
   Serial.print(
       "RSSI                : "
   );
-
   Serial.print(
       rssi,
       1
   );
-
-  Serial.println(
-      " dBm"
-  );
+  Serial.println(" dBm");
 
   Serial.print(
       "Link Quality        : "
   );
-
   Serial.print(
       linkQuality,
       1
   );
-
-  Serial.println(
-      " %"
-  );
+  Serial.println(" %");
 
   Serial.print(
       "Backhaul Condition  : "
   );
-
   Serial.println(
       backhaulCondition
   );
 
-  // ==================================================
-  // FAULT DIFFERENTIATION
-  // ==================================================
+  // --------------------------------------------------
+
+  Serial.println();
+
+  Serial.println(
+      "[ POWER SOURCE / ENERGY MANAGEMENT ]"
+  );
+
+  Serial.print(
+      "Grid Available      : "
+  );
+
+  Serial.println(
+      gridAvailable
+          ? "YES"
+          : "NO"
+  );
+
+  Serial.print(
+      "Generator Running   : "
+  );
+
+  Serial.println(
+      generatorRunning
+          ? "YES"
+          : "NO"
+  );
+
+  Serial.print(
+      "Active Power Source : "
+  );
+
+  Serial.println(
+      activePowerSource
+  );
+
+  Serial.print(
+      "Energy Action       : "
+  );
+
+  Serial.println(
+      energyAction
+  );
+
+  Serial.println(
+      "Action Source       : RULE-BASED ENERGY GROUND TRUTH"
+  );
+
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1592,7 +1579,6 @@ void loop()
   Serial.print(
       "RF Health           : "
   );
-
   Serial.println(
       rfHealth
   );
@@ -1600,7 +1586,6 @@ void loop()
   Serial.print(
       "Electrical Health   : "
   );
-
   Serial.println(
       electricalHealth
   );
@@ -1608,7 +1593,6 @@ void loop()
   Serial.print(
       "Local Site Status   : "
   );
-
   Serial.println(
       localSiteStatus
   );
@@ -1616,7 +1600,6 @@ void loop()
   Serial.print(
       "Backhaul Status     : "
   );
-
   Serial.println(
       backhaulCondition
   );
@@ -1624,7 +1607,6 @@ void loop()
   Serial.print(
       "Fault Candidate     : "
   );
-
   Serial.println(
       faultCandidate
   );
@@ -1633,9 +1615,7 @@ void loop()
       "Label Source        : RULE-BASED SIMULATION GROUND TRUTH"
   );
 
-  // ==================================================
-  // SYSTEM
-  // ==================================================
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1644,11 +1624,15 @@ void loop()
   );
 
   Serial.println(
-      "Stage               : DATA ACQUISITION"
+      "Stage               : DATA ACQUISITION + ENERGY MODELLING"
   );
 
   Serial.println(
       "AI Classifier       : NOT YET ACTIVE"
+  );
+
+  Serial.println(
+      "Energy AI           : NOT YET ACTIVE"
   );
 
   Serial.println();
