@@ -31,9 +31,22 @@
 #define BACKHAUL_LINK_PIN 14
 #define UPSTREAM_REACHABLE_PIN 13
 
-// Energy-management inputs
 #define GRID_AVAILABLE_PIN 16
 #define GENERATOR_RUNNING_PIN 17
+
+// ====================================================
+// TIMING
+// ====================================================
+
+const unsigned long FAST_INPUT_INTERVAL_MS = 50;
+const unsigned long LCD_REFRESH_INTERVAL_MS = 100;
+const unsigned long MPU_INTERVAL_MS = 100;
+const unsigned long DHT_INTERVAL_MS = 2000;
+
+const unsigned long DS18B20_REQUEST_INTERVAL_MS = 2000;
+const unsigned long DS18B20_CONVERSION_MS = 750;
+
+const unsigned long TELEMETRY_INTERVAL_MS = 2000;
 
 const float GRAVITY = 9.80665;
 
@@ -114,7 +127,6 @@ LiquidCrystal_I2C lcdRssi(
     2
 );
 
-// Energy source display
 LiquidCrystal_I2C lcdEnergySource(
     0x3E,
     16,
@@ -122,12 +134,104 @@ LiquidCrystal_I2C lcdEnergySource(
 );
 
 // ====================================================
+// GLOBAL MEASUREMENTS
+// ====================================================
+
+// Environment
+float shelterTemperature = 0.0;
+float humidity = 0.0;
+float paTemperature = 0.0;
+
+// Vibration
+float accelX = 0.0;
+float accelY = 0.0;
+float accelZ = 0.0;
+
+float totalAcceleration = 0.0;
+float dynamicVibration = 0.0;
+
+// DC power
+float dcBusVoltage = 0.0;
+float dcBusCurrent = 0.0;
+float dcPower = 0.0;
+
+// Battery
+float batteryVoltage = 0.0;
+float batterySOC = 0.0;
+
+// RF
+float rfForwardPower = 0.0;
+float rfReflectedPower = 0.0;
+
+bool rfValid = false;
+
+float vswr = 0.0;
+float returnLoss = 0.0;
+
+String rfHealth = "UNKNOWN";
+
+// Backhaul
+float latency = 0.0;
+float packetLoss = 0.0;
+float rssi = 0.0;
+float linkQuality = 0.0;
+
+bool linkUp = false;
+bool upstreamReachable = false;
+
+String backhaulCondition = "UNKNOWN";
+
+// Electrical
+String electricalHealth = "UNKNOWN";
+
+// Fault classification
+String localSiteStatus = "UNKNOWN";
+String faultCandidate = "UNKNOWN";
+
+// Energy
+bool gridAvailable = false;
+bool generatorRunning = false;
+
+String activePowerSource = "UNKNOWN";
+String energyAction = "UNKNOWN";
+
+// ====================================================
+// TIMERS
+// ====================================================
+
+unsigned long lastFastInputTime = 0;
+unsigned long lastLCDRefreshTime = 0;
+unsigned long lastMPUTime = 0;
+unsigned long lastDHTTime = 0;
+unsigned long lastTelemetryTime = 0;
+
+unsigned long lastDS18B20RequestTime = 0;
+
+bool ds18b20ConversionPending = false;
+
+// ====================================================
+// LCD LAST-DISPLAYED VALUES
+// ====================================================
+
+String lastDcVoltageLCD = "";
+String lastDcCurrentLCD = "";
+String lastBatteryLCD = "";
+
+String lastRfForwardLCD = "";
+String lastRfReflectedLCD = "";
+
+String lastBackhaulLCD = "";
+String lastLatencyLCD = "";
+String lastPacketLossLCD = "";
+String lastRssiLCD = "";
+
+String lastEnergySourceLCD = "";
+
+// ====================================================
 // LCD HELPERS
 // ====================================================
 
-void printLCDLine(
-    LiquidCrystal_I2C &lcd,
-    int row,
+String padLCDText(
     String text)
 {
   if (text.length() > 16)
@@ -144,32 +248,56 @@ void printLCDLine(
     text += " ";
   }
 
+  return text;
+}
+
+void writeLCDLine(
+    LiquidCrystal_I2C &lcd,
+    uint8_t row,
+    const String &text)
+{
   lcd.setCursor(
       0,
       row
   );
 
   lcd.print(
-      text
+      padLCDText(
+          text
+      )
   );
 }
 
-void updateLCD(
+void setLCDLabel(
     LiquidCrystal_I2C &lcd,
-    String label,
-    String value)
+    const String &label)
 {
-  printLCDLine(
+  writeLCDLine(
       lcd,
       0,
       label
   );
+}
 
-  printLCDLine(
-      lcd,
-      1,
-      value
-  );
+void updateLCDValueIfChanged(
+    LiquidCrystal_I2C &lcd,
+    const String &newValue,
+    String &oldValue,
+    bool force = false)
+{
+  if (
+      force ||
+      newValue != oldValue)
+  {
+    writeLCDLine(
+        lcd,
+        1,
+        newValue
+    );
+
+    oldValue =
+        newValue;
+  }
 }
 
 // ====================================================
@@ -256,24 +384,24 @@ float calculateReturnLoss(
 
 String determineRFHealth(
     bool valid,
-    float vswr)
+    float currentVswr)
 {
   if (!valid)
   {
     return "SEVERE FAULT";
   }
 
-  if (vswr < 1.5)
+  if (currentVswr < 1.5)
   {
     return "EXCELLENT";
   }
 
-  if (vswr < 2.0)
+  if (currentVswr < 2.0)
   {
     return "NORMAL";
   }
 
-  if (vswr < 3.0)
+  if (currentVswr < 3.0)
   {
     return "DEGRADED";
   }
@@ -289,7 +417,7 @@ String determineElectricalHealth(
     float voltage,
     float current,
     float power,
-    float rfForwardPower)
+    float forwardPower)
 {
   if (
       voltage < 40.0 ||
@@ -309,7 +437,7 @@ String determineElectricalHealth(
   }
 
   if (
-      rfForwardPower > 20.0 &&
+      forwardPower > 20.0 &&
       current < 1.0)
   {
     return "FAULT";
@@ -340,50 +468,50 @@ String determineElectricalHealth(
 // ====================================================
 
 float calculateLinkQuality(
-    float rssi)
+    float currentRssi)
 {
-  if (rssi >= -45.0)
+  if (currentRssi >= -45.0)
   {
     return 100.0;
   }
 
-  if (rssi <= -120.0)
+  if (currentRssi <= -120.0)
   {
     return 0.0;
   }
 
   return
-      ((rssi + 120.0) /
+      ((currentRssi + 120.0) /
        75.0) *
       100.0;
 }
 
 String determineBackhaulCondition(
-    bool linkUp,
-    bool upstreamReachable,
-    float latency,
-    float packetLoss,
-    float rssi)
+    bool currentLinkUp,
+    bool currentUpstreamReachable,
+    float currentLatency,
+    float currentPacketLoss,
+    float currentRssi)
 {
   if (
-      !linkUp ||
-      !upstreamReachable)
+      !currentLinkUp ||
+      !currentUpstreamReachable)
   {
     return "OUTAGE";
   }
 
   if (
-      latency >= 600.0 ||
-      packetLoss >= 60.0 ||
-      rssi <= -95.0)
+      currentLatency >= 600.0 ||
+      currentPacketLoss >= 60.0 ||
+      currentRssi <= -95.0)
   {
     return "CRITICAL";
   }
 
   if (
-      latency >= 200.0 ||
-      packetLoss >= 10.0 ||
-      rssi <= -80.0)
+      currentLatency >= 200.0 ||
+      currentPacketLoss >= 10.0 ||
+      currentRssi <= -80.0)
   {
     return "DEGRADED";
   }
@@ -396,70 +524,70 @@ String determineBackhaulCondition(
 // ====================================================
 
 String determineLocalSiteStatus(
-    String rfHealth,
-    String electricalHealth,
-    float paTemperature,
-    float batterySOC,
-    float dynamicVibration)
+    String currentRfHealth,
+    String currentElectricalHealth,
+    float currentPaTemperature,
+    float currentBatterySOC,
+    float currentDynamicVibration)
 {
   if (
-      rfHealth == "FAULT" ||
-      rfHealth == "SEVERE FAULT")
+      currentRfHealth == "FAULT" ||
+      currentRfHealth == "SEVERE FAULT")
   {
     return "FAULT";
   }
 
   if (
-      electricalHealth ==
+      currentElectricalHealth ==
       "FAULT")
   {
     return "FAULT";
   }
 
   if (
-      paTemperature >=
+      currentPaTemperature >=
       80.0)
   {
     return "FAULT";
   }
 
   if (
-      dynamicVibration >=
+      currentDynamicVibration >=
       3.0)
   {
     return "FAULT";
   }
 
   if (
-      rfHealth ==
+      currentRfHealth ==
       "DEGRADED")
   {
     return "DEGRADED";
   }
 
   if (
-      electricalHealth ==
+      currentElectricalHealth ==
       "DEGRADED")
   {
     return "DEGRADED";
   }
 
   if (
-      paTemperature >=
+      currentPaTemperature >=
       65.0)
   {
     return "DEGRADED";
   }
 
   if (
-      batterySOC <
+      currentBatterySOC <
       30.0)
   {
     return "DEGRADED";
   }
 
   if (
-      dynamicVibration >=
+      currentDynamicVibration >=
       1.0)
   {
     return "DEGRADED";
@@ -519,25 +647,21 @@ String determineFaultCandidate(
 // ====================================================
 
 String determineActivePowerSource(
-    bool gridAvailable,
-    bool generatorRunning,
-    float batterySOC)
+    bool currentGridAvailable,
+    bool currentGeneratorRunning,
+    float currentBatterySOC)
 {
-  // Grid takes priority whenever available.
-  if (gridAvailable)
+  if (currentGridAvailable)
   {
     return "GRID";
   }
 
-  // Grid unavailable but generator running.
-  if (generatorRunning)
+  if (currentGeneratorRunning)
   {
     return "GENERATOR";
   }
 
-  // Neither grid nor generator:
-  // use battery if usable energy remains.
-  if (batterySOC > 5.0)
+  if (currentBatterySOC > 5.0)
   {
     return "BATTERY";
   }
@@ -546,51 +670,401 @@ String determineActivePowerSource(
 }
 
 String determineEnergyAction(
-    bool gridAvailable,
-    bool generatorRunning,
-    float batterySOC)
+    bool currentGridAvailable,
+    bool currentGeneratorRunning,
+    float currentBatterySOC)
 {
-  // Grid available and generator also running:
-  // generator is wasting fuel/energy.
   if (
-      gridAvailable &&
-      generatorRunning)
+      currentGridAvailable &&
+      currentGeneratorRunning)
   {
     return "STOP_GENERATOR";
   }
 
-  // Normal mains operation.
-  if (gridAvailable)
+  if (currentGridAvailable)
   {
     return "NORMAL_OPERATION";
   }
 
-  // Grid failed, generator already running.
-  if (generatorRunning)
+  if (currentGeneratorRunning)
   {
     return "GENERATOR_SUPPLY";
   }
 
-  // Grid failed and generator is stopped.
-  // Site is therefore on battery.
-  if (batterySOC > 30.0)
+  if (currentBatterySOC > 30.0)
   {
     return "BATTERY_BACKUP";
   }
 
-  // Battery is becoming low.
-  if (batterySOC > 10.0)
+  if (currentBatterySOC > 10.0)
   {
     return "START_GENERATOR";
   }
 
-  // Battery nearly exhausted.
-  if (batterySOC > 5.0)
+  if (currentBatterySOC > 5.0)
   {
     return "LOAD_SHEDDING";
   }
 
   return "POWER_CRITICAL";
+}
+
+// ====================================================
+// DERIVED STATUS CALCULATIONS
+// ====================================================
+
+void recalculateSystemState()
+{
+  rfValid =
+      isRFMeasurementValid(
+          rfForwardPower,
+          rfReflectedPower
+      );
+
+  if (rfValid)
+  {
+    vswr =
+        calculateVSWR(
+            rfForwardPower,
+            rfReflectedPower
+        );
+
+    returnLoss =
+        calculateReturnLoss(
+            rfForwardPower,
+            rfReflectedPower
+        );
+  }
+  else
+  {
+    vswr = 0.0;
+    returnLoss = 0.0;
+  }
+
+  rfHealth =
+      determineRFHealth(
+          rfValid,
+          vswr
+      );
+
+  electricalHealth =
+      determineElectricalHealth(
+          dcBusVoltage,
+          dcBusCurrent,
+          dcPower,
+          rfForwardPower
+      );
+
+  linkQuality =
+      calculateLinkQuality(
+          rssi
+      );
+
+  backhaulCondition =
+      determineBackhaulCondition(
+          linkUp,
+          upstreamReachable,
+          latency,
+          packetLoss,
+          rssi
+      );
+
+  activePowerSource =
+      determineActivePowerSource(
+          gridAvailable,
+          generatorRunning,
+          batterySOC
+      );
+
+  energyAction =
+      determineEnergyAction(
+          gridAvailable,
+          generatorRunning,
+          batterySOC
+      );
+
+  localSiteStatus =
+      determineLocalSiteStatus(
+          rfHealth,
+          electricalHealth,
+          paTemperature,
+          batterySOC,
+          dynamicVibration
+      );
+
+  faultCandidate =
+      determineFaultCandidate(
+          localSiteStatus,
+          backhaulCondition
+      );
+}
+
+// ====================================================
+// FAST ANALOG + SWITCH INPUTS
+// ====================================================
+
+void readFastInputs()
+{
+  int dcVoltageRaw =
+      analogRead(
+          DC_VOLTAGE_PIN
+      );
+
+  int dcCurrentRaw =
+      analogRead(
+          DC_CURRENT_PIN
+      );
+
+  int batteryVoltageRaw =
+      analogRead(
+          BATTERY_VOLTAGE_PIN
+      );
+
+  int rfForwardRaw =
+      analogRead(
+          RF_FORWARD_PIN
+      );
+
+  int rfReflectedRaw =
+      analogRead(
+          RF_REFLECTED_PIN
+      );
+
+  int latencyRaw =
+      analogRead(
+          BACKHAUL_LATENCY_PIN
+      );
+
+  int packetLossRaw =
+      analogRead(
+          BACKHAUL_LOSS_PIN
+      );
+
+  int rssiRaw =
+      analogRead(
+          BACKHAUL_RSSI_PIN
+      );
+
+  // --------------------------------------------------
+  // ENGINEERING SCALES
+  // --------------------------------------------------
+
+  dcBusVoltage =
+      (
+          dcVoltageRaw /
+          4095.0
+      ) *
+      60.0;
+
+  dcBusCurrent =
+      (
+          dcCurrentRaw /
+          4095.0
+      ) *
+      30.0;
+
+  dcPower =
+      dcBusVoltage *
+      dcBusCurrent;
+
+  batteryVoltage =
+      (
+          batteryVoltageRaw /
+          4095.0
+      ) *
+      15.0;
+
+  batterySOC =
+      calculateBatterySOC(
+          batteryVoltage
+      );
+
+  rfForwardPower =
+      (
+          rfForwardRaw /
+          4095.0
+      ) *
+      100.0;
+
+  rfReflectedPower =
+      (
+          rfReflectedRaw /
+          4095.0
+      ) *
+      100.0;
+
+  latency =
+      10.0 +
+      (
+          latencyRaw /
+          4095.0
+      ) *
+      990.0;
+
+  packetLoss =
+      (
+          packetLossRaw /
+          4095.0
+      ) *
+      100.0;
+
+  rssi =
+      -45.0 -
+      (
+          rssiRaw /
+          4095.0
+      ) *
+      75.0;
+
+  // --------------------------------------------------
+  // DIGITAL INPUTS
+  // --------------------------------------------------
+
+  linkUp =
+      digitalRead(
+          BACKHAUL_LINK_PIN
+      ) ==
+      HIGH;
+
+  upstreamReachable =
+      digitalRead(
+          UPSTREAM_REACHABLE_PIN
+      ) ==
+      HIGH;
+
+  gridAvailable =
+      digitalRead(
+          GRID_AVAILABLE_PIN
+      ) ==
+      HIGH;
+
+  generatorRunning =
+      digitalRead(
+          GENERATOR_RUNNING_PIN
+      ) ==
+      HIGH;
+
+  recalculateSystemState();
+}
+
+// ====================================================
+// MPU6050
+// ====================================================
+
+void readMPU6050()
+{
+  sensors_event_t accel;
+  sensors_event_t gyro;
+  sensors_event_t mpuTemp;
+
+  mpu.getEvent(
+      &accel,
+      &gyro,
+      &mpuTemp
+  );
+
+  accelX =
+      accel.acceleration.x;
+
+  accelY =
+      accel.acceleration.y;
+
+  accelZ =
+      accel.acceleration.z;
+
+  totalAcceleration =
+      sqrt(
+          accelX * accelX +
+          accelY * accelY +
+          accelZ * accelZ
+      );
+
+  dynamicVibration =
+      fabs(
+          totalAcceleration -
+          GRAVITY
+      );
+
+  recalculateSystemState();
+}
+
+// ====================================================
+// DHT22
+// ====================================================
+
+void readDHT22()
+{
+  float newTemperature =
+      dht.readTemperature();
+
+  float newHumidity =
+      dht.readHumidity();
+
+  if (!isnan(newTemperature))
+  {
+    shelterTemperature =
+        newTemperature;
+  }
+
+  if (!isnan(newHumidity))
+  {
+    humidity =
+        newHumidity;
+  }
+}
+
+// ====================================================
+// NON-BLOCKING DS18B20
+// ====================================================
+
+void beginDS18B20Conversion(
+    unsigned long now)
+{
+  paTemperatureSensor
+      .requestTemperatures();
+
+  lastDS18B20RequestTime =
+      now;
+
+  ds18b20ConversionPending =
+      true;
+}
+
+void handleDS18B20(
+    unsigned long now)
+{
+  if (
+      ds18b20ConversionPending &&
+      now - lastDS18B20RequestTime >=
+          DS18B20_CONVERSION_MS)
+  {
+    float newPaTemperature =
+        paTemperatureSensor
+            .getTempCByIndex(0);
+
+    if (
+        newPaTemperature !=
+            DEVICE_DISCONNECTED_C)
+    {
+      paTemperature =
+          newPaTemperature;
+    }
+
+    ds18b20ConversionPending =
+        false;
+
+    recalculateSystemState();
+  }
+
+  if (
+      !ds18b20ConversionPending &&
+      now - lastDS18B20RequestTime >=
+          DS18B20_REQUEST_INTERVAL_MS)
+  {
+    beginDS18B20Conversion(
+        now
+    );
+  }
 }
 
 // ====================================================
@@ -627,594 +1101,264 @@ void initialiseLCDs()
 
   lcdEnergySource.backlight();
 
-  updateLCD(
+  // Labels are static: write them only once.
+  setLCDLabel(
       lcdDcVoltage,
-      "DC BUS VOLTAGE",
-      "Starting..."
+      "DC BUS VOLTAGE"
   );
 
-  updateLCD(
+  setLCDLabel(
       lcdDcCurrent,
-      "DC BUS CURRENT",
-      "Starting..."
+      "DC BUS CURRENT"
   );
 
-  updateLCD(
+  setLCDLabel(
       lcdBattery,
-      "BATTERY VOLTAGE",
-      "Starting..."
+      "BATTERY VOLTAGE"
   );
 
-  updateLCD(
+  setLCDLabel(
       lcdRfForward,
-      "FORWARD RF",
-      "Starting..."
+      "FORWARD RF"
   );
 
-  updateLCD(
+  setLCDLabel(
       lcdRfReflected,
-      "REFLECTED RF",
-      "Starting..."
+      "REFLECTED RF"
   );
 
-  updateLCD(
+  setLCDLabel(
       lcdBackhaul,
-      "BACKHAUL STATUS",
-      "Starting..."
+      "BACKHAUL STATUS"
   );
 
-  updateLCD(
+  setLCDLabel(
       lcdLatency,
-      "LATENCY",
-      "Starting..."
+      "LATENCY"
   );
 
-  updateLCD(
+  setLCDLabel(
       lcdPacketLoss,
-      "PACKET LOSS",
-      "Starting..."
+      "PACKET LOSS"
   );
 
-  updateLCD(
+  setLCDLabel(
       lcdRssi,
-      "RSSI",
-      "Starting..."
+      "RSSI"
   );
 
-  updateLCD(
+  setLCDLabel(
       lcdEnergySource,
-      "POWER SOURCE",
+      "POWER SOURCE"
+  );
+
+  // Initial value rows.
+  writeLCDLine(
+      lcdDcVoltage,
+      1,
+      "Starting..."
+  );
+
+  writeLCDLine(
+      lcdDcCurrent,
+      1,
+      "Starting..."
+  );
+
+  writeLCDLine(
+      lcdBattery,
+      1,
+      "Starting..."
+  );
+
+  writeLCDLine(
+      lcdRfForward,
+      1,
+      "Starting..."
+  );
+
+  writeLCDLine(
+      lcdRfReflected,
+      1,
+      "Starting..."
+  );
+
+  writeLCDLine(
+      lcdBackhaul,
+      1,
+      "Starting..."
+  );
+
+  writeLCDLine(
+      lcdLatency,
+      1,
+      "Starting..."
+  );
+
+  writeLCDLine(
+      lcdPacketLoss,
+      1,
+      "Starting..."
+  );
+
+  writeLCDLine(
+      lcdRssi,
+      1,
+      "Starting..."
+  );
+
+  writeLCDLine(
+      lcdEnergySource,
+      1,
       "Starting..."
   );
 }
 
 // ====================================================
-// SETUP
+// RESPONSIVE LCD REFRESH
 // ====================================================
 
-void setup()
+void refreshLCDs(
+    bool force = false)
 {
-  Serial.begin(
-      115200
-  );
-
-  delay(1000);
-
-  Serial.println();
-
-  Serial.println(
-      "======================================"
-  );
-
-  Serial.println(
-      " AUTONOMOUS BASE STATION"
-  );
-
-  Serial.println(
-      " ESP32 SENSOR NODE"
-  );
-
-  Serial.println(
-      "======================================"
-  );
-
-  // Explicitly lock ESP32 ADC reads to 12-bit:
-  // raw range 0..4095 used by every analogue scale below.
-  analogReadResolution(12);
-
-  dht.begin();
-
-  Wire.begin(
-      21,
-      22
-  );
-
-  if (!mpu.begin())
-  {
-    Serial.println(
-        "ERROR: MPU6050 not detected!"
-    );
-
-    while (true)
-    {
-      delay(1000);
-    }
-  }
-
-  Serial.println(
-      "MPU6050 detected."
-  );
-
-  paTemperatureSensor.begin();
-
-  Serial.print(
-      "DS18B20 devices found: "
-  );
-
-  Serial.println(
-      paTemperatureSensor
-          .getDeviceCount()
-  );
-
-  initialiseLCDs();
-
-  pinMode(
-      DC_VOLTAGE_PIN,
-      INPUT
-  );
-
-  pinMode(
-      DC_CURRENT_PIN,
-      INPUT
-  );
-
-  pinMode(
-      BATTERY_VOLTAGE_PIN,
-      INPUT
-  );
-
-  pinMode(
-      RF_FORWARD_PIN,
-      INPUT
-  );
-
-  pinMode(
-      RF_REFLECTED_PIN,
-      INPUT
-  );
-
-  pinMode(
-      BACKHAUL_LATENCY_PIN,
-      INPUT
-  );
-
-  pinMode(
-      BACKHAUL_LOSS_PIN,
-      INPUT
-  );
-
-  pinMode(
-      BACKHAUL_RSSI_PIN,
-      INPUT
-  );
-
-  pinMode(
-      BACKHAUL_LINK_PIN,
-      INPUT
-  );
-
-  pinMode(
-      UPSTREAM_REACHABLE_PIN,
-      INPUT
-  );
-
-  pinMode(
-      GRID_AVAILABLE_PIN,
-      INPUT
-  );
-
-  pinMode(
-      GENERATOR_RUNNING_PIN,
-      INPUT
-  );
-
-  Serial.println(
-      "Fault sensing inputs ready."
-  );
-
-  Serial.println(
-      "Energy management inputs ready."
-  );
-
-  Serial.println(
-      "Sensor node ready."
-  );
-}
-
-// ====================================================
-// MAIN LOOP
-// ====================================================
-
-void loop()
-{
-  // ==================================================
-  // ENVIRONMENT
-  // ==================================================
-
-  float shelterTemperature =
-      dht.readTemperature();
-
-  float humidity =
-      dht.readHumidity();
-
-  paTemperatureSensor
-      .requestTemperatures();
-
-  float paTemperature =
-      paTemperatureSensor
-          .getTempCByIndex(0);
-
-  // ==================================================
-  // VIBRATION
-  // ==================================================
-
-  sensors_event_t accel;
-  sensors_event_t gyro;
-  sensors_event_t mpuTemp;
-
-  mpu.getEvent(
-      &accel,
-      &gyro,
-      &mpuTemp
-  );
-
-  float totalAcceleration =
-      sqrt(
-          accel.acceleration.x *
-              accel.acceleration.x +
-
-          accel.acceleration.y *
-              accel.acceleration.y +
-
-          accel.acceleration.z *
-              accel.acceleration.z
-      );
-
-  float dynamicVibration =
-      fabs(
-          totalAcceleration -
-          GRAVITY
-      );
-
-  // ==================================================
-  // DC POWER
-  // ==================================================
-
-  float dcBusVoltage =
-      (
-          analogRead(
-              DC_VOLTAGE_PIN
-          ) /
-          4095.0
-      ) *
-      60.0;
-
-  float dcBusCurrent =
-      (
-          analogRead(
-              DC_CURRENT_PIN
-          ) /
-          4095.0
-      ) *
-      30.0;
-
-  float dcPower =
-      dcBusVoltage *
-      dcBusCurrent;
-
-  // ==================================================
-  // BATTERY
-  // ==================================================
-
-  float batteryVoltage =
-      (
-          analogRead(
-              BATTERY_VOLTAGE_PIN
-          ) /
-          4095.0
-      ) *
-      15.0;
-
-  float batterySOC =
-      calculateBatterySOC(
-          batteryVoltage
-      );
-
-  // ==================================================
-  // RF
-  // ==================================================
-
-  float rfForwardPower =
-      (
-          analogRead(
-              RF_FORWARD_PIN
-          ) /
-          4095.0
-      ) *
-      100.0;
-
-  float rfReflectedPower =
-      (
-          analogRead(
-              RF_REFLECTED_PIN
-          ) /
-          4095.0
-      ) *
-      100.0;
-
-  bool rfValid =
-      isRFMeasurementValid(
-          rfForwardPower,
-          rfReflectedPower
-      );
-
-  float vswr =
-      0.0;
-
-  float returnLoss =
-      0.0;
-
-  if (rfValid)
-  {
-    vswr =
-        calculateVSWR(
-            rfForwardPower,
-            rfReflectedPower
-        );
-
-    returnLoss =
-        calculateReturnLoss(
-            rfForwardPower,
-            rfReflectedPower
-        );
-  }
-
-  String rfHealth =
-      determineRFHealth(
-          rfValid,
-          vswr
-      );
-
-  String electricalHealth =
-      determineElectricalHealth(
-          dcBusVoltage,
-          dcBusCurrent,
-          dcPower,
-          rfForwardPower
-      );
-
-  // ==================================================
-  // BACKHAUL
-  // ==================================================
-
-  int latencyRaw =
-      analogRead(
-          BACKHAUL_LATENCY_PIN
-      );
-
-  int packetLossRaw =
-      analogRead(
-          BACKHAUL_LOSS_PIN
-      );
-
-  int rssiRaw =
-      analogRead(
-          BACKHAUL_RSSI_PIN
-      );
-
-  float latency =
-      10.0 +
-      (
-          latencyRaw /
-          4095.0
-      ) *
-      990.0;
-
-  float packetLoss =
-      (
-          packetLossRaw /
-          4095.0
-      ) *
-      100.0;
-
-  float rssi =
-      -45.0 -
-      (
-          rssiRaw /
-          4095.0
-      ) *
-      75.0;
-
-  bool linkUp =
-      digitalRead(
-          BACKHAUL_LINK_PIN
-      ) ==
-      HIGH;
-
-  bool upstreamReachable =
-      digitalRead(
-          UPSTREAM_REACHABLE_PIN
-      ) ==
-      HIGH;
-
-  float linkQuality =
-      calculateLinkQuality(
-          rssi
-      );
-
-  String backhaulCondition =
-      determineBackhaulCondition(
-          linkUp,
-          upstreamReachable,
-          latency,
-          packetLoss,
-          rssi
-      );
-
-  // ==================================================
-  // GRID + GENERATOR
-  // ==================================================
-
-  bool gridAvailable =
-      digitalRead(
-          GRID_AVAILABLE_PIN
-      ) ==
-      HIGH;
-
-  bool generatorRunning =
-      digitalRead(
-          GENERATOR_RUNNING_PIN
-      ) ==
-      HIGH;
-
-  String activePowerSource =
-      determineActivePowerSource(
-          gridAvailable,
-          generatorRunning,
-          batterySOC
-      );
-
-  String energyAction =
-      determineEnergyAction(
-          gridAvailable,
-          generatorRunning,
-          batterySOC
-      );
-
-  // ==================================================
-  // FAULT DIFFERENTIATION
-  // ==================================================
-
-  String localSiteStatus =
-      determineLocalSiteStatus(
-          rfHealth,
-          electricalHealth,
-          paTemperature,
-          batterySOC,
-          dynamicVibration
-      );
-
-  String faultCandidate =
-      determineFaultCandidate(
-          localSiteStatus,
-          backhaulCondition
-      );
-
-  // ==================================================
-  // LCDS
-  // ==================================================
-
-  updateLCD(
-      lcdDcVoltage,
-      "DC BUS VOLTAGE",
+  String dcVoltageText =
       String(
           dcBusVoltage,
           2
       ) +
-          " V"
-  );
+      " V";
 
-  updateLCD(
-      lcdDcCurrent,
-      "DC BUS CURRENT",
+  String dcCurrentText =
       String(
           dcBusCurrent,
           2
       ) +
-          " A"
-  );
+      " A";
 
-  updateLCD(
-      lcdBattery,
-      "BATTERY VOLTAGE",
+  String batteryText =
       String(
           batteryVoltage,
           2
       ) +
-          " V " +
-          String(
-              batterySOC,
-              0
-          ) +
-          "%"
-  );
+      " V " +
+      String(
+          batterySOC,
+          0
+      ) +
+      "%";
 
-  updateLCD(
-      lcdRfForward,
-      "FORWARD RF",
+  String rfForwardText =
       String(
           rfForwardPower,
           2
       ) +
-          " W"
-  );
+      " W";
 
-  updateLCD(
-      lcdRfReflected,
-      "REFLECTED RF",
+  String rfReflectedText =
       String(
           rfReflectedPower,
           2
       ) +
-          " W"
-  );
+      " W";
 
-  updateLCD(
-      lcdBackhaul,
-      "BACKHAUL STATUS",
-      backhaulCondition
-  );
-
-  updateLCD(
-      lcdLatency,
-      "LATENCY",
+  String latencyText =
       String(
           latency,
           1
       ) +
-          " ms"
-  );
+      " ms";
 
-  updateLCD(
-      lcdPacketLoss,
-      "PACKET LOSS",
+  String packetLossText =
       String(
           packetLoss,
           1
       ) +
-          " %"
-  );
+      " %";
 
-  updateLCD(
-      lcdRssi,
-      "RSSI",
+  String rssiText =
       String(
           rssi,
           1
       ) +
-          " dBm"
+      " dBm";
+
+  updateLCDValueIfChanged(
+      lcdDcVoltage,
+      dcVoltageText,
+      lastDcVoltageLCD,
+      force
   );
 
-  updateLCD(
+  updateLCDValueIfChanged(
+      lcdDcCurrent,
+      dcCurrentText,
+      lastDcCurrentLCD,
+      force
+  );
+
+  updateLCDValueIfChanged(
+      lcdBattery,
+      batteryText,
+      lastBatteryLCD,
+      force
+  );
+
+  updateLCDValueIfChanged(
+      lcdRfForward,
+      rfForwardText,
+      lastRfForwardLCD,
+      force
+  );
+
+  updateLCDValueIfChanged(
+      lcdRfReflected,
+      rfReflectedText,
+      lastRfReflectedLCD,
+      force
+  );
+
+  updateLCDValueIfChanged(
+      lcdBackhaul,
+      backhaulCondition,
+      lastBackhaulLCD,
+      force
+  );
+
+  updateLCDValueIfChanged(
+      lcdLatency,
+      latencyText,
+      lastLatencyLCD,
+      force
+  );
+
+  updateLCDValueIfChanged(
+      lcdPacketLoss,
+      packetLossText,
+      lastPacketLossLCD,
+      force
+  );
+
+  updateLCDValueIfChanged(
+      lcdRssi,
+      rssiText,
+      lastRssiLCD,
+      force
+  );
+
+  updateLCDValueIfChanged(
       lcdEnergySource,
-      "POWER SOURCE",
-      activePowerSource
+      activePowerSource,
+      lastEnergySourceLCD,
+      force
   );
+}
 
-  // ==================================================
-  // SERIAL TELEMETRY
-  // ==================================================
+// ====================================================
+// TELEMETRY
+// ====================================================
 
+void printTelemetry()
+{
   Serial.println();
 
   Serial.println(
@@ -1228,6 +1372,10 @@ void loop()
   Serial.println(
       "================================================"
   );
+
+  // --------------------------------------------------
+  // ENVIRONMENT
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1263,6 +1411,8 @@ void loop()
   Serial.println(" C");
 
   // --------------------------------------------------
+  // VIBRATION
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1274,7 +1424,7 @@ void loop()
       "Acceleration X      : "
   );
   Serial.print(
-      accel.acceleration.x,
+      accelX,
       2
   );
   Serial.println(" m/s^2");
@@ -1283,7 +1433,7 @@ void loop()
       "Acceleration Y      : "
   );
   Serial.print(
-      accel.acceleration.y,
+      accelY,
       2
   );
   Serial.println(" m/s^2");
@@ -1292,7 +1442,7 @@ void loop()
       "Acceleration Z      : "
   );
   Serial.print(
-      accel.acceleration.z,
+      accelZ,
       2
   );
   Serial.println(" m/s^2");
@@ -1315,6 +1465,8 @@ void loop()
   );
   Serial.println(" m/s^2");
 
+  // --------------------------------------------------
+  // DC POWER
   // --------------------------------------------------
 
   Serial.println();
@@ -1358,6 +1510,8 @@ void loop()
   );
 
   // --------------------------------------------------
+  // BATTERY
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1383,6 +1537,8 @@ void loop()
   );
   Serial.println(" %");
 
+  // --------------------------------------------------
+  // RF
   // --------------------------------------------------
 
   Serial.println();
@@ -1450,11 +1606,12 @@ void loop()
   Serial.print(
       "RF Health           : "
   );
-
   Serial.println(
       rfHealth
   );
 
+  // --------------------------------------------------
+  // BACKHAUL
   // --------------------------------------------------
 
   Serial.println();
@@ -1525,6 +1682,8 @@ void loop()
   );
 
   // --------------------------------------------------
+  // ENERGY
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1535,7 +1694,6 @@ void loop()
   Serial.print(
       "Grid Available      : "
   );
-
   Serial.println(
       gridAvailable
           ? "YES"
@@ -1545,7 +1703,6 @@ void loop()
   Serial.print(
       "Generator Running   : "
   );
-
   Serial.println(
       generatorRunning
           ? "YES"
@@ -1555,7 +1712,6 @@ void loop()
   Serial.print(
       "Active Power Source : "
   );
-
   Serial.println(
       activePowerSource
   );
@@ -1563,7 +1719,6 @@ void loop()
   Serial.print(
       "Energy Action       : "
   );
-
   Serial.println(
       energyAction
   );
@@ -1572,6 +1727,8 @@ void loop()
       "Action Source       : RULE-BASED ENERGY GROUND TRUTH"
   );
 
+  // --------------------------------------------------
+  // FAULT DIFFERENTIATION
   // --------------------------------------------------
 
   Serial.println();
@@ -1620,6 +1777,8 @@ void loop()
   );
 
   // --------------------------------------------------
+  // SYSTEM
+  // --------------------------------------------------
 
   Serial.println();
 
@@ -1639,13 +1798,319 @@ void loop()
       "Energy AI           : NOT YET ACTIVE"
   );
 
+  Serial.println(
+      "Control Refresh     : 50 ms"
+  );
+
+  Serial.println(
+      "LCD Refresh         : 100 ms"
+  );
+
+  Serial.println(
+      "Runtime             : NON-BLOCKING"
+  );
+}
+
+// ====================================================
+// SETUP
+// ====================================================
+
+void setup()
+{
+  Serial.begin(
+      115200
+  );
+
+  delay(500);
+
   Serial.println();
 
   Serial.println(
-      "Next telemetry update in 2 seconds..."
+      "======================================"
   );
 
-  delay(
-      2000
+  Serial.println(
+      " AUTONOMOUS BASE STATION"
   );
+
+  Serial.println(
+      " RESPONSIVE SENSOR NODE"
+  );
+
+  Serial.println(
+      "======================================"
+  );
+
+  // Explicitly lock ESP32 ADC reads to 12-bit.
+  analogReadResolution(
+      12
+  );
+
+  // --------------------------------------------------
+  // INPUT PINS
+  // --------------------------------------------------
+
+  pinMode(
+      DC_VOLTAGE_PIN,
+      INPUT
+  );
+
+  pinMode(
+      DC_CURRENT_PIN,
+      INPUT
+  );
+
+  pinMode(
+      BATTERY_VOLTAGE_PIN,
+      INPUT
+  );
+
+  pinMode(
+      RF_FORWARD_PIN,
+      INPUT
+  );
+
+  pinMode(
+      RF_REFLECTED_PIN,
+      INPUT
+  );
+
+  pinMode(
+      BACKHAUL_LATENCY_PIN,
+      INPUT
+  );
+
+  pinMode(
+      BACKHAUL_LOSS_PIN,
+      INPUT
+  );
+
+  pinMode(
+      BACKHAUL_RSSI_PIN,
+      INPUT
+  );
+
+  pinMode(
+      BACKHAUL_LINK_PIN,
+      INPUT
+  );
+
+  pinMode(
+      UPSTREAM_REACHABLE_PIN,
+      INPUT
+  );
+
+  pinMode(
+      GRID_AVAILABLE_PIN,
+      INPUT
+  );
+
+  pinMode(
+      GENERATOR_RUNNING_PIN,
+      INPUT
+  );
+
+  // --------------------------------------------------
+  // I2C
+  // --------------------------------------------------
+
+  Wire.begin(
+      21,
+      22
+  );
+
+  // --------------------------------------------------
+  // DHT22
+  // --------------------------------------------------
+
+  dht.begin();
+
+  // --------------------------------------------------
+  // MPU6050
+  // --------------------------------------------------
+
+  if (!mpu.begin())
+  {
+    Serial.println(
+        "ERROR: MPU6050 not detected!"
+    );
+
+    while (true)
+    {
+      delay(1000);
+    }
+  }
+
+  Serial.println(
+      "MPU6050 detected."
+  );
+
+  // --------------------------------------------------
+  // DS18B20
+  // --------------------------------------------------
+
+  paTemperatureSensor.begin();
+
+  // Critical responsiveness change:
+  // do not block while DS18B20 performs conversion.
+  paTemperatureSensor
+      .setWaitForConversion(
+          false
+      );
+
+  Serial.print(
+      "DS18B20 devices found: "
+  );
+
+  Serial.println(
+      paTemperatureSensor
+          .getDeviceCount()
+  );
+
+  // --------------------------------------------------
+  // LCDS
+  // --------------------------------------------------
+
+  initialiseLCDs();
+
+  // --------------------------------------------------
+  // INITIAL SENSOR READS
+  // --------------------------------------------------
+
+  readFastInputs();
+  readMPU6050();
+  readDHT22();
+
+  refreshLCDs(
+      true
+  );
+
+  unsigned long now =
+      millis();
+
+  beginDS18B20Conversion(
+      now
+  );
+
+  lastFastInputTime =
+      now;
+
+  lastLCDRefreshTime =
+      now;
+
+  lastMPUTime =
+      now;
+
+  lastDHTTime =
+      now;
+
+  lastTelemetryTime =
+      now;
+
+  Serial.println(
+      "Fast input loop ready."
+  );
+
+  Serial.println(
+      "Non-blocking DS18B20 ready."
+  );
+
+  Serial.println(
+      "Responsive LCD system ready."
+  );
+
+  Serial.println(
+      "Sensor node ready."
+  );
+}
+
+// ====================================================
+// MAIN LOOP
+// ====================================================
+
+void loop()
+{
+  unsigned long now =
+      millis();
+
+  // ==================================================
+  // FAST CONTROLS
+  // ==================================================
+
+  if (
+      now - lastFastInputTime >=
+      FAST_INPUT_INTERVAL_MS)
+  {
+    lastFastInputTime =
+        now;
+
+    readFastInputs();
+  }
+
+  // ==================================================
+  // MPU6050
+  // ==================================================
+
+  if (
+      now - lastMPUTime >=
+      MPU_INTERVAL_MS)
+  {
+    lastMPUTime =
+        now;
+
+    readMPU6050();
+  }
+
+  // ==================================================
+  // DHT22
+  // ==================================================
+
+  if (
+      now - lastDHTTime >=
+      DHT_INTERVAL_MS)
+  {
+    lastDHTTime =
+        now;
+
+    readDHT22();
+  }
+
+  // ==================================================
+  // DS18B20
+  // ==================================================
+
+  handleDS18B20(
+      now
+  );
+
+  // ==================================================
+  // LCD REFRESH
+  // ==================================================
+
+  if (
+      now - lastLCDRefreshTime >=
+      LCD_REFRESH_INTERVAL_MS)
+  {
+    lastLCDRefreshTime =
+        now;
+
+    refreshLCDs();
+  }
+
+  // ==================================================
+  // SERIAL TELEMETRY
+  // ==================================================
+
+  if (
+      now - lastTelemetryTime >=
+      TELEMETRY_INTERVAL_MS)
+  {
+    lastTelemetryTime =
+        now;
+
+    printTelemetry();
+  }
+
+  // No delay().
+  // Loop remains free to service fast controls.
 }
