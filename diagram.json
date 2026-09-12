@@ -1,0 +1,544 @@
+﻿{
+  "version": 1,
+  "author": "Autonomous Base Station",
+  "editor": "wokwi",
+
+  "parts": [
+    {
+      "type": "wokwi-text",
+      "id": "localHeading",
+      "top": 20,
+      "left": 30,
+      "attrs": {
+        "text": "LOCAL / ENVIRONMENTAL SENSING"
+      }
+    },
+
+    {
+      "type": "wokwi-dht22",
+      "id": "dht1",
+      "top": 120,
+      "left": 80,
+      "attrs": {
+        "temperature": "28",
+        "humidity": "45"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "dhtLabel",
+      "top": 85,
+      "left": 55,
+      "attrs": {
+        "text": "DHT22 - Shelter Temp / Humidity"
+      }
+    },
+
+    {
+      "type": "wokwi-mpu6050",
+      "id": "mpu1",
+      "top": 310,
+      "left": 70,
+      "attrs": {}
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "mpuLabel",
+      "top": 270,
+      "left": 65,
+      "attrs": {
+        "text": "MPU6050 - Vibration"
+      }
+    },
+
+    {
+      "type": "wokwi-ds18b20",
+      "id": "paTemp",
+      "top": 500,
+      "left": 90,
+      "attrs": {
+        "temperature": "42"
+      }
+    },
+
+    {
+      "type": "wokwi-resistor",
+      "id": "dsPullup",
+      "top": 515,
+      "left": 180,
+      "attrs": {
+        "value": "4700"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "dsLabel",
+      "top": 460,
+      "left": 65,
+      "attrs": {
+        "text": "DS18B20 - PA Temperature"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "controllerHeading",
+      "top": 150,
+      "left": 390,
+      "attrs": {
+        "text": "EDGE CONTROLLER"
+      }
+    },
+
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp32",
+      "top": 245,
+      "left": 405,
+      "attrs": {}
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "controllerLabel",
+      "top": 470,
+      "left": 375,
+      "attrs": {
+        "text": "ESP32 - Acquisition / Telemetry"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "powerHeading",
+      "top": 10,
+      "left": 835,
+      "attrs": {
+        "text": "DC POWER SYSTEM CONTROLS"
+      }
+    },
+
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcdDcVoltage",
+      "top": 80,
+      "left": 650,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x20",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+
+    {
+      "type": "wokwi-potentiometer",
+      "id": "dcVoltage",
+      "top": 210,
+      "left": 715,
+      "attrs": {
+        "value": "800"
+      }
+    },
+
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcdDcCurrent",
+      "top": 80,
+      "left": 920,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x21",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+
+    {
+      "type": "wokwi-potentiometer",
+      "id": "dcCurrent",
+      "top": 210,
+      "left": 985,
+      "attrs": {
+        "value": "350"
+      }
+    },
+
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcdBattery",
+      "top": 80,
+      "left": 1190,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x22",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+
+    {
+      "type": "wokwi-potentiometer",
+      "id": "batteryVoltage",
+      "top": 210,
+      "left": 1255,
+      "attrs": {
+        "value": "830"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "rfHeading",
+      "top": 355,
+      "left": 900,
+      "attrs": {
+        "text": "RF MONITORING CONTROLS"
+      }
+    },
+
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcdRfForward",
+      "top": 425,
+      "left": 755,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x23",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+
+    {
+      "type": "wokwi-potentiometer",
+      "id": "rfForward",
+      "top": 555,
+      "left": 820,
+      "attrs": {
+        "value": "750"
+      }
+    },
+
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcdRfReflected",
+      "top": 425,
+      "left": 1055,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x24",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+
+    {
+      "type": "wokwi-potentiometer",
+      "id": "rfReflected",
+      "top": 555,
+      "left": 1120,
+      "attrs": {
+        "value": "50"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "backhaulHeading",
+      "top": 700,
+      "left": 835,
+      "attrs": {
+        "text": "BACKHAUL / UPSTREAM NETWORK"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "backhaulStatusHeading",
+      "top": 755,
+      "left": 930,
+      "attrs": {
+        "text": "OVERALL BACKHAUL STATUS"
+      }
+    },
+
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcdBackhaul",
+      "top": 795,
+      "left": 930,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x25",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "metricHeading",
+      "top": 930,
+      "left": 860,
+      "attrs": {
+        "text": "INDEPENDENT BACKHAUL METRICS"
+      }
+    },
+
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcdLatency",
+      "top": 990,
+      "left": 650,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x26",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+
+    {
+      "type": "wokwi-potentiometer",
+      "id": "latencyInput",
+      "top": 1120,
+      "left": 715,
+      "attrs": {
+        "value": "35"
+      }
+    },
+
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcdPacketLoss",
+      "top": 990,
+      "left": 920,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x27",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+
+    {
+      "type": "wokwi-potentiometer",
+      "id": "packetLossInput",
+      "top": 1120,
+      "left": 985,
+      "attrs": {
+        "value": "8"
+      }
+    },
+
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcdRssi",
+      "top": 990,
+      "left": 1190,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x3F",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+
+    {
+      "type": "wokwi-potentiometer",
+      "id": "rssiInput",
+      "top": 1120,
+      "left": 1255,
+      "attrs": {
+        "value": "140"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "digitalHeading",
+      "top": 1260,
+      "left": 880,
+      "attrs": {
+        "text": "DIGITAL CONNECTIVITY STATES"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "linkLabel",
+      "top": 1320,
+      "left": 725,
+      "attrs": {
+        "text": "PHYSICAL LINK"
+      }
+    },
+
+    {
+      "type": "wokwi-slide-switch",
+      "id": "linkSwitch",
+      "top": 1370,
+      "left": 790,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "linkDirection",
+      "top": 1435,
+      "left": 720,
+      "attrs": {
+        "text": "LEFT: DOWN   RIGHT: UP"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "reachableLabel",
+      "top": 1320,
+      "left": 1050,
+      "attrs": {
+        "text": "UPSTREAM REACHABLE"
+      }
+    },
+
+    {
+      "type": "wokwi-slide-switch",
+      "id": "reachableSwitch",
+      "top": 1370,
+      "left": 1120,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+
+    {
+      "type": "wokwi-text",
+      "id": "reachableDirection",
+      "top": 1435,
+      "left": 1055,
+      "attrs": {
+        "text": "LEFT: NO   RIGHT: YES"
+      }
+    }
+  ],
+
+  "connections": [
+    [ "dht1:VCC", "esp32:3V3", "red", [] ],
+    [ "dht1:GND", "esp32:GND.1", "black", [] ],
+    [ "dht1:SDA", "esp32:D15", "green", [] ],
+
+    [ "mpu1:VCC", "esp32:3V3", "red", [] ],
+    [ "mpu1:GND", "esp32:GND.1", "black", [] ],
+    [ "mpu1:SDA", "esp32:D21", "blue", [] ],
+    [ "mpu1:SCL", "esp32:D22", "yellow", [] ],
+
+    [ "paTemp:VCC", "esp32:3V3", "red", [] ],
+    [ "paTemp:GND", "esp32:GND.1", "black", [] ],
+    [ "paTemp:DQ", "esp32:D4", "green", [] ],
+
+    [ "dsPullup:1", "esp32:3V3", "red", [] ],
+    [ "dsPullup:2", "esp32:D4", "green", [] ],
+
+    [ "dcVoltage:VCC", "esp32:3V3", "red", [] ],
+    [ "dcVoltage:GND", "esp32:GND.1", "black", [] ],
+    [ "dcVoltage:SIG", "esp32:D34", "purple", [] ],
+
+    [ "dcCurrent:VCC", "esp32:3V3", "red", [] ],
+    [ "dcCurrent:GND", "esp32:GND.1", "black", [] ],
+    [ "dcCurrent:SIG", "esp32:D35", "orange", [] ],
+
+    [ "batteryVoltage:VCC", "esp32:3V3", "red", [] ],
+    [ "batteryVoltage:GND", "esp32:GND.1", "black", [] ],
+    [ "batteryVoltage:SIG", "esp32:D32", "cyan", [] ],
+
+    [ "rfForward:VCC", "esp32:3V3", "red", [] ],
+    [ "rfForward:GND", "esp32:GND.1", "black", [] ],
+    [ "rfForward:SIG", "esp32:D33", "limegreen", [] ],
+
+    [ "rfReflected:VCC", "esp32:3V3", "red", [] ],
+    [ "rfReflected:GND", "esp32:GND.1", "black", [] ],
+    [ "rfReflected:SIG", "esp32:D36", "magenta", [] ],
+
+    [ "latencyInput:VCC", "esp32:3V3", "red", [] ],
+    [ "latencyInput:GND", "esp32:GND.1", "black", [] ],
+    [ "latencyInput:SIG", "esp32:D25", "gold", [] ],
+
+    [ "packetLossInput:VCC", "esp32:3V3", "red", [] ],
+    [ "packetLossInput:GND", "esp32:GND.1", "black", [] ],
+    [ "packetLossInput:SIG", "esp32:D26", "orange", [] ],
+
+    [ "rssiInput:VCC", "esp32:3V3", "red", [] ],
+    [ "rssiInput:GND", "esp32:GND.1", "black", [] ],
+    [ "rssiInput:SIG", "esp32:D27", "cyan", [] ],
+
+    [ "linkSwitch:1", "esp32:GND.1", "black", [] ],
+    [ "linkSwitch:2", "esp32:D14", "green", [] ],
+    [ "linkSwitch:3", "esp32:3V3", "red", [] ],
+
+    [ "reachableSwitch:1", "esp32:GND.1", "black", [] ],
+    [ "reachableSwitch:2", "esp32:D13", "green", [] ],
+    [ "reachableSwitch:3", "esp32:3V3", "red", [] ],
+
+    [ "lcdDcVoltage:VCC", "esp32:VIN", "red", [] ],
+    [ "lcdDcVoltage:GND", "esp32:GND.2", "black", [] ],
+    [ "lcdDcVoltage:SDA", "esp32:D21", "green", [] ],
+    [ "lcdDcVoltage:SCL", "esp32:D22", "blue", [] ],
+
+    [ "lcdDcCurrent:VCC", "esp32:VIN", "red", [] ],
+    [ "lcdDcCurrent:GND", "esp32:GND.2", "black", [] ],
+    [ "lcdDcCurrent:SDA", "esp32:D21", "green", [] ],
+    [ "lcdDcCurrent:SCL", "esp32:D22", "blue", [] ],
+
+    [ "lcdBattery:VCC", "esp32:VIN", "red", [] ],
+    [ "lcdBattery:GND", "esp32:GND.2", "black", [] ],
+    [ "lcdBattery:SDA", "esp32:D21", "green", [] ],
+    [ "lcdBattery:SCL", "esp32:D22", "blue", [] ],
+
+    [ "lcdRfForward:VCC", "esp32:VIN", "red", [] ],
+    [ "lcdRfForward:GND", "esp32:GND.2", "black", [] ],
+    [ "lcdRfForward:SDA", "esp32:D21", "green", [] ],
+    [ "lcdRfForward:SCL", "esp32:D22", "blue", [] ],
+
+    [ "lcdRfReflected:VCC", "esp32:VIN", "red", [] ],
+    [ "lcdRfReflected:GND", "esp32:GND.2", "black", [] ],
+    [ "lcdRfReflected:SDA", "esp32:D21", "green", [] ],
+    [ "lcdRfReflected:SCL", "esp32:D22", "blue", [] ],
+
+    [ "lcdBackhaul:VCC", "esp32:VIN", "red", [] ],
+    [ "lcdBackhaul:GND", "esp32:GND.2", "black", [] ],
+    [ "lcdBackhaul:SDA", "esp32:D21", "green", [] ],
+    [ "lcdBackhaul:SCL", "esp32:D22", "blue", [] ],
+
+    [ "lcdLatency:VCC", "esp32:VIN", "red", [] ],
+    [ "lcdLatency:GND", "esp32:GND.2", "black", [] ],
+    [ "lcdLatency:SDA", "esp32:D21", "green", [] ],
+    [ "lcdLatency:SCL", "esp32:D22", "blue", [] ],
+
+    [ "lcdPacketLoss:VCC", "esp32:VIN", "red", [] ],
+    [ "lcdPacketLoss:GND", "esp32:GND.2", "black", [] ],
+    [ "lcdPacketLoss:SDA", "esp32:D21", "green", [] ],
+    [ "lcdPacketLoss:SCL", "esp32:D22", "blue", [] ],
+
+    [ "lcdRssi:VCC", "esp32:VIN", "red", [] ],
+    [ "lcdRssi:GND", "esp32:GND.2", "black", [] ],
+    [ "lcdRssi:SDA", "esp32:D21", "green", [] ],
+    [ "lcdRssi:SCL", "esp32:D22", "blue", [] ],
+
+    [ "esp32:TX0", "$serialMonitor:RX", "", [] ],
+    [ "esp32:RX0", "$serialMonitor:TX", "", [] ]
+  ],
+
+  "serialMonitor": {
+    "display": "always",
+    "newline": "lf"
+  }
+}

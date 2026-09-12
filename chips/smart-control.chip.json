@@ -1,0 +1,26 @@
+{
+  "name": "Base Station Smart Control",
+  "author": "Autonomous Base Station Project",
+  "pins": [
+    "OUT"
+  ],
+  "controls": [
+    {
+      "id": "position",
+      "label": "Knob / Slider",
+      "type": "range",
+      "min": 0,
+      "max": 1000,
+      "step": 1
+    },
+    {
+      "id": "manualValue",
+      "label": "Manual Value (blank = knob)",
+      "type": "string"
+    }
+  ],
+  "display": {
+    "width": 120,
+    "height": 120
+  }
+}
