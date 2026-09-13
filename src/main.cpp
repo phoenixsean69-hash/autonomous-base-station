@@ -129,6 +129,30 @@ const float RSSI_DROP_THRESHOLD_DB = 8.0f;
 // in the 2-second telemetry stream.
 const unsigned long BACKHAUL_EVENT_HOLD_MS = 3000;
 
+// ====================================================
+// THERMAL SIGNAL PROCESSING
+// ====================================================
+//
+// DHT22 and DS18B20 measurements update roughly every
+// two seconds.
+//
+// Thermal signals change much more slowly than vibration,
+// RF or network signals, therefore stronger smoothing is
+// appropriate.
+//
+const float THERMAL_EMA_ALPHA = 0.25f;
+
+// Rate-of-rise thresholds.
+//
+// Temperatures are expressed as degrees Celsius per minute.
+const float THERMAL_RISE_THRESHOLD_C_PER_MIN = 0.50f;
+const float THERMAL_FAST_RISE_THRESHOLD_C_PER_MIN = 2.00f;
+
+// These PA temperature limits match the existing
+// local-site health model.
+const float PA_THERMAL_HOT_C = 65.0f;
+const float PA_THERMAL_CRITICAL_C = 80.0f;
+
 struct RollingStatsState
 {
   float buffer[POWER_STATS_SAMPLES];
@@ -246,6 +270,41 @@ LiquidCrystal_I2C lcdOperatingMode(
 float shelterTemperature = 0.0;
 float humidity = 0.0;
 float paTemperature = 0.0;
+
+// ----------------------------------------------------
+// Processed thermal features
+// ----------------------------------------------------
+
+float shelterTemperatureEMA = 0.0;
+float humidityEMA = 0.0;
+float paTemperatureEMA = 0.0;
+
+float shelterTemperatureTrendCPerMin = 0.0;
+float paTemperatureTrendCPerMin = 0.0;
+
+// Temperature difference between the RF power amplifier
+// and the shelter environment.
+//
+// A growing positive differential can indicate localised
+// equipment heating.
+float paShelterTemperatureDeltaC = 0.0;
+
+// Strongest positive thermal rate currently observed.
+float maximumThermalRiseCPerMin = 0.0;
+
+RollingStatsState shelterTemperatureStats = {};
+RollingStatsState humidityStats = {};
+RollingStatsState paTemperatureStats = {};
+
+bool shelterThermalInitialised = false;
+bool humidityThermalInitialised = false;
+bool paThermalInitialised = false;
+
+unsigned long lastShelterThermalTime = 0;
+unsigned long lastPaThermalTime = 0;
+
+String thermalTrendState = "COLLECTING";
+String thermalRiskState = "COLLECTING";
 
 // Vibration
 float accelX = 0.0;
@@ -400,6 +459,20 @@ unsigned long lastPacketLossBurstTime = 0;
 unsigned long lastRssiDropTime = 0;
 
 uint16_t consecutiveHighLossSamples = 0;
+
+// ----------------------------------------------------
+// BACKHAUL EVENT LATCHES
+// ----------------------------------------------------
+//
+// These remain TRUE until the next telemetry report
+// acknowledges them.
+//
+// This prevents short events from disappearing between
+// the fast 50 ms processing loop and the slower 2-second
+// human-readable telemetry output.
+bool latencySpikeLatched = false;
+bool packetLossBurstLatched = false;
+bool rssiDropLatched = false;
 
 // Electrical
 String electricalHealth = "UNKNOWN";
@@ -1589,6 +1662,17 @@ float applyBackhaulEMA(
 void updateBackhaulSignalProcessing(
     unsigned long now)
 {
+  // Capture previous event states so we can identify
+  // the rising edge of a new transient event.
+  bool wasLatencySpikeDetected =
+      latencySpikeDetected;
+
+  bool wasPacketLossBurstDetected =
+      packetLossBurstDetected;
+
+  bool wasRssiDropDetected =
+      rssiDropDetected;
+
   // --------------------------------------------------
   // INITIALISE FILTERS FROM FIRST VALID SAMPLE
   // --------------------------------------------------
@@ -1704,6 +1788,14 @@ void updateBackhaulSignalProcessing(
           BACKHAUL_EVENT_HOLD_MS
       );
 
+  if (
+      latencySpikeDetected &&
+      !wasLatencySpikeDetected)
+  {
+    latencySpikeLatched =
+        true;
+  }
+
   // --------------------------------------------------
   // PACKET-LOSS BURST DETECTION
   // --------------------------------------------------
@@ -1741,6 +1833,14 @@ void updateBackhaulSignalProcessing(
           BACKHAUL_EVENT_HOLD_MS
       );
 
+  if (
+      packetLossBurstDetected &&
+      !wasPacketLossBurstDetected)
+  {
+    packetLossBurstLatched =
+        true;
+  }
+
   // --------------------------------------------------
   // RSSI SUDDEN-DROP DETECTION
   //
@@ -1769,6 +1869,14 @@ void updateBackhaulSignalProcessing(
           lastRssiDropTime <=
           BACKHAUL_EVENT_HOLD_MS
       );
+
+  if (
+      rssiDropDetected &&
+      !wasRssiDropDetected)
+  {
+    rssiDropLatched =
+        true;
+  }
 
   // --------------------------------------------------
   // TREND / RATE-OF-CHANGE FEATURES
@@ -2287,6 +2395,292 @@ void readMPU6050()
   recalculateSystemState();
 }
 // ====================================================
+// THERMAL SIGNAL PROCESSING
+// ====================================================
+
+float applyThermalEMA(
+    float previousFiltered,
+    float newSample)
+{
+  return
+      THERMAL_EMA_ALPHA *
+      newSample +
+      (
+          1.0f -
+          THERMAL_EMA_ALPHA
+      ) *
+      previousFiltered;
+}
+
+
+// Recalculate derived thermal relationships after either
+// shelter or PA temperature changes.
+void updateThermalDerivedState()
+{
+  if (
+      shelterThermalInitialised &&
+      paThermalInitialised)
+  {
+    paShelterTemperatureDeltaC =
+        paTemperatureEMA -
+        shelterTemperatureEMA;
+  }
+  else
+  {
+    paShelterTemperatureDeltaC =
+        0.0f;
+  }
+
+  maximumThermalRiseCPerMin =
+      shelterTemperatureTrendCPerMin;
+
+  if (
+      paTemperatureTrendCPerMin >
+      maximumThermalRiseCPerMin)
+  {
+    maximumThermalRiseCPerMin =
+        paTemperatureTrendCPerMin;
+  }
+
+  // --------------------------------------------------
+  // THERMAL TREND STATE
+  // --------------------------------------------------
+
+  if (
+      !shelterThermalInitialised ||
+      !paThermalInitialised)
+  {
+    thermalTrendState =
+        "COLLECTING";
+  }
+  else if (
+      maximumThermalRiseCPerMin >=
+      THERMAL_FAST_RISE_THRESHOLD_C_PER_MIN)
+  {
+    thermalTrendState =
+        "RISING_FAST";
+  }
+  else if (
+      maximumThermalRiseCPerMin >=
+      THERMAL_RISE_THRESHOLD_C_PER_MIN)
+  {
+    thermalTrendState =
+        "RISING";
+  }
+  else if (
+      shelterTemperatureTrendCPerMin <=
+          -THERMAL_RISE_THRESHOLD_C_PER_MIN &&
+      paTemperatureTrendCPerMin <=
+          -THERMAL_RISE_THRESHOLD_C_PER_MIN)
+  {
+    thermalTrendState =
+        "FALLING";
+  }
+  else
+  {
+    thermalTrendState =
+        "STABLE";
+  }
+
+  // --------------------------------------------------
+  // THERMAL RISK STATE
+  //
+  // This is diagnostic information only.
+  // Existing rule-based ground-truth decisions are not
+  // replaced by this processed value.
+  // --------------------------------------------------
+
+  if (!paThermalInitialised)
+  {
+    thermalRiskState =
+        "COLLECTING";
+  }
+  else if (
+      paTemperatureEMA >=
+      PA_THERMAL_CRITICAL_C)
+  {
+    thermalRiskState =
+        "CRITICAL";
+  }
+  else if (
+      paTemperatureEMA >=
+      PA_THERMAL_HOT_C)
+  {
+    thermalRiskState =
+        "HOT";
+  }
+  else if (
+      maximumThermalRiseCPerMin >=
+      THERMAL_FAST_RISE_THRESHOLD_C_PER_MIN)
+  {
+    thermalRiskState =
+        "FAST_RISE";
+  }
+  else
+  {
+    thermalRiskState =
+        "NORMAL";
+  }
+}
+
+
+// Process DHT22 shelter temperature and humidity.
+void updateShelterThermalProcessing(
+    unsigned long now,
+    bool temperatureUpdated,
+    bool humidityUpdated)
+{
+  if (temperatureUpdated)
+  {
+    updateRollingStats(
+        shelterTemperatureStats,
+        shelterTemperature
+    );
+
+    if (!shelterThermalInitialised)
+    {
+      shelterTemperatureEMA =
+          shelterTemperature;
+
+      shelterTemperatureTrendCPerMin =
+          0.0f;
+
+      lastShelterThermalTime =
+          now;
+
+      shelterThermalInitialised =
+          true;
+    }
+    else
+    {
+      float previousEMA =
+          shelterTemperatureEMA;
+
+      shelterTemperatureEMA =
+          applyThermalEMA(
+              shelterTemperatureEMA,
+              shelterTemperature
+          );
+
+      unsigned long elapsed =
+          now -
+          lastShelterThermalTime;
+
+      if (elapsed > 0)
+      {
+        float elapsedMinutes =
+            elapsed /
+            60000.0f;
+
+        if (elapsedMinutes > 0.0f)
+        {
+          shelterTemperatureTrendCPerMin =
+              (
+                  shelterTemperatureEMA -
+                  previousEMA
+              ) /
+              elapsedMinutes;
+        }
+      }
+
+      lastShelterThermalTime =
+          now;
+    }
+  }
+
+  if (humidityUpdated)
+  {
+    updateRollingStats(
+        humidityStats,
+        humidity
+    );
+
+    if (!humidityThermalInitialised)
+    {
+      humidityEMA =
+          humidity;
+
+      humidityThermalInitialised =
+          true;
+    }
+    else
+    {
+      humidityEMA =
+          applyThermalEMA(
+              humidityEMA,
+              humidity
+          );
+    }
+  }
+
+  updateThermalDerivedState();
+}
+
+
+// Process DS18B20 PA temperature.
+void updatePaThermalProcessing(
+    unsigned long now)
+{
+  updateRollingStats(
+      paTemperatureStats,
+      paTemperature
+  );
+
+  if (!paThermalInitialised)
+  {
+    paTemperatureEMA =
+        paTemperature;
+
+    paTemperatureTrendCPerMin =
+        0.0f;
+
+    lastPaThermalTime =
+        now;
+
+    paThermalInitialised =
+        true;
+  }
+  else
+  {
+    float previousEMA =
+        paTemperatureEMA;
+
+    paTemperatureEMA =
+        applyThermalEMA(
+            paTemperatureEMA,
+            paTemperature
+        );
+
+    unsigned long elapsed =
+        now -
+        lastPaThermalTime;
+
+    if (elapsed > 0)
+    {
+      float elapsedMinutes =
+          elapsed /
+          60000.0f;
+
+      if (elapsedMinutes > 0.0f)
+      {
+        paTemperatureTrendCPerMin =
+            (
+                paTemperatureEMA -
+                previousEMA
+            ) /
+            elapsedMinutes;
+      }
+    }
+
+    lastPaThermalTime =
+        now;
+  }
+
+  updateThermalDerivedState();
+}
+
+
+// ====================================================
 // DHT22
 // ====================================================
 
@@ -2298,16 +2692,39 @@ void readDHT22()
   float newHumidity =
       dht.readHumidity();
 
+  bool temperatureUpdated =
+      false;
+
+  bool humidityUpdated =
+      false;
+
   if (!isnan(newTemperature))
   {
     shelterTemperature =
         newTemperature;
+
+    temperatureUpdated =
+        true;
   }
 
   if (!isnan(newHumidity))
   {
     humidity =
         newHumidity;
+
+    humidityUpdated =
+        true;
+  }
+
+  if (
+      temperatureUpdated ||
+      humidityUpdated)
+  {
+    updateShelterThermalProcessing(
+        millis(),
+        temperatureUpdated,
+        humidityUpdated
+    );
   }
 }
 
@@ -2346,6 +2763,10 @@ void handleDS18B20(
     {
       paTemperature =
           newPaTemperature;
+
+      updatePaThermalProcessing(
+          now
+      );
     }
 
     ds18b20ConversionPending =
@@ -2754,6 +3175,120 @@ void printTelemetry()
       2
   );
   Serial.println(" C");
+
+  // --------------------------------------------------
+  // THERMAL SIGNAL PROCESSING
+  // --------------------------------------------------
+
+  Serial.println();
+
+  Serial.println(
+      "[ THERMAL SIGNAL PROCESSING ]"
+  );
+
+  Serial.print(
+      "Shelter Temp EMA    : "
+  );
+  Serial.print(
+      shelterTemperatureEMA,
+      2
+  );
+  Serial.println(" C");
+
+  Serial.print(
+      "Shelter Temp StdDev : "
+  );
+  Serial.print(
+      shelterTemperatureStats.stdDev,
+      3
+  );
+  Serial.println(" C");
+
+  Serial.print(
+      "Shelter Temp Trend  : "
+  );
+  Serial.print(
+      shelterTemperatureTrendCPerMin,
+      3
+  );
+  Serial.println(" C/min");
+
+  Serial.print(
+      "Humidity EMA        : "
+  );
+  Serial.print(
+      humidityEMA,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "Humidity Std Dev    : "
+  );
+  Serial.print(
+      humidityStats.stdDev,
+      3
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "PA Temp EMA         : "
+  );
+  Serial.print(
+      paTemperatureEMA,
+      2
+  );
+  Serial.println(" C");
+
+  Serial.print(
+      "PA Temp Std Dev     : "
+  );
+  Serial.print(
+      paTemperatureStats.stdDev,
+      3
+  );
+  Serial.println(" C");
+
+  Serial.print(
+      "PA Temp Trend       : "
+  );
+  Serial.print(
+      paTemperatureTrendCPerMin,
+      3
+  );
+  Serial.println(" C/min");
+
+  Serial.print(
+      "PA-Shelter Delta    : "
+  );
+  Serial.print(
+      paShelterTemperatureDeltaC,
+      2
+  );
+  Serial.println(" C");
+
+  Serial.print(
+      "Max Thermal Rise    : "
+  );
+  Serial.print(
+      maximumThermalRiseCPerMin,
+      3
+  );
+  Serial.println(" C/min");
+
+  Serial.print(
+      "Thermal Trend       : "
+  );
+  Serial.println(
+      thermalTrendState
+  );
+
+  Serial.print(
+      "Thermal Risk        : "
+  );
+  Serial.println(
+      thermalRiskState
+  );
 
   // --------------------------------------------------
   // VIBRATION
@@ -3341,7 +3876,7 @@ void printTelemetry()
       "Latency Spike       : "
   );
   Serial.println(
-      latencySpikeDetected
+      latencySpikeLatched
           ? "YES"
           : "NO"
   );
@@ -3377,7 +3912,7 @@ void printTelemetry()
       "Packet Loss Burst   : "
   );
   Serial.println(
-      packetLossBurstDetected
+      packetLossBurstLatched
           ? "YES"
           : "NO"
   );
@@ -3413,7 +3948,7 @@ void printTelemetry()
       "RSSI Sudden Drop    : "
   );
   Serial.println(
-      rssiDropDetected
+      rssiDropLatched
           ? "YES"
           : "NO"
   );
@@ -3643,6 +4178,24 @@ void printTelemetry()
   Serial.println(
       "Runtime             : NON-BLOCKING"
   );
+
+  // --------------------------------------------------
+  // TELEMETRY EVENT ACKNOWLEDGEMENT
+  // --------------------------------------------------
+  //
+  // Events detected since the previous telemetry report
+  // have now been shown to the user/dashboard pipeline.
+  //
+  // Clear the latches so the next report only contains
+  // genuinely new transient events.
+  latencySpikeLatched =
+      false;
+
+  packetLossBurstLatched =
+      false;
+
+  rssiDropLatched =
+      false;
 }
 
 // ====================================================
