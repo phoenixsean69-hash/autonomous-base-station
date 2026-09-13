@@ -73,6 +73,43 @@ const uint16_t FFT_SAMPLES = 128;
 const double VIBRATION_SAMPLE_RATE_HZ = 50.0;
 
 // ====================================================
+// POWER SIGNAL PROCESSING
+// ====================================================
+
+// Fast analogue inputs are sampled every 50 ms = 20 Hz.
+//
+// A 40-sample statistics window therefore covers:
+//
+// 40 / 20 = 2 seconds.
+//
+// EMA:
+// y[n] = alpha*x[n] + (1-alpha)*y[n-1]
+//
+// A relatively small alpha suppresses short ADC fluctuations
+// while still responding quickly enough for site monitoring.
+constexpr uint16_t POWER_STATS_SAMPLES = 40;
+
+const float POWER_EMA_ALPHA = 0.15f;
+
+// Trends are calculated over approximately one second
+// using the smoothed signals rather than individual samples.
+const unsigned long POWER_TREND_INTERVAL_MS = 1000;
+
+struct RollingStatsState
+{
+  float buffer[POWER_STATS_SAMPLES];
+
+  uint16_t index;
+  uint16_t count;
+
+  double sum;
+  double sumSquares;
+
+  float mean;
+  float stdDev;
+};
+
+// ====================================================
 // SENSOR OBJECTS
 // ====================================================
 
@@ -220,9 +257,55 @@ float dcBusVoltage = 0.0;
 float dcBusCurrent = 0.0;
 float dcPower = 0.0;
 
+// ----------------------------------------------------
+// Processed DC power features
+// ----------------------------------------------------
+
+float dcBusVoltageEMA = 0.0;
+float dcBusCurrentEMA = 0.0;
+float dcPowerEMA = 0.0;
+
+float dcVoltageTrendVPerSec = 0.0;
+float dcCurrentTrendAPerSec = 0.0;
+float dcPowerTrendWPerSec = 0.0;
+
+RollingStatsState dcVoltageStats = {};
+RollingStatsState dcCurrentStats = {};
+RollingStatsState dcPowerStats = {};
+
 // Battery
 float batteryVoltage = 0.0;
 float batterySOC = 0.0;
+
+// ----------------------------------------------------
+// Processed battery features
+// ----------------------------------------------------
+
+float batteryVoltageEMA = 0.0;
+float batterySOCEMA = 0.0;
+
+float batteryVoltageTrendVPerMin = 0.0;
+float batterySOCTrendPctPerMin = 0.0;
+
+// Positive value means estimated discharge.
+// A charging battery gives zero discharge rate here.
+float batteryDischargeRatePctPerMin = 0.0;
+
+String batteryTrendState = "STABLE";
+
+RollingStatsState batteryVoltageStats = {};
+RollingStatsState batterySOCStats = {};
+
+bool powerSignalProcessingInitialised = false;
+
+unsigned long lastPowerTrendTime = 0;
+
+float previousDcVoltageEMA = 0.0;
+float previousDcCurrentEMA = 0.0;
+float previousDcPowerEMA = 0.0;
+
+float previousBatteryVoltageEMA = 0.0;
+float previousBatterySOCEMA = 0.0;
 
 // RF
 float rfForwardPower = 0.0;
@@ -1039,6 +1122,380 @@ void recalculateSystemState()
 }
 
 // ====================================================
+// POWER / BATTERY SIGNAL PROCESSING
+// ====================================================
+
+// Rolling statistics provide short-term mean and variation.
+//
+// Standard deviation is particularly useful because a signal
+// may have an acceptable average while still being unstable.
+void updateRollingStats(
+    RollingStatsState &state,
+    float sample)
+{
+  if (
+      state.count <
+      POWER_STATS_SAMPLES)
+  {
+    state.buffer[
+        state.index
+    ] =
+        sample;
+
+    state.sum +=
+        sample;
+
+    state.sumSquares +=
+        (
+            double
+        )sample *
+        sample;
+
+    state.count++;
+  }
+  else
+  {
+    float oldSample =
+        state.buffer[
+            state.index
+        ];
+
+    state.sum -=
+        oldSample;
+
+    state.sumSquares -=
+        (
+            double
+        )oldSample *
+        oldSample;
+
+    state.buffer[
+        state.index
+    ] =
+        sample;
+
+    state.sum +=
+        sample;
+
+    state.sumSquares +=
+        (
+            double
+        )sample *
+        sample;
+  }
+
+  state.index++;
+
+  if (
+      state.index >=
+      POWER_STATS_SAMPLES)
+  {
+    state.index =
+        0;
+  }
+
+  if (state.count == 0)
+  {
+    state.mean =
+        0.0;
+
+    state.stdDev =
+        0.0;
+
+    return;
+  }
+
+  state.mean =
+      state.sum /
+      state.count;
+
+  double variance =
+      (
+          state.sumSquares /
+          state.count
+      ) -
+      (
+          (
+              double
+          )state.mean *
+          state.mean
+      );
+
+  // Floating point rounding may produce a tiny
+  // negative variance such as -0.00000001.
+  if (variance < 0.0)
+  {
+    variance =
+        0.0;
+  }
+
+  state.stdDev =
+      sqrt(
+          variance
+      );
+}
+
+
+// Exponential Moving Average.
+//
+// This is an IIR low-pass filter:
+//
+// filtered[n] =
+// alpha*raw[n] +
+// (1-alpha)*filtered[n-1]
+float applyEMA(
+    float previousFiltered,
+    float newSample)
+{
+  return
+      POWER_EMA_ALPHA *
+      newSample +
+      (
+          1.0 -
+          POWER_EMA_ALPHA
+      ) *
+      previousFiltered;
+}
+
+
+// Updates the mathematical features used later by
+// diagnostics, dataset generation and machine learning.
+//
+// IMPORTANT:
+//
+// Existing ground-truth safety rules continue to use the
+// original engineering measurements. These processed signals
+// are additional features rather than replacements.
+void updatePowerSignalProcessing(
+    unsigned long now)
+{
+  // --------------------------------------------------
+  // INITIAL CONDITION
+  // --------------------------------------------------
+
+  if (
+      !powerSignalProcessingInitialised)
+  {
+    dcBusVoltageEMA =
+        dcBusVoltage;
+
+    dcBusCurrentEMA =
+        dcBusCurrent;
+
+    dcPowerEMA =
+        dcPower;
+
+    batteryVoltageEMA =
+        batteryVoltage;
+
+    batterySOCEMA =
+        batterySOC;
+
+    previousDcVoltageEMA =
+        dcBusVoltageEMA;
+
+    previousDcCurrentEMA =
+        dcBusCurrentEMA;
+
+    previousDcPowerEMA =
+        dcPowerEMA;
+
+    previousBatteryVoltageEMA =
+        batteryVoltageEMA;
+
+    previousBatterySOCEMA =
+        batterySOCEMA;
+
+    lastPowerTrendTime =
+        now;
+
+    powerSignalProcessingInitialised =
+        true;
+  }
+  else
+  {
+    // ------------------------------------------------
+    // EMA LOW-PASS FILTERING
+    // ------------------------------------------------
+
+    dcBusVoltageEMA =
+        applyEMA(
+            dcBusVoltageEMA,
+            dcBusVoltage
+        );
+
+    dcBusCurrentEMA =
+        applyEMA(
+            dcBusCurrentEMA,
+            dcBusCurrent
+        );
+
+    dcPowerEMA =
+        applyEMA(
+            dcPowerEMA,
+            dcPower
+        );
+
+    batteryVoltageEMA =
+        applyEMA(
+            batteryVoltageEMA,
+            batteryVoltage
+        );
+
+    batterySOCEMA =
+        applyEMA(
+            batterySOCEMA,
+            batterySOC
+        );
+  }
+
+  // --------------------------------------------------
+  // ROLLING VARIABILITY
+  // --------------------------------------------------
+
+  updateRollingStats(
+      dcVoltageStats,
+      dcBusVoltage
+  );
+
+  updateRollingStats(
+      dcCurrentStats,
+      dcBusCurrent
+  );
+
+  updateRollingStats(
+      dcPowerStats,
+      dcPower
+  );
+
+  updateRollingStats(
+      batteryVoltageStats,
+      batteryVoltage
+  );
+
+  updateRollingStats(
+      batterySOCStats,
+      batterySOC
+  );
+
+  // --------------------------------------------------
+  // RATE-OF-CHANGE / TREND FEATURES
+  // --------------------------------------------------
+
+  unsigned long elapsed =
+      now -
+      lastPowerTrendTime;
+
+  if (
+      elapsed >=
+      POWER_TREND_INTERVAL_MS)
+  {
+    float elapsedSeconds =
+        elapsed /
+        1000.0;
+
+    if (elapsedSeconds > 0.0)
+    {
+      dcVoltageTrendVPerSec =
+          (
+              dcBusVoltageEMA -
+              previousDcVoltageEMA
+          ) /
+          elapsedSeconds;
+
+      dcCurrentTrendAPerSec =
+          (
+              dcBusCurrentEMA -
+              previousDcCurrentEMA
+          ) /
+          elapsedSeconds;
+
+      dcPowerTrendWPerSec =
+          (
+              dcPowerEMA -
+              previousDcPowerEMA
+          ) /
+          elapsedSeconds;
+
+      // Battery changes are normally much slower,
+      // therefore battery rates are expressed per minute.
+      batteryVoltageTrendVPerMin =
+          (
+              (
+                  batteryVoltageEMA -
+                  previousBatteryVoltageEMA
+              ) /
+              elapsedSeconds
+          ) *
+          60.0;
+
+      batterySOCTrendPctPerMin =
+          (
+              (
+                  batterySOCEMA -
+                  previousBatterySOCEMA
+              ) /
+              elapsedSeconds
+          ) *
+          60.0;
+
+      if (
+          batterySOCTrendPctPerMin <
+          0.0)
+      {
+        batteryDischargeRatePctPerMin =
+            -batterySOCTrendPctPerMin;
+      }
+      else
+      {
+        batteryDischargeRatePctPerMin =
+            0.0;
+      }
+
+      // Small movements are treated as stable.
+      if (
+          batterySOCTrendPctPerMin <
+          -0.05)
+      {
+        batteryTrendState =
+            "DISCHARGING";
+      }
+      else if (
+          batterySOCTrendPctPerMin >
+          0.05)
+      {
+        batteryTrendState =
+            "CHARGING";
+      }
+      else
+      {
+        batteryTrendState =
+            "STABLE";
+      }
+    }
+
+    previousDcVoltageEMA =
+        dcBusVoltageEMA;
+
+    previousDcCurrentEMA =
+        dcBusCurrentEMA;
+
+    previousDcPowerEMA =
+        dcPowerEMA;
+
+    previousBatteryVoltageEMA =
+        batteryVoltageEMA;
+
+    previousBatterySOCEMA =
+        batterySOCEMA;
+
+    lastPowerTrendTime =
+        now;
+  }
+}
+
+
+// ====================================================
 // FAST ANALOG + SWITCH INPUTS
 // ====================================================
 
@@ -1166,6 +1623,14 @@ void readFastInputs()
           4095.0
       ) *
       100.0;
+
+  // --------------------------------------------------
+  // SIGNAL PROCESSING
+  // --------------------------------------------------
+
+  updatePowerSignalProcessing(
+      millis()
+  );
 
   // --------------------------------------------------
   // DIGITAL INPUTS
@@ -2163,6 +2628,186 @@ void printTelemetry()
   Serial.println(" %");
 
   // --------------------------------------------------
+  // POWER / BATTERY SIGNAL PROCESSING
+  // --------------------------------------------------
+
+  Serial.println();
+
+  Serial.println(
+      "[ POWER SIGNAL PROCESSING ]"
+  );
+
+  Serial.print(
+      "DC Voltage EMA      : "
+  );
+  Serial.print(
+      dcBusVoltageEMA,
+      3
+  );
+  Serial.println(" V");
+
+  Serial.print(
+      "DC Voltage Std Dev  : "
+  );
+  Serial.print(
+      dcVoltageStats.stdDev,
+      4
+  );
+  Serial.println(" V");
+
+  Serial.print(
+      "DC Voltage Trend    : "
+  );
+  Serial.print(
+      dcVoltageTrendVPerSec,
+      4
+  );
+  Serial.println(" V/s");
+
+  Serial.print(
+      "DC Current EMA      : "
+  );
+  Serial.print(
+      dcBusCurrentEMA,
+      3
+  );
+  Serial.println(" A");
+
+  Serial.print(
+      "DC Current Std Dev  : "
+  );
+  Serial.print(
+      dcCurrentStats.stdDev,
+      4
+  );
+  Serial.println(" A");
+
+  Serial.print(
+      "DC Current Trend    : "
+  );
+  Serial.print(
+      dcCurrentTrendAPerSec,
+      4
+  );
+  Serial.println(" A/s");
+
+  Serial.print(
+      "DC Power EMA        : "
+  );
+  Serial.print(
+      dcPowerEMA,
+      2
+  );
+  Serial.println(" W");
+
+  Serial.print(
+      "DC Power Std Dev    : "
+  );
+  Serial.print(
+      dcPowerStats.stdDev,
+      3
+  );
+  Serial.println(" W");
+
+  Serial.print(
+      "DC Power Trend      : "
+  );
+  Serial.print(
+      dcPowerTrendWPerSec,
+      3
+  );
+  Serial.println(" W/s");
+
+  Serial.print(
+      "Battery Voltage EMA : "
+  );
+  Serial.print(
+      batteryVoltageEMA,
+      3
+  );
+  Serial.println(" V");
+
+  Serial.print(
+      "Battery Volt StdDev : "
+  );
+  Serial.print(
+      batteryVoltageStats.stdDev,
+      4
+  );
+  Serial.println(" V");
+
+  Serial.print(
+      "Battery Volt Trend  : "
+  );
+  Serial.print(
+      batteryVoltageTrendVPerMin,
+      4
+  );
+  Serial.println(" V/min");
+
+  Serial.print(
+      "Battery SoC EMA     : "
+  );
+  Serial.print(
+      batterySOCEMA,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "Battery SoC StdDev  : "
+  );
+  Serial.print(
+      batterySOCStats.stdDev,
+      3
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "Battery SoC Trend   : "
+  );
+  Serial.print(
+      batterySOCTrendPctPerMin,
+      3
+  );
+  Serial.println(" %/min");
+
+  Serial.print(
+      "Battery Discharge   : "
+  );
+  Serial.print(
+      batteryDischargeRatePctPerMin,
+      3
+  );
+  Serial.println(" %/min");
+
+  Serial.print(
+      "Battery Trend State : "
+  );
+  Serial.println(
+      batteryTrendState
+  );
+
+  Serial.print(
+      "Statistics Window   : "
+  );
+  Serial.print(
+      POWER_STATS_SAMPLES *
+      FAST_INPUT_INTERVAL_MS /
+      1000.0,
+      2
+  );
+  Serial.println(" s");
+
+  Serial.print(
+      "EMA Alpha           : "
+  );
+  Serial.println(
+      POWER_EMA_ALPHA,
+      2
+  );
+
+  // --------------------------------------------------
   // RF
   // --------------------------------------------------
 
@@ -2509,7 +3154,7 @@ void printTelemetry()
   );
 
   Serial.println(
-      "Stage               : DATA ACQUISITION + ENERGY MODELLING"
+      "Stage               : DATA ACQUISITION + SIGNAL PROCESSING + ENERGY MODELLING"
   );
 
   Serial.println(
