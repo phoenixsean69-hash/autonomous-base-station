@@ -95,6 +95,40 @@ const float POWER_EMA_ALPHA = 0.15f;
 // using the smoothed signals rather than individual samples.
 const unsigned long POWER_TREND_INTERVAL_MS = 1000;
 
+// ====================================================
+// BACKHAUL SIGNAL PROCESSING
+// ====================================================
+
+// Backhaul analogue controls are sampled by the same
+// 50 ms fast-input loop = 20 samples per second.
+//
+// The existing 40-sample RollingStatsState therefore
+// represents approximately a 2-second network window.
+const float BACKHAUL_EMA_ALPHA = 0.20f;
+
+const unsigned long BACKHAUL_TREND_INTERVAL_MS = 1000;
+
+// Jitter is estimated from successive latency changes:
+//
+// jitterSample = |latency[n] - latency[n-1]|
+//
+// and then smoothed using EWMA.
+const float LATENCY_SPIKE_DELTA_MS = 75.0f;
+
+// Packet loss must remain high for this many samples
+// before it is considered a burst.
+//
+// 10 samples at 20 Hz = 0.5 seconds.
+const uint16_t PACKET_LOSS_BURST_SAMPLES = 10;
+const float PACKET_LOSS_BURST_THRESHOLD = 10.0f;
+
+// Sudden RSSI deterioration threshold.
+const float RSSI_DROP_THRESHOLD_DB = 8.0f;
+
+// Event indicators remain visible long enough to appear
+// in the 2-second telemetry stream.
+const unsigned long BACKHAUL_EVENT_HOLD_MS = 3000;
+
 struct RollingStatsState
 {
   float buffer[POWER_STATS_SAMPLES];
@@ -328,6 +362,44 @@ bool linkUp = false;
 bool upstreamReachable = false;
 
 String backhaulCondition = "UNKNOWN";
+
+// ----------------------------------------------------
+// Processed backhaul features
+// ----------------------------------------------------
+
+float latencyEMA = 0.0;
+float latencyJitterEWMA = 0.0;
+float latencyTrendMsPerSec = 0.0;
+
+float packetLossEMA = 0.0;
+float packetLossTrendPctPerSec = 0.0;
+
+float rssiEMA = 0.0;
+float rssiTrendDbPerSec = 0.0;
+
+RollingStatsState latencyStats = {};
+RollingStatsState packetLossStats = {};
+RollingStatsState rssiStats = {};
+
+bool backhaulSignalProcessingInitialised = false;
+
+float previousLatencyRaw = 0.0;
+float previousLatencyEMA = 0.0;
+float previousPacketLossEMA = 0.0;
+float previousRssiEMA = 0.0;
+
+unsigned long lastBackhaulTrendTime = 0;
+
+// Transient-event detection
+bool latencySpikeDetected = false;
+bool packetLossBurstDetected = false;
+bool rssiDropDetected = false;
+
+unsigned long lastLatencySpikeTime = 0;
+unsigned long lastPacketLossBurstTime = 0;
+unsigned long lastRssiDropTime = 0;
+
+uint16_t consecutiveHighLossSamples = 0;
 
 // Electrical
 String electricalHealth = "UNKNOWN";
@@ -1496,6 +1568,267 @@ void updatePowerSignalProcessing(
 
 
 // ====================================================
+// BACKHAUL SIGNAL PROCESSING
+// ====================================================
+
+float applyBackhaulEMA(
+    float previousFiltered,
+    float newSample)
+{
+  return
+      BACKHAUL_EMA_ALPHA *
+      newSample +
+      (
+          1.0 -
+          BACKHAUL_EMA_ALPHA
+      ) *
+      previousFiltered;
+}
+
+
+void updateBackhaulSignalProcessing(
+    unsigned long now)
+{
+  // --------------------------------------------------
+  // INITIALISE FILTERS FROM FIRST VALID SAMPLE
+  // --------------------------------------------------
+
+  if (
+      !backhaulSignalProcessingInitialised)
+  {
+    latencyEMA =
+        latency;
+
+    packetLossEMA =
+        packetLoss;
+
+    rssiEMA =
+        rssi;
+
+    previousLatencyRaw =
+        latency;
+
+    previousLatencyEMA =
+        latencyEMA;
+
+    previousPacketLossEMA =
+        packetLossEMA;
+
+    previousRssiEMA =
+        rssiEMA;
+
+    lastBackhaulTrendTime =
+        now;
+
+    backhaulSignalProcessingInitialised =
+        true;
+  }
+  else
+  {
+    // ------------------------------------------------
+    // LATENCY JITTER
+    // ------------------------------------------------
+
+    float jitterSample =
+        fabs(
+            latency -
+            previousLatencyRaw
+        );
+
+    latencyJitterEWMA =
+        applyBackhaulEMA(
+            latencyJitterEWMA,
+            jitterSample
+        );
+
+    // ------------------------------------------------
+    // EWMA FILTERS
+    // ------------------------------------------------
+
+    latencyEMA =
+        applyBackhaulEMA(
+            latencyEMA,
+            latency
+        );
+
+    packetLossEMA =
+        applyBackhaulEMA(
+            packetLossEMA,
+            packetLoss
+        );
+
+    rssiEMA =
+        applyBackhaulEMA(
+            rssiEMA,
+            rssi
+        );
+  }
+
+  // --------------------------------------------------
+  // ROLLING STATISTICS
+  // --------------------------------------------------
+
+  updateRollingStats(
+      latencyStats,
+      latency
+  );
+
+  updateRollingStats(
+      packetLossStats,
+      packetLoss
+  );
+
+  updateRollingStats(
+      rssiStats,
+      rssi
+  );
+
+  // --------------------------------------------------
+  // LATENCY SPIKE DETECTION
+  // --------------------------------------------------
+
+  if (
+      latency >
+      latencyEMA +
+      LATENCY_SPIKE_DELTA_MS)
+  {
+    lastLatencySpikeTime =
+        now;
+  }
+
+  latencySpikeDetected =
+      (
+          lastLatencySpikeTime != 0 &&
+          now -
+          lastLatencySpikeTime <=
+          BACKHAUL_EVENT_HOLD_MS
+      );
+
+  // --------------------------------------------------
+  // PACKET-LOSS BURST DETECTION
+  // --------------------------------------------------
+
+  if (
+      packetLoss >=
+      PACKET_LOSS_BURST_THRESHOLD)
+  {
+    if (
+        consecutiveHighLossSamples <
+        65535)
+    {
+      consecutiveHighLossSamples++;
+    }
+  }
+  else
+  {
+    consecutiveHighLossSamples =
+        0;
+  }
+
+  if (
+      consecutiveHighLossSamples >=
+      PACKET_LOSS_BURST_SAMPLES)
+  {
+    lastPacketLossBurstTime =
+        now;
+  }
+
+  packetLossBurstDetected =
+      (
+          lastPacketLossBurstTime != 0 &&
+          now -
+          lastPacketLossBurstTime <=
+          BACKHAUL_EVENT_HOLD_MS
+      );
+
+  // --------------------------------------------------
+  // RSSI SUDDEN-DROP DETECTION
+  //
+  // Example:
+  // filtered RSSI = -55 dBm
+  // current RSSI  = -70 dBm
+  //
+  // drop = 15 dB
+  // --------------------------------------------------
+
+  if (
+      (
+          rssiEMA -
+          rssi
+      ) >=
+      RSSI_DROP_THRESHOLD_DB)
+  {
+    lastRssiDropTime =
+        now;
+  }
+
+  rssiDropDetected =
+      (
+          lastRssiDropTime != 0 &&
+          now -
+          lastRssiDropTime <=
+          BACKHAUL_EVENT_HOLD_MS
+      );
+
+  // --------------------------------------------------
+  // TREND / RATE-OF-CHANGE FEATURES
+  // --------------------------------------------------
+
+  unsigned long elapsed =
+      now -
+      lastBackhaulTrendTime;
+
+  if (
+      elapsed >=
+      BACKHAUL_TREND_INTERVAL_MS)
+  {
+    float elapsedSeconds =
+        elapsed /
+        1000.0f;
+
+    if (elapsedSeconds > 0.0f)
+    {
+      latencyTrendMsPerSec =
+          (
+              latencyEMA -
+              previousLatencyEMA
+          ) /
+          elapsedSeconds;
+
+      packetLossTrendPctPerSec =
+          (
+              packetLossEMA -
+              previousPacketLossEMA
+          ) /
+          elapsedSeconds;
+
+      rssiTrendDbPerSec =
+          (
+              rssiEMA -
+              previousRssiEMA
+          ) /
+          elapsedSeconds;
+    }
+
+    previousLatencyEMA =
+        latencyEMA;
+
+    previousPacketLossEMA =
+        packetLossEMA;
+
+    previousRssiEMA =
+        rssiEMA;
+
+    lastBackhaulTrendTime =
+        now;
+  }
+
+  previousLatencyRaw =
+      latency;
+}
+
+
+// ====================================================
 // FAST ANALOG + SWITCH INPUTS
 // ====================================================
 
@@ -1628,8 +1961,15 @@ void readFastInputs()
   // SIGNAL PROCESSING
   // --------------------------------------------------
 
+  unsigned long processingNow =
+      millis();
+
   updatePowerSignalProcessing(
-      millis()
+      processingNow
+  );
+
+  updateBackhaulSignalProcessing(
+      processingNow
   );
 
   // --------------------------------------------------
@@ -2949,6 +3289,133 @@ void printTelemetry()
   );
   Serial.println(
       backhaulCondition
+  );
+
+  // --------------------------------------------------
+  // BACKHAUL SIGNAL PROCESSING
+  // --------------------------------------------------
+
+  Serial.println();
+
+  Serial.println(
+      "[ BACKHAUL SIGNAL PROCESSING ]"
+  );
+
+  Serial.print(
+      "Latency EWMA        : "
+  );
+  Serial.print(
+      latencyEMA,
+      2
+  );
+  Serial.println(" ms");
+
+  Serial.print(
+      "Latency Jitter      : "
+  );
+  Serial.print(
+      latencyJitterEWMA,
+      3
+  );
+  Serial.println(" ms");
+
+  Serial.print(
+      "Latency Std Dev     : "
+  );
+  Serial.print(
+      latencyStats.stdDev,
+      3
+  );
+  Serial.println(" ms");
+
+  Serial.print(
+      "Latency Trend       : "
+  );
+  Serial.print(
+      latencyTrendMsPerSec,
+      3
+  );
+  Serial.println(" ms/s");
+
+  Serial.print(
+      "Latency Spike       : "
+  );
+  Serial.println(
+      latencySpikeDetected
+          ? "YES"
+          : "NO"
+  );
+
+  Serial.print(
+      "Packet Loss EWMA    : "
+  );
+  Serial.print(
+      packetLossEMA,
+      3
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "Packet Loss Std Dev : "
+  );
+  Serial.print(
+      packetLossStats.stdDev,
+      3
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "Packet Loss Trend   : "
+  );
+  Serial.print(
+      packetLossTrendPctPerSec,
+      3
+  );
+  Serial.println(" %/s");
+
+  Serial.print(
+      "Packet Loss Burst   : "
+  );
+  Serial.println(
+      packetLossBurstDetected
+          ? "YES"
+          : "NO"
+  );
+
+  Serial.print(
+      "RSSI EWMA           : "
+  );
+  Serial.print(
+      rssiEMA,
+      2
+  );
+  Serial.println(" dBm");
+
+  Serial.print(
+      "RSSI Std Dev        : "
+  );
+  Serial.print(
+      rssiStats.stdDev,
+      3
+  );
+  Serial.println(" dB");
+
+  Serial.print(
+      "RSSI Trend          : "
+  );
+  Serial.print(
+      rssiTrendDbPerSec,
+      3
+  );
+  Serial.println(" dB/s");
+
+  Serial.print(
+      "RSSI Sudden Drop    : "
+  );
+  Serial.println(
+      rssiDropDetected
+          ? "YES"
+          : "NO"
   );
 
   // --------------------------------------------------
