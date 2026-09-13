@@ -1,4 +1,4 @@
-﻿#include <Arduino.h>
+#include <Arduino.h>
 #include <Wire.h>
 #include <DHT.h>
 #include <Adafruit_MPU6050.h>
@@ -7,6 +7,7 @@
 #include <DallasTemperature.h>
 #include <LiquidCrystal_I2C.h>
 #include <math.h>
+#include <arduinoFFT.h>
 
 // ====================================================
 // PIN DEFINITIONS
@@ -46,7 +47,7 @@
 
 const unsigned long FAST_INPUT_INTERVAL_MS = 50;
 const unsigned long LCD_REFRESH_INTERVAL_MS = 100;
-const unsigned long MPU_INTERVAL_MS = 100;
+const unsigned long MPU_INTERVAL_MS = 20;
 const unsigned long DHT_INTERVAL_MS = 2000;
 
 const unsigned long DS18B20_REQUEST_INTERVAL_MS = 2000;
@@ -55,6 +56,21 @@ const unsigned long DS18B20_CONVERSION_MS = 750;
 const unsigned long TELEMETRY_INTERVAL_MS = 2000;
 
 const float GRAVITY = 9.80665;
+
+// ====================================================
+// VIBRATION SIGNAL PROCESSING
+// ====================================================
+
+// 50 Hz sample rate:
+// Nyquist frequency = 25 Hz.
+//
+// 128 samples give a time window of:
+// 128 / 50 = 2.56 seconds.
+//
+// Frequency resolution:
+// 50 / 128 = 0.390625 Hz.
+const uint16_t FFT_SAMPLES = 128;
+const double VIBRATION_SAMPLE_RATE_HZ = 50.0;
 
 // ====================================================
 // SENSOR OBJECTS
@@ -167,6 +183,37 @@ float accelZ = 0.0;
 
 float totalAcceleration = 0.0;
 float dynamicVibration = 0.0;
+
+// Signed acceleration residual after removing gravity.
+// Unlike dynamicVibration, this keeps the positive/negative
+// waveform needed for frequency analysis.
+float vibrationSignal = 0.0;
+
+// FFT sample buffers.
+double vibrationReal[FFT_SAMPLES];
+double vibrationImag[FFT_SAMPLES];
+
+uint16_t vibrationSampleIndex = 0;
+bool vibrationSpectrumReady = false;
+
+// Time-domain features.
+float vibrationMean = 0.0;
+float vibrationRMS = 0.0;
+float vibrationStdDev = 0.0;
+float vibrationPeakToPeak = 0.0;
+
+// Frequency-domain features.
+float dominantVibrationFrequencyHz = 0.0;
+float vibrationSpectralEnergy = 0.0;
+float vibrationSpectralCentroidHz = 0.0;
+
+ArduinoFFT<double> vibrationFFT =
+    ArduinoFFT<double>(
+        vibrationReal,
+        vibrationImag,
+        FFT_SAMPLES,
+        VIBRATION_SAMPLE_RATE_HZ
+    );
 
 // DC power
 float dcBusVoltage = 0.0;
@@ -1170,6 +1217,200 @@ void readFastInputs()
 }
 
 // ====================================================
+// VIBRATION FEATURE EXTRACTION
+// ====================================================
+
+void processVibrationSpectrum()
+{
+  // --------------------------------------------------
+  // TIME-DOMAIN FEATURES
+  // --------------------------------------------------
+
+  double sum = 0.0;
+  double sumSquares = 0.0;
+
+  double minimumValue =
+      vibrationReal[0];
+
+  double maximumValue =
+      vibrationReal[0];
+
+  for (
+      uint16_t i = 0;
+      i < FFT_SAMPLES;
+      i++)
+  {
+    double sample =
+        vibrationReal[i];
+
+    sum += sample;
+
+    sumSquares +=
+        sample *
+        sample;
+
+    if (sample < minimumValue)
+    {
+      minimumValue =
+          sample;
+    }
+
+    if (sample > maximumValue)
+    {
+      maximumValue =
+          sample;
+    }
+  }
+
+  double mean =
+      sum /
+      FFT_SAMPLES;
+
+  vibrationMean =
+      mean;
+
+  vibrationRMS =
+      sqrt(
+          sumSquares /
+          FFT_SAMPLES
+      );
+
+  double varianceSum =
+      0.0;
+
+  for (
+      uint16_t i = 0;
+      i < FFT_SAMPLES;
+      i++)
+  {
+    double deviation =
+        vibrationReal[i] -
+        mean;
+
+    varianceSum +=
+        deviation *
+        deviation;
+  }
+
+  vibrationStdDev =
+      sqrt(
+          varianceSum /
+          FFT_SAMPLES
+      );
+
+  vibrationPeakToPeak =
+      maximumValue -
+      minimumValue;
+
+  // --------------------------------------------------
+  // FREQUENCY-DOMAIN FEATURES
+  // --------------------------------------------------
+
+  for (
+      uint16_t i = 0;
+      i < FFT_SAMPLES;
+      i++)
+  {
+    vibrationImag[i] =
+        0.0;
+  }
+
+  // For an almost perfectly stationary signal there is
+  // no useful vibration spectrum to analyse.
+  if (vibrationRMS < 0.0001)
+  {
+    dominantVibrationFrequencyHz =
+        0.0;
+
+    vibrationSpectralEnergy =
+        0.0;
+
+    vibrationSpectralCentroidHz =
+        0.0;
+
+    vibrationSpectrumReady =
+        true;
+
+    return;
+  }
+
+  // Remove any remaining DC offset.
+  vibrationFFT.dcRemoval();
+
+  // Hamming window reduces spectral leakage caused by
+  // analysing a finite-length sample window.
+  vibrationFFT.windowing(
+      FFTWindow::Hamming,
+      FFTDirection::Forward
+  );
+
+  vibrationFFT.compute(
+      FFTDirection::Forward
+  );
+
+  vibrationFFT.complexToMagnitude();
+
+  dominantVibrationFrequencyHz =
+      vibrationFFT.majorPeak();
+
+  double spectralEnergy =
+      0.0;
+
+  double weightedFrequencySum =
+      0.0;
+
+  double magnitudeSum =
+      0.0;
+
+  // Ignore bin 0 because that is the DC component.
+  for (
+      uint16_t i = 1;
+      i < FFT_SAMPLES / 2;
+      i++)
+  {
+    double magnitude =
+        vibrationReal[i];
+
+    double frequency =
+        (
+            i *
+            VIBRATION_SAMPLE_RATE_HZ
+        ) /
+        FFT_SAMPLES;
+
+    spectralEnergy +=
+        magnitude *
+        magnitude;
+
+    weightedFrequencySum +=
+        frequency *
+        magnitude;
+
+    magnitudeSum +=
+        magnitude;
+  }
+
+  vibrationSpectralEnergy =
+      spectralEnergy /
+      FFT_SAMPLES;
+
+  if (magnitudeSum > 0.000001)
+  {
+    vibrationSpectralCentroidHz =
+        weightedFrequencySum /
+        magnitudeSum;
+  }
+  else
+  {
+    vibrationSpectralCentroidHz =
+        0.0;
+  }
+
+  vibrationSpectrumReady =
+      true;
+}
+
+// ====================================================
 // MPU6050
 // ====================================================
 
@@ -1201,15 +1442,45 @@ void readMPU6050()
           accelZ * accelZ
       );
 
+  // Signed gravity-removed vibration waveform.
+  vibrationSignal =
+      totalAcceleration -
+      GRAVITY;
+
+  // Absolute instantaneous magnitude retained for the
+  // existing local-health rules.
   dynamicVibration =
       fabs(
-          totalAcceleration -
-          GRAVITY
+          vibrationSignal
       );
+
+  // Store one sample in the FFT window.
+  vibrationReal[
+      vibrationSampleIndex
+  ] =
+      vibrationSignal;
+
+  vibrationImag[
+      vibrationSampleIndex
+  ] =
+      0.0;
+
+  vibrationSampleIndex++;
+
+  // Once the window is full, calculate the signal
+  // processing features and begin a new window.
+  if (
+      vibrationSampleIndex >=
+      FFT_SAMPLES)
+  {
+    processVibrationSpectrum();
+
+    vibrationSampleIndex =
+        0;
+  }
 
   recalculateSystemState();
 }
-
 // ====================================================
 // DHT22
 // ====================================================
@@ -1733,6 +2004,91 @@ void printTelemetry()
       3
   );
   Serial.println(" m/s^2");
+
+  Serial.print(
+      "Vibration RMS       : "
+  );
+  Serial.print(
+      vibrationRMS,
+      4
+  );
+  Serial.println(" m/s^2");
+
+  Serial.print(
+      "Vibration Std Dev   : "
+  );
+  Serial.print(
+      vibrationStdDev,
+      4
+  );
+  Serial.println(" m/s^2");
+
+  Serial.print(
+      "Vibration Peak-Peak : "
+  );
+  Serial.print(
+      vibrationPeakToPeak,
+      4
+  );
+  Serial.println(" m/s^2");
+
+  Serial.print(
+      "Dominant Frequency  : "
+  );
+
+  if (vibrationSpectrumReady)
+  {
+    Serial.print(
+        dominantVibrationFrequencyHz,
+        2
+    );
+
+    Serial.println(" Hz");
+  }
+  else
+  {
+    Serial.println(
+        "COLLECTING"
+    );
+  }
+
+  Serial.print(
+      "Spectral Centroid   : "
+  );
+
+  if (vibrationSpectrumReady)
+  {
+    Serial.print(
+        vibrationSpectralCentroidHz,
+        2
+    );
+
+    Serial.println(" Hz");
+  }
+  else
+  {
+    Serial.println(
+        "COLLECTING"
+    );
+  }
+
+  Serial.print(
+      "Spectral Energy     : "
+  );
+
+  if (vibrationSpectrumReady)
+  {
+    Serial.println(
+        vibrationSpectralEnergy,
+        6
+    );
+  }
+  else
+  {
+    Serial.println(
+        "COLLECTING"
+    );
+  }
 
   // --------------------------------------------------
   // DC POWER
@@ -2500,4 +2856,5 @@ void loop()
   // No delay().
   // Loop remains free to service fast controls.
 }
+
 
