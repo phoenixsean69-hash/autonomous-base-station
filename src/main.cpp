@@ -1045,6 +1045,16 @@ String determineOperatingMode()
           electricalHealth == "FAULT" ||
           backhaulCondition == "CRITICAL" ||
           backhaulCondition == "OUTAGE" ||
+
+          // Critical PA thermal fault:
+          // energy saving must never take priority over
+          // equipment protection and fault recovery.
+          paTemperature >= PA_THERMAL_CRITICAL_C ||
+
+          // Severe mechanical vibration is also treated
+          // as a major local equipment fault.
+          dynamicVibration >= 3.0f ||
+
           !fanOperational ||
           !rectifierNormal ||
           !radioOperational
