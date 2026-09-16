@@ -125,6 +125,19 @@ const float PACKET_LOSS_BURST_THRESHOLD = 10.0f;
 // Sudden RSSI deterioration threshold.
 const float RSSI_DROP_THRESHOLD_DB = 8.0f;
 
+// Dual-time-scale RSSI processing.
+//
+// Fast EWMA:
+//     reacts quickly to the current signal.
+//
+// Slow baseline:
+//     remembers the recent normal operating level.
+//
+// A sudden deterioration is detected by comparing the
+// current RSSI against the slow baseline rather than
+// against the fast filter.
+const float RSSI_SLOW_BASELINE_ALPHA = 0.02f;
+
 // Event indicators remain visible long enough to appear
 // in the 2-second telemetry stream.
 const unsigned long BACKHAUL_EVENT_HOLD_MS = 3000;
@@ -434,6 +447,15 @@ float packetLossEMA = 0.0;
 float packetLossTrendPctPerSec = 0.0;
 
 float rssiEMA = 0.0;
+
+// Slow-moving reference representing the previously
+// established normal RSSI level.
+float rssiSlowBaselineEMA = 0.0;
+
+// Positive value means current RSSI is weaker than
+// the slow baseline by this many dB.
+float rssiDropMagnitudeDb = 0.0;
+
 float rssiTrendDbPerSec = 0.0;
 
 RollingStatsState latencyStats = {};
@@ -1699,6 +1721,12 @@ void updateBackhaulSignalProcessing(
     rssiEMA =
         rssi;
 
+    rssiSlowBaselineEMA =
+        rssi;
+
+    rssiDropMagnitudeDb =
+        0.0f;
+
     previousLatencyRaw =
         latency;
 
@@ -1756,6 +1784,20 @@ void updateBackhaulSignalProcessing(
             rssiEMA,
             rssi
         );
+
+    // Slow baseline intentionally reacts much more slowly
+    // than the normal RSSI EWMA.
+    //
+    // This allows a deterioration that develops over several
+    // 50 ms samples to remain visible as a transient event.
+    rssiSlowBaselineEMA =
+        RSSI_SLOW_BASELINE_ALPHA *
+        rssi +
+        (
+            1.0f -
+            RSSI_SLOW_BASELINE_ALPHA
+        ) *
+        rssiSlowBaselineEMA;
   }
 
   // --------------------------------------------------
@@ -1853,19 +1895,35 @@ void updateBackhaulSignalProcessing(
 
   // --------------------------------------------------
   // RSSI SUDDEN-DROP DETECTION
+  // --------------------------------------------------
+  //
+  // We compare the current RSSI against a slow baseline.
   //
   // Example:
-  // filtered RSSI = -55 dBm
-  // current RSSI  = -70 dBm
   //
-  // drop = 15 dB
+  // slow baseline = -55 dBm
+  // current RSSI  = -90 dBm
+  //
+  // drop magnitude:
+  //
+  // -55 - (-90) = 35 dB
+  //
+  // This dual-time-scale method works even when the
+  // Wokwi potentiometer changes over several samples.
   // --------------------------------------------------
 
+  rssiDropMagnitudeDb =
+      rssiSlowBaselineEMA -
+      rssi;
+
+  if (rssiDropMagnitudeDb < 0.0f)
+  {
+    rssiDropMagnitudeDb =
+        0.0f;
+  }
+
   if (
-      (
-          rssiEMA -
-          rssi
-      ) >=
+      rssiDropMagnitudeDb >=
       RSSI_DROP_THRESHOLD_DB)
   {
     lastRssiDropTime =
@@ -3935,6 +3993,24 @@ void printTelemetry()
       2
   );
   Serial.println(" dBm");
+
+  Serial.print(
+      "RSSI Slow Baseline  : "
+  );
+  Serial.print(
+      rssiSlowBaselineEMA,
+      2
+  );
+  Serial.println(" dBm");
+
+  Serial.print(
+      "RSSI Drop Magnitude : "
+  );
+  Serial.print(
+      rssiDropMagnitudeDb,
+      2
+  );
+  Serial.println(" dB");
 
   Serial.print(
       "RSSI Std Dev        : "
