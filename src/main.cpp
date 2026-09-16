@@ -199,6 +199,44 @@ const float THERMAL_FAST_RISE_THRESHOLD_C_PER_MIN = 2.00f;
 const float PA_THERMAL_HOT_C = 65.0f;
 const float PA_THERMAL_CRITICAL_C = 80.0f;
 
+// ====================================================
+// ENERGY GUARDRAILS / HYSTERESIS / RECOVERY
+// ====================================================
+//
+// These timings are demo-scale values.
+//
+// A production BTS would normally use longer confirmation
+// periods based on operator policy and network requirements.
+//
+
+// Minimum time before a capacity-reducing mode transition.
+//
+// Capacity increases are allowed immediately.
+const unsigned long MODE_MIN_DWELL_MS = 8000;
+
+// After a major fault clears, all major-fault conditions
+// must remain healthy continuously for this period before
+// normal energy optimisation is allowed again.
+const unsigned long RECOVERY_CONFIRMATION_MS = 6000;
+
+// Traffic hysteresis:
+//
+// FULL:
+//   enter >= 65%
+//   leave only < 55%
+//
+// REDUCED:
+//   enter < 15%
+//   leave >= 25%
+//
+// This prevents operating-mode oscillation when traffic
+// sits close to a single threshold.
+const float TRAFFIC_FULL_ENTER_PCT = 65.0f;
+const float TRAFFIC_FULL_EXIT_PCT = 55.0f;
+
+const float TRAFFIC_REDUCED_ENTER_PCT = 15.0f;
+const float TRAFFIC_REDUCED_EXIT_PCT = 25.0f;
+
 struct RollingStatsState
 {
   float buffer[POWER_STATS_SAMPLES];
@@ -626,6 +664,29 @@ bool radioOperational = true;
 // Baseline energy-management state
 String operatingMode = "UNKNOWN";
 String operatingModeReason = "STARTING";
+
+// Requested mode is the safe target produced by the policy
+// before minimum-dwell enforcement is applied.
+String requestedOperatingMode = "UNKNOWN";
+String requestedOperatingModeReason = "STARTING";
+
+// Guardrail / recovery explanation state.
+String guardrailStatus = "STARTING";
+String recoveryState = "STABLE";
+
+// True after a major fault has occurred and remains true
+// until the healthy recovery-confirmation period completes.
+bool recoveryActive = false;
+
+unsigned long recoveryHealthySince = 0;
+unsigned long lastOperatingModeChangeTime = 0;
+
+unsigned long recoveryConfirmationRemainingMs = 0;
+unsigned long modeDwellRemainingMs = 0;
+
+// Useful stability KPI:
+// how many actual operating-mode changes occurred.
+unsigned long operatingModeChangeCount = 0;
 
 float baselineSitePowerKW = 0.0;
 float managedSitePowerKW = 0.0;
@@ -1148,133 +1209,555 @@ String determineEnergyAction(
 }
 
 // ====================================================
-// BASELINE OPERATING MODE
+// GUARDED OPERATING-MODE CONTROLLER
 // ====================================================
 
-String determineOperatingMode()
+
+// ----------------------------------------------------
+// MAJOR-FAULT GUARDRAIL
+// ----------------------------------------------------
+//
+// These conditions require maximum service / recovery
+// priority.
+//
+// Grid loss is deliberately NOT included here because a
+// healthy site may legitimately continue in a battery-
+// conservation mode after mains failure.
+//
+bool isMajorFaultActive()
 {
-  // Critical backup-energy condition.
-  if (
-      !gridAvailable &&
-      !generatorRunning &&
-      batterySOC <= 25.0)
-  {
-    operatingModeReason =
-        "CRITICAL BACKUP ENERGY";
-
-    return "EMERGENCY";
-  }
-
-  // Major faults prioritise stability and recovery.
-  bool majorFault =
+  return
       (
           rfHealth == "FAULT" ||
           rfHealth == "SEVERE FAULT" ||
+
           electricalHealth == "FAULT" ||
+
           backhaulCondition == "CRITICAL" ||
           backhaulCondition == "OUTAGE" ||
 
-          // Critical PA thermal fault:
-          // energy saving must never take priority over
-          // equipment protection and fault recovery.
-          paTemperature >= PA_THERMAL_CRITICAL_C ||
+          paTemperature >=
+              PA_THERMAL_CRITICAL_C ||
 
-          // Severe mechanical vibration is also treated
-          // as a major local equipment fault.
-          dynamicVibration >= 3.0f ||
+          dynamicVibration >=
+              3.0f ||
 
           !fanOperational ||
           !rectifierNormal ||
           !radioOperational
       );
+}
 
-  if (majorFault)
+
+// ----------------------------------------------------
+// DEGRADED-SERVICE GUARDRAIL
+// ----------------------------------------------------
+//
+// Degraded conditions do not necessarily require FULL
+// capacity, but aggressive REDUCED operation is blocked.
+//
+bool isDegradedGuardrailActive()
+{
+  return
+      (
+          localSiteStatus == "DEGRADED" ||
+
+          backhaulCondition == "DEGRADED" ||
+
+          thermalRiskState == "FAST_RISE"
+      );
+}
+
+
+// ----------------------------------------------------
+// MODE CAPACITY RANK
+// ----------------------------------------------------
+//
+// Used only to decide whether a transition is a service-
+// capacity increase.
+//
+// Higher rank = greater available service capacity.
+//
+int operatingModeCapacityRank(
+    const String &mode)
+{
+  if (mode == "FULL")
   {
-    operatingModeReason =
+    return 3;
+  }
+
+  if (mode == "ECO")
+  {
+    return 2;
+  }
+
+  if (mode == "REDUCED")
+  {
+    return 1;
+  }
+
+  // EMERGENCY intentionally represents minimum essential
+  // operation.
+  if (mode == "EMERGENCY")
+  {
+    return 0;
+  }
+
+  return -1;
+}
+
+
+// ----------------------------------------------------
+// REQUESTED MODE
+// ----------------------------------------------------
+//
+// Produces the safe requested mode.
+//
+// The final applied mode may remain higher temporarily due
+// to minimum dwell time or recovery confirmation.
+//
+String determineRequestedOperatingMode()
+{
+  guardrailStatus =
+      "PASSED";
+
+  // --------------------------------------------------
+  // CRITICAL BACKUP ENERGY
+  // --------------------------------------------------
+
+  if (
+      !gridAvailable &&
+      !generatorRunning &&
+      batterySOC <= 25.0f)
+  {
+    requestedOperatingModeReason =
+        "CRITICAL BACKUP ENERGY";
+
+    guardrailStatus =
+        "CRITICAL ENERGY PROTECTION";
+
+    return "EMERGENCY";
+  }
+
+  // --------------------------------------------------
+  // MAJOR FAULT
+  // --------------------------------------------------
+
+  if (isMajorFaultActive())
+  {
+    requestedOperatingModeReason =
         "FAULT / RECOVERY PRIORITY";
+
+    guardrailStatus =
+        "FORCED FULL - MAJOR FAULT";
 
     return "FULL";
   }
 
-  // If the site is running from battery, conserve energy
-  // while sufficient reserve still exists.
+  // --------------------------------------------------
+  // BATTERY CONSERVATION
+  // --------------------------------------------------
+
   if (
       !gridAvailable &&
       !generatorRunning)
   {
-    operatingModeReason =
+    requestedOperatingModeReason =
         "BATTERY CONSERVATION";
 
     return "ECO";
   }
 
-  // High traffic requires full capacity.
-  if (trafficLoad >= 65.0)
+  // --------------------------------------------------
+  // TRAFFIC POLICY WITH HYSTERESIS
+  // --------------------------------------------------
+
+  String candidateMode =
+      "ECO";
+
+  String candidateReason =
+      "MODERATE TRAFFIC";
+
+  // FULL always enters immediately at 65%.
+  if (
+      trafficLoad >=
+      TRAFFIC_FULL_ENTER_PCT)
   {
-    operatingModeReason =
+    candidateMode =
+        "FULL";
+
+    candidateReason =
         "HIGH TRAFFIC";
-
-    return "FULL";
   }
 
-  // Moderate load: normal energy-saving mode.
-  if (trafficLoad >= 20.0)
+  // If already FULL, remain FULL until traffic drops below
+  // the lower 55% exit threshold.
+  else if (
+      operatingMode == "FULL" &&
+      trafficLoad >=
+          TRAFFIC_FULL_EXIT_PCT)
+  {
+    candidateMode =
+        "FULL";
+
+    candidateReason =
+        "FULL TRAFFIC HYSTERESIS";
+  }
+
+  // If already REDUCED, do not return to ECO until traffic
+  // reaches the upper 25% exit threshold.
+  else if (
+      operatingMode == "REDUCED")
+  {
+    if (
+        trafficLoad >=
+        TRAFFIC_REDUCED_EXIT_PCT)
+    {
+      candidateMode =
+          "ECO";
+
+      candidateReason =
+          "TRAFFIC RECOVERY";
+    }
+    else
+    {
+      candidateMode =
+          "REDUCED";
+
+      candidateReason =
+          "LOW TRAFFIC HYSTERESIS";
+    }
+  }
+
+  // When not already REDUCED, only enter REDUCED below 15%.
+  else if (
+      trafficLoad <
+      TRAFFIC_REDUCED_ENTER_PCT)
+  {
+    candidateMode =
+        "REDUCED";
+
+    candidateReason =
+        "LOW TRAFFIC";
+  }
+
+  // Otherwise ECO.
+  else
+  {
+    candidateMode =
+        "ECO";
+
+    candidateReason =
+        "MODERATE TRAFFIC";
+  }
+
+  // --------------------------------------------------
+  // DEGRADED-SERVICE MINIMUM MODE
+  // --------------------------------------------------
+  //
+  // A degraded site is prevented from entering REDUCED.
+  // It receives at least ECO capacity.
+  //
+  if (
+      isDegradedGuardrailActive() &&
+      candidateMode == "REDUCED")
+  {
+    candidateMode =
+        "ECO";
+
+    candidateReason =
+        "DEGRADED SERVICE GUARDRAIL";
+
+    guardrailStatus =
+        "MINIMUM ECO - DEGRADED SERVICE";
+  }
+
+  requestedOperatingModeReason =
+      candidateReason;
+
+  return candidateMode;
+}
+
+
+// ----------------------------------------------------
+// OPERATING-MODE CONTROLLER
+// ----------------------------------------------------
+
+void updateOperatingModeController(
+    unsigned long now)
+{
+  requestedOperatingMode =
+      determineRequestedOperatingMode();
+
+  bool majorFaultActive =
+      isMajorFaultActive();
+
+  // --------------------------------------------------
+  // FAULT / RECOVERY STATE MACHINE
+  // --------------------------------------------------
+
+  if (majorFaultActive)
+  {
+    recoveryActive =
+        true;
+
+    recoveryHealthySince =
+        0;
+
+    recoveryConfirmationRemainingMs =
+        RECOVERY_CONFIRMATION_MS;
+
+    recoveryState =
+        "FAULT_ACTIVE";
+  }
+
+  else if (
+      recoveryActive &&
+      requestedOperatingMode !=
+          "EMERGENCY")
+  {
+    if (
+        recoveryHealthySince ==
+        0)
+    {
+      recoveryHealthySince =
+          now;
+    }
+
+    unsigned long healthyElapsed =
+        now -
+        recoveryHealthySince;
+
+    if (
+        healthyElapsed <
+        RECOVERY_CONFIRMATION_MS)
+    {
+      recoveryConfirmationRemainingMs =
+          RECOVERY_CONFIRMATION_MS -
+          healthyElapsed;
+
+      recoveryState =
+          "VERIFYING";
+
+      requestedOperatingMode =
+          "FULL";
+
+      requestedOperatingModeReason =
+          "RECOVERY CONFIRMATION";
+
+      guardrailStatus =
+          "RECOVERY CONFIRMATION HOLD";
+    }
+    else
+    {
+      recoveryActive =
+          false;
+
+      recoveryHealthySince =
+          0;
+
+      recoveryConfirmationRemainingMs =
+          0;
+
+      recoveryState =
+          "STABLE";
+    }
+  }
+
+  else
+  {
+    recoveryConfirmationRemainingMs =
+        0;
+
+    if (!recoveryActive)
+    {
+      recoveryState =
+          "STABLE";
+    }
+  }
+
+  // --------------------------------------------------
+  // INITIAL MODE
+  // --------------------------------------------------
+
+  if (operatingMode == "UNKNOWN")
+  {
+    operatingMode =
+        requestedOperatingMode;
+
+    operatingModeReason =
+        requestedOperatingModeReason;
+
+    lastOperatingModeChangeTime =
+        now;
+
+    modeDwellRemainingMs =
+        MODE_MIN_DWELL_MS;
+
+    return;
+  }
+
+  // --------------------------------------------------
+  // NO CHANGE REQUESTED
+  // --------------------------------------------------
+
+  if (
+      requestedOperatingMode ==
+      operatingMode)
   {
     operatingModeReason =
-        "MODERATE TRAFFIC";
+        requestedOperatingModeReason;
 
-    return "ECO";
+    unsigned long modeAge =
+        now -
+        lastOperatingModeChangeTime;
+
+    if (
+        modeAge <
+        MODE_MIN_DWELL_MS)
+    {
+      modeDwellRemainingMs =
+          MODE_MIN_DWELL_MS -
+          modeAge;
+    }
+    else
+    {
+      modeDwellRemainingMs =
+          0;
+    }
+
+    return;
   }
 
-  // Very low healthy traffic.
-  operatingModeReason =
-      "LOW TRAFFIC";
+  // --------------------------------------------------
+  // IMMEDIATE SAFETY / CAPACITY TRANSITIONS
+  // --------------------------------------------------
 
-  return "REDUCED";
+  bool criticalEnergyTransition =
+      (
+          requestedOperatingMode ==
+          "EMERGENCY"
+      );
+
+  bool capacityIncrease =
+      (
+          operatingModeCapacityRank(
+              requestedOperatingMode
+          ) >
+          operatingModeCapacityRank(
+              operatingMode
+          )
+      );
+
+  if (
+      criticalEnergyTransition ||
+      capacityIncrease)
+  {
+    operatingMode =
+        requestedOperatingMode;
+
+    operatingModeReason =
+        requestedOperatingModeReason;
+
+    lastOperatingModeChangeTime =
+        now;
+
+    operatingModeChangeCount++;
+
+    modeDwellRemainingMs =
+        MODE_MIN_DWELL_MS;
+
+    return;
+  }
+
+  // --------------------------------------------------
+  // CAPACITY-REDUCING TRANSITION
+  // --------------------------------------------------
+  //
+  // Reductions are only allowed after the current mode has
+  // satisfied the minimum dwell period.
+  //
+
+  unsigned long modeAge =
+      now -
+      lastOperatingModeChangeTime;
+
+  if (
+      modeAge >=
+      MODE_MIN_DWELL_MS)
+  {
+    operatingMode =
+        requestedOperatingMode;
+
+    operatingModeReason =
+        requestedOperatingModeReason;
+
+    lastOperatingModeChangeTime =
+        now;
+
+    operatingModeChangeCount++;
+
+    modeDwellRemainingMs =
+        MODE_MIN_DWELL_MS;
+  }
+  else
+  {
+    modeDwellRemainingMs =
+        MODE_MIN_DWELL_MS -
+        modeAge;
+
+    operatingModeReason =
+        "DWELL / HYSTERESIS HOLD";
+
+    guardrailStatus =
+        "DWELL HOLD - SAVING DELAYED";
+  }
 }
+
 
 float getOperatingModePowerFactor(
     const String &mode)
 {
-  // Simulation assumptions for the first baseline.
+  // Simulation assumptions for the baseline digital twin.
   //
-  // FULL      = 100% of baseline load
+  // FULL      = 100%
   // ECO       = 82%
   // REDUCED   = 65%
   // EMERGENCY = 50%
-  //
-  // These values are not production NetOne figures.
-  // They are digital-twin assumptions used to compare
-  // relative energy consumption.
 
   if (mode == "ECO")
   {
-    return 0.82;
+    return 0.82f;
   }
 
   if (mode == "REDUCED")
   {
-    return 0.65;
+    return 0.65f;
   }
 
   if (mode == "EMERGENCY")
   {
-    return 0.50;
+    return 0.50f;
   }
 
-  return 1.00;
+  return 1.00f;
 }
+
 
 void updateEnergyModeMetrics()
 {
-  operatingMode =
-      determineOperatingMode();
+  unsigned long now =
+      millis();
 
-  // Current DC power is used as the first simulated
+  updateOperatingModeController(
+      now
+  );
+
+  // Current DC power remains the first simulated
   // site-power baseline/proxy.
   baselineSitePowerKW =
       dcPower /
-      1000.0;
+      1000.0f;
 
   float modeFactor =
       getOperatingModePowerFactor(
@@ -1285,19 +1768,21 @@ void updateEnergyModeMetrics()
       baselineSitePowerKW *
       modeFactor;
 
-  if (baselineSitePowerKW > 0.0001)
+  if (
+      baselineSitePowerKW >
+      0.0001f)
   {
     estimatedEnergySavingPct =
         (
-            1.0 -
+            1.0f -
             modeFactor
         ) *
-        100.0;
+        100.0f;
   }
   else
   {
     estimatedEnergySavingPct =
-        0.0;
+        0.0f;
   }
 }
 // ====================================================
@@ -5076,6 +5561,86 @@ void printTelemetry()
   );
 
   // --------------------------------------------------
+  // GUARDRAILS / HYSTERESIS / RECOVERY
+  // --------------------------------------------------
+
+  Serial.println();
+
+  Serial.println(
+      "[ GUARDRAILS / HYSTERESIS / RECOVERY ]"
+  );
+
+  Serial.print(
+      "Requested Mode      : "
+  );
+  Serial.println(
+      requestedOperatingMode
+  );
+
+  Serial.print(
+      "Requested Reason    : "
+  );
+  Serial.println(
+      requestedOperatingModeReason
+  );
+
+  Serial.print(
+      "Applied Mode        : "
+  );
+  Serial.println(
+      operatingMode
+  );
+
+  Serial.print(
+      "Guardrail Status    : "
+  );
+  Serial.println(
+      guardrailStatus
+  );
+
+  Serial.print(
+      "Recovery State      : "
+  );
+  Serial.println(
+      recoveryState
+  );
+
+  Serial.print(
+      "Recovery Remaining  : "
+  );
+  Serial.print(
+      recoveryConfirmationRemainingMs /
+      1000.0f,
+      1
+  );
+  Serial.println(" s");
+
+  Serial.print(
+      "Mode Dwell Remaining: "
+  );
+  Serial.print(
+      modeDwellRemainingMs /
+      1000.0f,
+      1
+  );
+  Serial.println(" s");
+
+  Serial.print(
+      "Mode Changes        : "
+  );
+  Serial.println(
+      operatingModeChangeCount
+  );
+
+  Serial.println(
+      "FULL Hysteresis     : enter 65% / exit 55%"
+  );
+
+  Serial.println(
+      "REDUCED Hysteresis  : enter 15% / exit 25%"
+  );
+
+  // --------------------------------------------------
   // FAULT DIFFERENTIATION
   // --------------------------------------------------
 
@@ -5135,7 +5700,7 @@ void printTelemetry()
   );
 
   Serial.println(
-      "Stage               : DATA ACQUISITION + SIGNAL PROCESSING + ENERGY MODELLING"
+      "Stage               : SIGNAL PROCESSING + GUARDED ENERGY CONTROL + RECOVERY"
   );
 
   Serial.println(
