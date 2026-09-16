@@ -96,6 +96,39 @@ const float POWER_EMA_ALPHA = 0.15f;
 const unsigned long POWER_TREND_INTERVAL_MS = 1000;
 
 // ====================================================
+// RF SIGNAL PROCESSING
+// ====================================================
+//
+// RF forward/reflected controls are sampled every 50 ms,
+// therefore the RF processing path runs at 20 Hz.
+//
+// The existing 40-sample rolling-statistics structure gives:
+//
+// 40 / 20 Hz = 2 seconds.
+//
+// RF health ground-truth rules continue to use the raw
+// engineering measurements. These processed quantities are
+// additional diagnostic / machine-learning features.
+//
+const float RF_SIGNAL_EMA_ALPHA = 0.15f;
+
+const unsigned long RF_TREND_INTERVAL_MS = 1000;
+
+// Reflection ratio:
+//
+// reflected / forward * 100
+//
+// A VSWR of approximately 2.0 corresponds to roughly
+// 11.1% reflected-to-forward power ratio.
+//
+// Crossing this region is therefore treated as an RF
+// mismatch event for diagnostic purposes.
+const float RF_MISMATCH_RATIO_THRESHOLD_PCT = 11.1f;
+
+// Keep transient RF events available for telemetry.
+const unsigned long RF_EVENT_HOLD_MS = 3000;
+
+// ====================================================
 // BACKHAUL SIGNAL PROCESSING
 // ====================================================
 
@@ -423,6 +456,55 @@ float vswr = 0.0;
 float returnLoss = 0.0;
 
 String rfHealth = "UNKNOWN";
+
+// ----------------------------------------------------
+// Processed RF features
+// ----------------------------------------------------
+
+// Smoothed RF powers.
+float rfForwardPowerEMA = 0.0;
+float rfReflectedPowerEMA = 0.0;
+
+// Reflection ratio:
+//
+// Pr / Pf * 100
+//
+// Lower is normally better.
+float rfReflectionRatioPct = 0.0;
+float rfReflectionRatioPctEMA = 0.0;
+
+// Smoothed derived RF quantities.
+float rfVswrEMA = 0.0;
+float rfReturnLossEMA = 0.0;
+
+// One-second trends.
+float rfForwardTrendWPerSec = 0.0;
+float rfReflectedTrendWPerSec = 0.0;
+float rfReflectionRatioTrendPctPerSec = 0.0;
+float rfVswrTrendPerSec = 0.0;
+float rfReturnLossTrendDbPerSec = 0.0;
+
+// Two-second rolling variability.
+RollingStatsState rfForwardStats = {};
+RollingStatsState rfReflectedStats = {};
+RollingStatsState rfReflectionRatioStats = {};
+
+bool rfSignalProcessingInitialised = false;
+bool previousRfDerivedValid = false;
+
+unsigned long lastRfTrendTime = 0;
+
+float previousRfForwardEMA = 0.0;
+float previousRfReflectedEMA = 0.0;
+float previousRfReflectionRatioEMA = 0.0;
+float previousRfVswrEMA = 0.0;
+float previousRfReturnLossEMA = 0.0;
+
+// RF mismatch transient / state-change capture.
+bool rfMismatchDetected = false;
+bool rfMismatchLatched = false;
+
+unsigned long lastRfMismatchTime = 0;
 
 // Backhaul
 float latency = 0.0;
@@ -1673,6 +1755,336 @@ void updatePowerSignalProcessing(
 
 
 // ====================================================
+// RF SIGNAL PROCESSING
+// ====================================================
+
+float applyRfEMA(
+    float previousFiltered,
+    float newSample)
+{
+  return
+      RF_SIGNAL_EMA_ALPHA *
+      newSample +
+      (
+          1.0f -
+          RF_SIGNAL_EMA_ALPHA
+      ) *
+      previousFiltered;
+}
+
+
+void updateRFSignalProcessing(
+    unsigned long now)
+{
+  // Capture the previous detector state so a genuinely
+  // new mismatch can be latched on its rising edge.
+  bool wasRfMismatchDetected =
+      rfMismatchDetected;
+
+  // --------------------------------------------------
+  // REFLECTION RATIO
+  // --------------------------------------------------
+  //
+  // Reflection ratio is intentionally bounded to 100%.
+  //
+  // If reflected power equals/exceeds forward power the
+  // normal RF-validity logic already marks the measurement
+  // as invalid / severe fault. Bounding the feature prevents
+  // extreme ratios from dominating later ML scaling.
+  if (rfForwardPower > 0.01f)
+  {
+    rfReflectionRatioPct =
+        (
+            rfReflectedPower /
+            rfForwardPower
+        ) *
+        100.0f;
+
+    if (rfReflectionRatioPct < 0.0f)
+    {
+      rfReflectionRatioPct =
+          0.0f;
+    }
+
+    if (rfReflectionRatioPct > 100.0f)
+    {
+      rfReflectionRatioPct =
+          100.0f;
+    }
+  }
+  else
+  {
+    rfReflectionRatioPct =
+        100.0f;
+  }
+
+  // --------------------------------------------------
+  // INITIAL CONDITION
+  // --------------------------------------------------
+
+  if (!rfSignalProcessingInitialised)
+  {
+    rfForwardPowerEMA =
+        rfForwardPower;
+
+    rfReflectedPowerEMA =
+        rfReflectedPower;
+
+    rfReflectionRatioPctEMA =
+        rfReflectionRatioPct;
+
+    if (rfValid)
+    {
+      rfVswrEMA =
+          vswr;
+
+      rfReturnLossEMA =
+          returnLoss;
+    }
+    else
+    {
+      rfVswrEMA =
+          0.0f;
+
+      rfReturnLossEMA =
+          0.0f;
+    }
+
+    previousRfForwardEMA =
+        rfForwardPowerEMA;
+
+    previousRfReflectedEMA =
+        rfReflectedPowerEMA;
+
+    previousRfReflectionRatioEMA =
+        rfReflectionRatioPctEMA;
+
+    previousRfVswrEMA =
+        rfVswrEMA;
+
+    previousRfReturnLossEMA =
+        rfReturnLossEMA;
+
+    previousRfDerivedValid =
+        rfValid;
+
+    lastRfTrendTime =
+        now;
+
+    rfSignalProcessingInitialised =
+        true;
+  }
+  else
+  {
+    // ------------------------------------------------
+    // EMA FILTERING
+    // ------------------------------------------------
+
+    rfForwardPowerEMA =
+        applyRfEMA(
+            rfForwardPowerEMA,
+            rfForwardPower
+        );
+
+    rfReflectedPowerEMA =
+        applyRfEMA(
+            rfReflectedPowerEMA,
+            rfReflectedPower
+        );
+
+    rfReflectionRatioPctEMA =
+        applyRfEMA(
+            rfReflectionRatioPctEMA,
+            rfReflectionRatioPct
+        );
+
+    // VSWR and return loss only have mathematical meaning
+    // while the RF power pair is valid.
+    if (rfValid)
+    {
+      if (!previousRfDerivedValid)
+      {
+        // Reinitialise derived filters after recovering
+        // from an invalid RF measurement so a fake trend
+        // is not produced.
+        rfVswrEMA =
+            vswr;
+
+        rfReturnLossEMA =
+            returnLoss;
+      }
+      else
+      {
+        rfVswrEMA =
+            applyRfEMA(
+                rfVswrEMA,
+                vswr
+            );
+
+        rfReturnLossEMA =
+            applyRfEMA(
+                rfReturnLossEMA,
+                returnLoss
+            );
+      }
+    }
+  }
+
+  // --------------------------------------------------
+  // ROLLING STATISTICS
+  // --------------------------------------------------
+
+  updateRollingStats(
+      rfForwardStats,
+      rfForwardPower
+  );
+
+  updateRollingStats(
+      rfReflectedStats,
+      rfReflectedPower
+  );
+
+  updateRollingStats(
+      rfReflectionRatioStats,
+      rfReflectionRatioPct
+  );
+
+  // --------------------------------------------------
+  // RF MISMATCH EVENT DETECTION
+  // --------------------------------------------------
+  //
+  // A mismatch event is produced when:
+  //
+  // 1. the RF pair becomes mathematically invalid, OR
+  // 2. reflected/forward ratio reaches the approximate
+  //    VSWR >= 2 region.
+  //
+  // Existing RFHealth remains the official rule-based
+  // ground-truth classification.
+  bool mismatchCondition =
+      (
+          !rfValid ||
+          rfReflectionRatioPct >=
+              RF_MISMATCH_RATIO_THRESHOLD_PCT
+      );
+
+  if (mismatchCondition)
+  {
+    lastRfMismatchTime =
+        now;
+  }
+
+  rfMismatchDetected =
+      (
+          lastRfMismatchTime != 0 &&
+          now -
+          lastRfMismatchTime <=
+          RF_EVENT_HOLD_MS
+      );
+
+  if (
+      rfMismatchDetected &&
+      !wasRfMismatchDetected)
+  {
+    rfMismatchLatched =
+        true;
+  }
+
+  // --------------------------------------------------
+  // RATE-OF-CHANGE / TREND FEATURES
+  // --------------------------------------------------
+
+  unsigned long elapsed =
+      now -
+      lastRfTrendTime;
+
+  if (
+      elapsed >=
+      RF_TREND_INTERVAL_MS)
+  {
+    float elapsedSeconds =
+        elapsed /
+        1000.0f;
+
+    if (elapsedSeconds > 0.0f)
+    {
+      rfForwardTrendWPerSec =
+          (
+              rfForwardPowerEMA -
+              previousRfForwardEMA
+          ) /
+          elapsedSeconds;
+
+      rfReflectedTrendWPerSec =
+          (
+              rfReflectedPowerEMA -
+              previousRfReflectedEMA
+          ) /
+          elapsedSeconds;
+
+      rfReflectionRatioTrendPctPerSec =
+          (
+              rfReflectionRatioPctEMA -
+              previousRfReflectionRatioEMA
+          ) /
+          elapsedSeconds;
+
+      if (
+          rfValid &&
+          previousRfDerivedValid)
+      {
+        rfVswrTrendPerSec =
+            (
+                rfVswrEMA -
+                previousRfVswrEMA
+            ) /
+            elapsedSeconds;
+
+        rfReturnLossTrendDbPerSec =
+            (
+                rfReturnLossEMA -
+                previousRfReturnLossEMA
+            ) /
+            elapsedSeconds;
+      }
+      else
+      {
+        rfVswrTrendPerSec =
+            0.0f;
+
+        rfReturnLossTrendDbPerSec =
+            0.0f;
+      }
+    }
+
+    previousRfForwardEMA =
+        rfForwardPowerEMA;
+
+    previousRfReflectedEMA =
+        rfReflectedPowerEMA;
+
+    previousRfReflectionRatioEMA =
+        rfReflectionRatioPctEMA;
+
+    if (rfValid)
+    {
+      previousRfVswrEMA =
+          rfVswrEMA;
+
+      previousRfReturnLossEMA =
+          rfReturnLossEMA;
+    }
+
+    previousRfDerivedValid =
+        rfValid;
+
+    lastRfTrendTime =
+        now;
+  }
+}
+
+
+// ====================================================
 // BACKHAUL SIGNAL PROCESSING
 // ====================================================
 
@@ -2195,6 +2607,16 @@ void readFastInputs()
       HIGH;
 
   recalculateSystemState();
+
+  // RF signal processing is performed after
+  // recalculateSystemState() so rfValid, VSWR and
+  // return loss correspond to the current raw RF sample.
+  //
+  // Processed RF features DO NOT replace the existing
+  // rule-based RF ground truth.
+  updateRFSignalProcessing(
+      processingNow
+  );
 }
 
 // ====================================================
@@ -3824,6 +4246,190 @@ void printTelemetry()
   );
 
   // --------------------------------------------------
+  // RF SIGNAL PROCESSING
+  // --------------------------------------------------
+
+  Serial.println();
+
+  Serial.println(
+      "[ RF SIGNAL PROCESSING ]"
+  );
+
+  Serial.print(
+      "Forward Power EMA   : "
+  );
+  Serial.print(
+      rfForwardPowerEMA,
+      3
+  );
+  Serial.println(" W");
+
+  Serial.print(
+      "Forward Std Dev     : "
+  );
+  Serial.print(
+      rfForwardStats.stdDev,
+      3
+  );
+  Serial.println(" W");
+
+  Serial.print(
+      "Forward Trend       : "
+  );
+  Serial.print(
+      rfForwardTrendWPerSec,
+      3
+  );
+  Serial.println(" W/s");
+
+  Serial.print(
+      "Reflected Power EMA : "
+  );
+  Serial.print(
+      rfReflectedPowerEMA,
+      3
+  );
+  Serial.println(" W");
+
+  Serial.print(
+      "Reflected Std Dev   : "
+  );
+  Serial.print(
+      rfReflectedStats.stdDev,
+      3
+  );
+  Serial.println(" W");
+
+  Serial.print(
+      "Reflected Trend     : "
+  );
+  Serial.print(
+      rfReflectedTrendWPerSec,
+      3
+  );
+  Serial.println(" W/s");
+
+  Serial.print(
+      "Reflection Ratio    : "
+  );
+  Serial.print(
+      rfReflectionRatioPct,
+      3
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "Reflection Ratio EMA: "
+  );
+  Serial.print(
+      rfReflectionRatioPctEMA,
+      3
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "Ratio Std Dev       : "
+  );
+  Serial.print(
+      rfReflectionRatioStats.stdDev,
+      3
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "Ratio Trend         : "
+  );
+  Serial.print(
+      rfReflectionRatioTrendPctPerSec,
+      3
+  );
+  Serial.println(" %/s");
+
+  if (rfValid)
+  {
+    Serial.print(
+        "VSWR EMA            : "
+    );
+    Serial.println(
+        rfVswrEMA,
+        3
+    );
+
+    Serial.print(
+        "VSWR Trend          : "
+    );
+    Serial.print(
+        rfVswrTrendPerSec,
+        4
+    );
+    Serial.println(" /s");
+
+    Serial.print(
+        "Return Loss EMA     : "
+    );
+    Serial.print(
+        rfReturnLossEMA,
+        3
+    );
+    Serial.println(" dB");
+
+    Serial.print(
+        "Return Loss Trend   : "
+    );
+    Serial.print(
+        rfReturnLossTrendDbPerSec,
+        4
+    );
+    Serial.println(" dB/s");
+  }
+  else
+  {
+    Serial.println(
+        "VSWR EMA            : INVALID"
+    );
+
+    Serial.println(
+        "VSWR Trend          : INVALID"
+    );
+
+    Serial.println(
+        "Return Loss EMA     : INVALID"
+    );
+
+    Serial.println(
+        "Return Loss Trend   : INVALID"
+    );
+  }
+
+  Serial.print(
+      "RF Mismatch Event   : "
+  );
+  Serial.println(
+      rfMismatchLatched
+          ? "YES"
+          : "NO"
+  );
+
+  Serial.print(
+      "RF Statistics Window: "
+  );
+  Serial.print(
+      POWER_STATS_SAMPLES *
+      FAST_INPUT_INTERVAL_MS /
+      1000.0f,
+      2
+  );
+  Serial.println(" s");
+
+  Serial.print(
+      "RF EMA Alpha        : "
+  );
+  Serial.println(
+      RF_SIGNAL_EMA_ALPHA,
+      2
+  );
+
+  // --------------------------------------------------
   // BACKHAUL
   // --------------------------------------------------
 
@@ -4281,6 +4887,9 @@ void printTelemetry()
       false;
 
   rssiDropLatched =
+      false;
+
+  rfMismatchLatched =
       false;
 }
 
