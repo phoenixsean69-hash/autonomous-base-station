@@ -391,6 +391,30 @@ ArduinoFFT<double> vibrationFFT =
         VIBRATION_SAMPLE_RATE_HZ
     );
 
+// ----------------------------------------------------
+// Raw circuit-control readings
+// ----------------------------------------------------
+//
+// Wokwi potentiometers visually use a 0-1023 position.
+// The ESP32 reads them using its 12-bit ADC: 0-4095.
+//
+// Keeping the raw ADC values allows telemetry to show both
+// the physical circuit control position and the resulting
+// engineering measurement.
+//
+int dcVoltageRaw = 0;
+int dcCurrentRaw = 0;
+int batteryVoltageRaw = 0;
+
+int rfForwardRaw = 0;
+int rfReflectedRaw = 0;
+
+int latencyRaw = 0;
+int packetLossRaw = 0;
+int rssiRaw = 0;
+
+int trafficLoadRaw = 0;
+
 // DC power
 float dcBusVoltage = 0.0;
 float dcBusCurrent = 0.0;
@@ -2422,47 +2446,47 @@ void updateBackhaulSignalProcessing(
 
 void readFastInputs()
 {
-  int dcVoltageRaw =
+  dcVoltageRaw =
       analogRead(
           DC_VOLTAGE_PIN
       );
 
-  int dcCurrentRaw =
+  dcCurrentRaw =
       analogRead(
           DC_CURRENT_PIN
       );
 
-  int batteryVoltageRaw =
+  batteryVoltageRaw =
       analogRead(
           BATTERY_VOLTAGE_PIN
       );
 
-  int rfForwardRaw =
+  rfForwardRaw =
       analogRead(
           RF_FORWARD_PIN
       );
 
-  int rfReflectedRaw =
+  rfReflectedRaw =
       analogRead(
           RF_REFLECTED_PIN
       );
 
-  int latencyRaw =
+  latencyRaw =
       analogRead(
           BACKHAUL_LATENCY_PIN
       );
 
-  int packetLossRaw =
+  packetLossRaw =
       analogRead(
           BACKHAUL_LOSS_PIN
       );
 
-  int rssiRaw =
+  rssiRaw =
       analogRead(
           BACKHAUL_RSSI_PIN
       );
 
-  int trafficLoadRaw =
+  trafficLoadRaw =
       analogRead(
           TRAFFIC_LOAD_PIN
       );
@@ -3610,6 +3634,97 @@ void refreshLCDs(
 }
 
 // ====================================================
+// CIRCUIT TELEMETRY HELPERS
+// ====================================================
+
+// Convert the ESP32 12-bit ADC reading back to the
+// approximate 0-1023 control value displayed by a
+// Wokwi potentiometer.
+int adcToWokwiPotValue(
+    int rawAdc)
+{
+  if (rawAdc < 0)
+  {
+    rawAdc = 0;
+  }
+
+  if (rawAdc > 4095)
+  {
+    rawAdc = 4095;
+  }
+
+  return
+      (
+          (
+              (long)rawAdc *
+              1023L
+          ) +
+          2047L
+      ) /
+      4095L;
+}
+
+
+void printCircuitPotLine(
+    const char *label,
+    int rawAdc,
+    float engineeringValue,
+    uint8_t decimals,
+    const char *unit)
+{
+  Serial.print(label);
+  Serial.print(" : ");
+
+  Serial.print(
+      adcToWokwiPotValue(
+          rawAdc
+      )
+  );
+
+  Serial.print("/1023 | ADC ");
+
+  Serial.print(
+      rawAdc
+  );
+
+  Serial.print("/4095 | ");
+
+  Serial.print(
+      engineeringValue,
+      decimals
+  );
+
+  Serial.print(" ");
+
+  Serial.println(
+      unit
+  );
+}
+
+
+void printCircuitSwitchLine(
+    const char *label,
+    bool highState,
+    const char *highMeaning,
+    const char *lowMeaning)
+{
+  Serial.print(label);
+  Serial.print(" : ");
+
+  if (highState)
+  {
+    Serial.print("RIGHT | HIGH | ");
+    Serial.println(highMeaning);
+  }
+  else
+  {
+    Serial.print("LEFT  | LOW  | ");
+    Serial.println(lowMeaning);
+  }
+}
+
+
+// ====================================================
 // TELEMETRY
 // ====================================================
 
@@ -3627,6 +3742,178 @@ void printTelemetry()
 
   Serial.println(
       "================================================"
+  );
+
+  // --------------------------------------------------
+  // CIRCUIT INPUT VALUES
+  // --------------------------------------------------
+
+  Serial.println();
+
+  Serial.println(
+      "[ CIRCUIT INPUT VALUES ]"
+  );
+
+  Serial.println(
+      "Pot scale shown as Wokwi position / ESP32 ADC"
+  );
+
+  Serial.println();
+
+  Serial.print(
+      "DHT22 Temperature   : "
+  );
+  Serial.print(
+      shelterTemperature,
+      2
+  );
+  Serial.println(" C");
+
+  Serial.print(
+      "DHT22 Humidity      : "
+  );
+  Serial.print(
+      humidity,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "DS18B20 PA Temp     : "
+  );
+  Serial.print(
+      paTemperature,
+      2
+  );
+  Serial.println(" C");
+
+  Serial.println();
+
+  printCircuitPotLine(
+      "DC Voltage Pot D34 ",
+      dcVoltageRaw,
+      dcBusVoltage,
+      2,
+      "V"
+  );
+
+  printCircuitPotLine(
+      "DC Current Pot D35 ",
+      dcCurrentRaw,
+      dcBusCurrent,
+      2,
+      "A"
+  );
+
+  printCircuitPotLine(
+      "Battery Pot D32    ",
+      batteryVoltageRaw,
+      batteryVoltage,
+      2,
+      "V"
+  );
+
+  Serial.println();
+
+  printCircuitPotLine(
+      "RF Forward Pot D33 ",
+      rfForwardRaw,
+      rfForwardPower,
+      2,
+      "W"
+  );
+
+  printCircuitPotLine(
+      "RF Reflect Pot VP  ",
+      rfReflectedRaw,
+      rfReflectedPower,
+      2,
+      "W"
+  );
+
+  Serial.println();
+
+  printCircuitPotLine(
+      "Latency Pot D25    ",
+      latencyRaw,
+      latency,
+      1,
+      "ms"
+  );
+
+  printCircuitPotLine(
+      "Loss Pot D26       ",
+      packetLossRaw,
+      packetLoss,
+      1,
+      "%"
+  );
+
+  printCircuitPotLine(
+      "RSSI Pot D27       ",
+      rssiRaw,
+      rssi,
+      1,
+      "dBm"
+  );
+
+  printCircuitPotLine(
+      "Traffic Pot VN     ",
+      trafficLoadRaw,
+      trafficLoad,
+      1,
+      "%"
+  );
+
+  Serial.println();
+
+  printCircuitSwitchLine(
+      "Physical Link D14  ",
+      linkUp,
+      "UP",
+      "DOWN"
+  );
+
+  printCircuitSwitchLine(
+      "Upstream D13       ",
+      upstreamReachable,
+      "REACHABLE",
+      "UNREACHABLE"
+  );
+
+  printCircuitSwitchLine(
+      "Grid RX2 / GPIO16  ",
+      gridAvailable,
+      "AVAILABLE",
+      "FAILED"
+  );
+
+  printCircuitSwitchLine(
+      "Generator TX2/D17  ",
+      generatorRunning,
+      "RUNNING",
+      "STOPPED"
+  );
+
+  printCircuitSwitchLine(
+      "Cooling Fan D18    ",
+      fanOperational,
+      "OPERATIONAL",
+      "FAILED"
+  );
+
+  printCircuitSwitchLine(
+      "Rectifier D19      ",
+      rectifierNormal,
+      "NORMAL",
+      "FAULT"
+  );
+
+  printCircuitSwitchLine(
+      "Radio D23          ",
+      radioOperational,
+      "OPERATIONAL",
+      "FAULT"
   );
 
   // --------------------------------------------------
