@@ -1,0 +1,219 @@
+{
+  "schema": "abs.ml.metrics.v1",
+  "model_name": "fault_domain_random_forest",
+  "dataset_sha256": "edf6946cc3c21b2cd8ea924e386a5affa5fad551345c5c0d1da583727217064b",
+  "dataset_rows": 12000,
+  "training_rows": 9600,
+  "test_rows": 2400,
+  "accuracy": 1.0,
+  "balanced_accuracy": 1.0,
+  "macro_precision": 1.0,
+  "macro_recall": 1.0,
+  "macro_f1": 1.0,
+  "oob_score": 1.0,
+  "label_order": [
+    "NORMAL",
+    "LOCAL",
+    "UPSTREAM",
+    "MIXED"
+  ],
+  "confusion_matrix": [
+    [
+      600,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      600,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      600,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      600
+    ]
+  ],
+  "classification_report": {
+    "NORMAL": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 600.0
+    },
+    "LOCAL": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 600.0
+    },
+    "UPSTREAM": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 600.0
+    },
+    "MIXED": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 600.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 2400.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 2400.0
+    }
+  },
+  "feature_importance": [
+    {
+      "feature": "latency_ms",
+      "importance": 0.11064629110116825
+    },
+    {
+      "feature": "battery_soc_trend_pct_per_min",
+      "importance": 0.09651609205715299
+    },
+    {
+      "feature": "packet_loss_pct",
+      "importance": 0.0957024180705092
+    },
+    {
+      "feature": "latency_jitter_ms",
+      "importance": 0.07566957586382958
+    },
+    {
+      "feature": "rf_forward_w",
+      "importance": 0.05614353284069058
+    },
+    {
+      "feature": "pa_temp_trend_c_per_min",
+      "importance": 0.04665693571623769
+    },
+    {
+      "feature": "pa_shelter_delta_c",
+      "importance": 0.04128722031096557
+    },
+    {
+      "feature": "grid_available",
+      "importance": 0.03202103277512468
+    },
+    {
+      "feature": "upstream_reachable",
+      "importance": 0.031519752718721365
+    },
+    {
+      "feature": "radio_operational",
+      "importance": 0.03134942111810565
+    },
+    {
+      "feature": "rf_reflected_w",
+      "importance": 0.0294053637549456
+    },
+    {
+      "feature": "vibration_std_mps2",
+      "importance": 0.02939387925090409
+    },
+    {
+      "feature": "vibration_peak_to_peak_mps2",
+      "importance": 0.029110200127206932
+    },
+    {
+      "feature": "pa_temp_c",
+      "importance": 0.027266987270065882
+    },
+    {
+      "feature": "dc_voltage_v",
+      "importance": 0.026597437990684456
+    },
+    {
+      "feature": "rf_reflection_ratio_pct",
+      "importance": 0.025264391522348995
+    },
+    {
+      "feature": "vibration_rms_mps2",
+      "importance": 0.025047069876898826
+    },
+    {
+      "feature": "return_loss_db",
+      "importance": 0.02411608107467465
+    },
+    {
+      "feature": "rssi_dbm",
+      "importance": 0.02311517061253076
+    },
+    {
+      "feature": "vswr",
+      "importance": 0.0227913165478116
+    },
+    {
+      "feature": "rssi_drop_db",
+      "importance": 0.02151484573110162
+    },
+    {
+      "feature": "battery_voltage_v",
+      "importance": 0.016526367689710234
+    },
+    {
+      "feature": "battery_soc_pct",
+      "importance": 0.01552694917737902
+    },
+    {
+      "feature": "traffic_load_pct",
+      "importance": 0.0146397120515945
+    },
+    {
+      "feature": "vibration_dominant_hz",
+      "importance": 0.010862766063481105
+    },
+    {
+      "feature": "physical_link_up",
+      "importance": 0.008179879574325102
+    },
+    {
+      "feature": "rectifier_normal",
+      "importance": 0.007872238324484119
+    },
+    {
+      "feature": "generator_running",
+      "importance": 0.007115136616047903
+    },
+    {
+      "feature": "dc_power_w",
+      "importance": 0.00628975753216651
+    },
+    {
+      "feature": "dc_current_a",
+      "importance": 0.005484837780730255
+    },
+    {
+      "feature": "fan_operational",
+      "importance": 0.004396456782132965
+    },
+    {
+      "feature": "shelter_temp_c",
+      "importance": 0.0014249367659920464
+    },
+    {
+      "feature": "humidity_pct",
+      "importance": 0.0005459453102771885
+    }
+  ]
+}
