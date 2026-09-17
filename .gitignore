@@ -15,3 +15,4 @@ ml/data/*.csv
 ml/data/dataset_manifest.json
 ml/models/*.joblib
 ml/data/dataset_v2_manifest.json
+ml/models/fault_domain_xgboost_v2.json
