@@ -1,4 +1,5 @@
 [wokwi]
 version = 1
+rfc2217ServerPort = 4000
 firmware = '.pio/build/pico/firmware.uf2'
 elf = '.pio/build/pico/firmware.elf'
