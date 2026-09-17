@@ -4210,6 +4210,349 @@ void printCircuitSwitchLine(
 
 
 // ====================================================
+// MACHINE-READABLE TELEMETRY
+// ====================================================
+//
+// One complete JSON object is written on a single line.
+//
+// The ABS_JSON| prefix lets the future Pico / Python receiver
+// distinguish structured telemetry from the human-readable
+// diagnostic output.
+//
+// Human-readable telemetry remains unchanged.
+//
+void printMachineReadableTelemetry()
+{
+  Serial.print("ABS_JSON|{");
+
+  // --------------------------------------------------
+  // RECORD INFORMATION
+  // --------------------------------------------------
+
+  Serial.print("\"schema\":\"abs.v1\"");
+
+  Serial.print(",\"timestamp_ms\":");
+  Serial.print(millis());
+
+  // --------------------------------------------------
+  // ENVIRONMENT / THERMAL
+  // --------------------------------------------------
+
+  Serial.print(",\"shelter_temp_c\":");
+  Serial.print(shelterTemperature, 2);
+
+  Serial.print(",\"humidity_pct\":");
+  Serial.print(humidity, 2);
+
+  Serial.print(",\"pa_temp_c\":");
+  Serial.print(paTemperature, 2);
+
+  Serial.print(",\"pa_temp_ema_c\":");
+  Serial.print(paTemperatureEMA, 2);
+
+  Serial.print(",\"pa_temp_trend_c_per_min\":");
+  Serial.print(paTemperatureTrendCPerMin, 3);
+
+  Serial.print(",\"pa_shelter_delta_c\":");
+  Serial.print(paShelterTemperatureDeltaC, 2);
+
+  // --------------------------------------------------
+  // VIBRATION FEATURES
+  // --------------------------------------------------
+
+  Serial.print(",\"dynamic_vibration_mps2\":");
+  Serial.print(dynamicVibration, 4);
+
+  Serial.print(",\"vibration_rms_mps2\":");
+  Serial.print(vibrationRMS, 4);
+
+  Serial.print(",\"vibration_std_mps2\":");
+  Serial.print(vibrationStdDev, 4);
+
+  Serial.print(",\"vibration_peak_to_peak_mps2\":");
+  Serial.print(vibrationPeakToPeak, 4);
+
+  Serial.print(",\"vibration_dominant_hz\":");
+  Serial.print(dominantVibrationFrequencyHz, 3);
+
+  Serial.print(",\"vibration_centroid_hz\":");
+  Serial.print(vibrationSpectralCentroidHz, 3);
+
+  Serial.print(",\"vibration_spectral_energy\":");
+  Serial.print(vibrationSpectralEnergy, 6);
+
+  // --------------------------------------------------
+  // POWER / BATTERY
+  // --------------------------------------------------
+
+  Serial.print(",\"dc_voltage_v\":");
+  Serial.print(dcBusVoltage, 3);
+
+  Serial.print(",\"dc_current_a\":");
+  Serial.print(dcBusCurrent, 3);
+
+  Serial.print(",\"dc_power_w\":");
+  Serial.print(dcPower, 2);
+
+  Serial.print(",\"dc_voltage_ema_v\":");
+  Serial.print(dcBusVoltageEMA, 3);
+
+  Serial.print(",\"dc_current_ema_a\":");
+  Serial.print(dcBusCurrentEMA, 3);
+
+  Serial.print(",\"dc_power_ema_w\":");
+  Serial.print(dcPowerEMA, 2);
+
+  Serial.print(",\"dc_voltage_std_v\":");
+  Serial.print(dcVoltageStats.stdDev, 4);
+
+  Serial.print(",\"dc_current_std_a\":");
+  Serial.print(dcCurrentStats.stdDev, 4);
+
+  Serial.print(",\"dc_power_std_w\":");
+  Serial.print(dcPowerStats.stdDev, 3);
+
+  Serial.print(",\"dc_voltage_trend_vps\":");
+  Serial.print(dcVoltageTrendVPerSec, 4);
+
+  Serial.print(",\"dc_current_trend_aps\":");
+  Serial.print(dcCurrentTrendAPerSec, 4);
+
+  Serial.print(",\"dc_power_trend_wps\":");
+  Serial.print(dcPowerTrendWPerSec, 3);
+
+  Serial.print(",\"battery_voltage_v\":");
+  Serial.print(batteryVoltage, 3);
+
+  Serial.print(",\"battery_soc_pct\":");
+  Serial.print(batterySOC, 2);
+
+  Serial.print(",\"battery_voltage_ema_v\":");
+  Serial.print(batteryVoltageEMA, 3);
+
+  Serial.print(",\"battery_soc_ema_pct\":");
+  Serial.print(batterySOCEMA, 2);
+
+  Serial.print(",\"battery_soc_trend_pct_per_min\":");
+  Serial.print(batterySOCTrendPctPerMin, 3);
+
+  // --------------------------------------------------
+  // RF
+  // --------------------------------------------------
+
+  Serial.print(",\"rf_forward_w\":");
+  Serial.print(rfForwardPower, 3);
+
+  Serial.print(",\"rf_reflected_w\":");
+  Serial.print(rfReflectedPower, 3);
+
+  Serial.print(",\"rf_forward_ema_w\":");
+  Serial.print(rfForwardPowerEMA, 3);
+
+  Serial.print(",\"rf_reflected_ema_w\":");
+  Serial.print(rfReflectedPowerEMA, 3);
+
+  Serial.print(",\"rf_reflection_ratio_pct\":");
+  Serial.print(rfReflectionRatioPct, 3);
+
+  Serial.print(",\"rf_reflection_ratio_ema_pct\":");
+  Serial.print(rfReflectionRatioPctEMA, 3);
+
+  Serial.print(",\"vswr\":");
+  Serial.print(vswr, 3);
+
+  Serial.print(",\"vswr_ema\":");
+  Serial.print(rfVswrEMA, 3);
+
+  Serial.print(",\"return_loss_db\":");
+  Serial.print(returnLoss, 3);
+
+  Serial.print(",\"return_loss_ema_db\":");
+  Serial.print(rfReturnLossEMA, 3);
+
+  // --------------------------------------------------
+  // BACKHAUL
+  // --------------------------------------------------
+
+  Serial.print(",\"latency_ms\":");
+  Serial.print(latency, 2);
+
+  Serial.print(",\"latency_ema_ms\":");
+  Serial.print(latencyEMA, 2);
+
+  Serial.print(",\"latency_jitter_ms\":");
+  Serial.print(latencyJitterEWMA, 3);
+
+  Serial.print(",\"packet_loss_pct\":");
+  Serial.print(packetLoss, 3);
+
+  Serial.print(",\"packet_loss_ema_pct\":");
+  Serial.print(packetLossEMA, 3);
+
+  Serial.print(",\"rssi_dbm\":");
+  Serial.print(rssi, 2);
+
+  Serial.print(",\"rssi_ema_dbm\":");
+  Serial.print(rssiEMA, 2);
+
+  Serial.print(",\"rssi_slow_baseline_dbm\":");
+  Serial.print(rssiSlowBaselineEMA, 2);
+
+  Serial.print(",\"rssi_drop_db\":");
+  Serial.print(rssiDropMagnitudeDb, 2);
+
+  Serial.print(",\"traffic_load_pct\":");
+  Serial.print(trafficLoad, 2);
+
+  // --------------------------------------------------
+  // DIGITAL INPUT STATES
+  // --------------------------------------------------
+
+  Serial.print(",\"physical_link_up\":");
+  Serial.print(linkUp ? "true" : "false");
+
+  Serial.print(",\"upstream_reachable\":");
+  Serial.print(upstreamReachable ? "true" : "false");
+
+  Serial.print(",\"grid_available\":");
+  Serial.print(gridAvailable ? "true" : "false");
+
+  Serial.print(",\"generator_running\":");
+  Serial.print(generatorRunning ? "true" : "false");
+
+  Serial.print(",\"fan_operational\":");
+  Serial.print(fanOperational ? "true" : "false");
+
+  Serial.print(",\"rectifier_normal\":");
+  Serial.print(rectifierNormal ? "true" : "false");
+
+  Serial.print(",\"radio_operational\":");
+  Serial.print(radioOperational ? "true" : "false");
+
+  // --------------------------------------------------
+  // TRANSIENT EVENTS
+  // --------------------------------------------------
+
+  Serial.print(",\"latency_spike\":");
+  Serial.print(latencySpikeLatched ? "true" : "false");
+
+  Serial.print(",\"packet_loss_burst\":");
+  Serial.print(packetLossBurstLatched ? "true" : "false");
+
+  Serial.print(",\"rssi_sudden_drop\":");
+  Serial.print(rssiDropLatched ? "true" : "false");
+
+  Serial.print(",\"rf_mismatch_event\":");
+  Serial.print(rfMismatchLatched ? "true" : "false");
+
+  // --------------------------------------------------
+  // RULE-BASED GROUND TRUTH / STATUS
+  // --------------------------------------------------
+
+  Serial.print(",\"rf_health\":\"");
+  Serial.print(rfHealth);
+  Serial.print("\"");
+
+  Serial.print(",\"electrical_health\":\"");
+  Serial.print(electricalHealth);
+  Serial.print("\"");
+
+  Serial.print(",\"thermal_risk\":\"");
+  Serial.print(thermalRiskState);
+  Serial.print("\"");
+
+  Serial.print(",\"backhaul_status\":\"");
+  Serial.print(backhaulCondition);
+  Serial.print("\"");
+
+  Serial.print(",\"local_site_status\":\"");
+  Serial.print(localSiteStatus);
+  Serial.print("\"");
+
+  Serial.print(",\"fault_label\":\"");
+  Serial.print(faultCandidate);
+  Serial.print("\"");
+
+  // --------------------------------------------------
+  // ENERGY / CONTROL
+  // --------------------------------------------------
+
+  Serial.print(",\"active_power_source\":\"");
+  Serial.print(activePowerSource);
+  Serial.print("\"");
+
+  Serial.print(",\"energy_action\":\"");
+  Serial.print(energyAction);
+  Serial.print("\"");
+
+  Serial.print(",\"requested_mode\":\"");
+  Serial.print(requestedOperatingMode);
+  Serial.print("\"");
+
+  Serial.print(",\"operating_mode\":\"");
+  Serial.print(operatingMode);
+  Serial.print("\"");
+
+  Serial.print(",\"guardrail_status\":\"");
+  Serial.print(guardrailStatus);
+  Serial.print("\"");
+
+  Serial.print(",\"recovery_state\":\"");
+  Serial.print(recoveryState);
+  Serial.print("\"");
+
+  Serial.print(",\"baseline_power_kw\":");
+  Serial.print(baselineSitePowerKW, 4);
+
+  Serial.print(",\"managed_power_kw\":");
+  Serial.print(managedSitePowerKW, 4);
+
+  Serial.print(",\"energy_saving_pct\":");
+  Serial.print(estimatedEnergySavingPct, 2);
+
+  Serial.print(",\"mode_change_count\":");
+  Serial.print(operatingModeChangeCount);
+
+  // --------------------------------------------------
+  // RAW CIRCUIT ADC VALUES
+  // --------------------------------------------------
+
+  Serial.print(",\"raw_adc\":{");
+
+  Serial.print("\"dc_voltage\":");
+  Serial.print(dcVoltageRaw);
+
+  Serial.print(",\"dc_current\":");
+  Serial.print(dcCurrentRaw);
+
+  Serial.print(",\"battery_voltage\":");
+  Serial.print(batteryVoltageRaw);
+
+  Serial.print(",\"rf_forward\":");
+  Serial.print(rfForwardRaw);
+
+  Serial.print(",\"rf_reflected\":");
+  Serial.print(rfReflectedRaw);
+
+  Serial.print(",\"latency\":");
+  Serial.print(latencyRaw);
+
+  Serial.print(",\"packet_loss\":");
+  Serial.print(packetLossRaw);
+
+  Serial.print(",\"rssi\":");
+  Serial.print(rssiRaw);
+
+  Serial.print(",\"traffic\":");
+  Serial.print(trafficLoadRaw);
+
+  Serial.print("}");
+
+  Serial.println("}");
+}
+
+
+// ====================================================
 // TELEMETRY
 // ====================================================
 
@@ -5700,7 +6043,7 @@ void printTelemetry()
   );
 
   Serial.println(
-      "Stage               : SIGNAL PROCESSING + GUARDED ENERGY CONTROL + RECOVERY"
+      "Stage               : SIGNAL PROCESSING + GUARDED CONTROL + STRUCTURED TELEMETRY"
   );
 
   Serial.println(
@@ -5722,6 +6065,22 @@ void printTelemetry()
   Serial.println(
       "Runtime             : NON-BLOCKING"
   );
+
+  // --------------------------------------------------
+  // MACHINE-READABLE RECORD
+  // --------------------------------------------------
+  //
+  // Print before clearing transient-event latches so the
+  // structured record receives the same event information
+  // as the human-readable report.
+  //
+  Serial.println();
+
+  Serial.println(
+      "[ MACHINE READABLE TELEMETRY ]"
+  );
+
+  printMachineReadableTelemetry();
 
   // --------------------------------------------------
   // TELEMETRY EVENT ACKNOWLEDGEMENT
