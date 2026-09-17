@@ -11,3 +11,5 @@
 .env
 __pycache__/
 *.pyc
+ml/data/*.csv
+ml/data/dataset_manifest.json
