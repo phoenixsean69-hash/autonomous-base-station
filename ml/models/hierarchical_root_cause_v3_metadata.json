@@ -1,0 +1,92 @@
+{
+  "schema": "abs.ml.root_cause.v1",
+  "model_name": "hierarchical_root_cause_v3",
+  "dataset_sha256": "b0d85e2ff9131489aee74eff52e0c8560ef5ca852ec1099f1b9a850963703812",
+  "feature_columns": [
+    "shelter_temp_c",
+    "humidity_pct",
+    "pa_temp_c",
+    "pa_temp_trend_c_per_min",
+    "pa_shelter_delta_c",
+    "vibration_rms_mps2",
+    "vibration_std_mps2",
+    "vibration_peak_to_peak_mps2",
+    "vibration_dominant_hz",
+    "dc_voltage_v",
+    "dc_current_a",
+    "dc_power_w",
+    "battery_voltage_v",
+    "battery_soc_pct",
+    "battery_soc_trend_pct_per_min",
+    "rf_forward_w",
+    "rf_reflection_ratio_pct",
+    "rf_reflected_w",
+    "vswr",
+    "return_loss_db",
+    "latency_ms",
+    "latency_jitter_ms",
+    "packet_loss_pct",
+    "rssi_dbm",
+    "rssi_drop_db",
+    "traffic_load_pct",
+    "physical_link_up",
+    "upstream_reachable",
+    "grid_available",
+    "generator_running",
+    "fan_operational",
+    "rectifier_normal",
+    "radio_operational"
+  ],
+  "feature_count": 33,
+  "timesteps": 24,
+  "outer_test_size": 0.2,
+  "inner_validation_size": 0.15,
+  "random_state": 42,
+  "outer_test_used_for_training": false,
+  "hierarchy": {
+    "fault_domain_stage": [
+      "NORMAL",
+      "LOCAL",
+      "UPSTREAM",
+      "MIXED"
+    ],
+    "local_head_runs_for": [
+      "LOCAL",
+      "MIXED"
+    ],
+    "upstream_head_runs_for": [
+      "UPSTREAM",
+      "MIXED"
+    ],
+    "mixed_runs_both_heads": true
+  },
+  "local_head": {
+    "classes": [
+      "COOLING_FAULT",
+      "RADIO_FAULT",
+      "RECTIFIER_FAULT",
+      "RF_MISMATCH",
+      "BATTERY_LOW",
+      "GRID_FAILURE",
+      "MECHANICAL_VIBRATION",
+      "TRAFFIC_OVERLOAD"
+    ],
+    "model_type": "PyTorchTCN",
+    "selected_epoch": 36,
+    "best_validation_loss": 0.11869323899348577
+  },
+  "upstream_head": {
+    "classes": [
+      "BACKHAUL_CONGESTION",
+      "UPSTREAM_LINK_DEGRADATION",
+      "UPSTREAM_LINK_FAILURE",
+      "UPSTREAM_OUTAGE"
+    ],
+    "model_type": "PyTorchTCN",
+    "selected_epoch": 26,
+    "best_validation_loss": 0.0010994802242041463
+  },
+  "comparison_baseline": "XGBoost using only final timestep for each eligible root-cause head",
+  "conditioned_evaluation": true,
+  "conditioned_evaluation_note": "Root-cause metrics assume the sequence is routed to the correct head. End-to-end domain gating is evaluated in the unified inference stage."
+}
