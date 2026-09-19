@@ -1,0 +1,61 @@
+{
+  "schema": "abs.ml.anomaly.v1",
+  "model_name": "temporal_anomaly_v3",
+  "dataset_sha256": "b0d85e2ff9131489aee74eff52e0c8560ef5ca852ec1099f1b9a850963703812",
+  "feature_columns": [
+    "shelter_temp_c",
+    "humidity_pct",
+    "pa_temp_c",
+    "pa_temp_trend_c_per_min",
+    "pa_shelter_delta_c",
+    "vibration_rms_mps2",
+    "vibration_std_mps2",
+    "vibration_peak_to_peak_mps2",
+    "vibration_dominant_hz",
+    "dc_voltage_v",
+    "dc_current_a",
+    "dc_power_w",
+    "battery_voltage_v",
+    "battery_soc_pct",
+    "battery_soc_trend_pct_per_min",
+    "rf_forward_w",
+    "rf_reflection_ratio_pct",
+    "rf_reflected_w",
+    "vswr",
+    "return_loss_db",
+    "latency_ms",
+    "latency_jitter_ms",
+    "packet_loss_pct",
+    "rssi_dbm",
+    "rssi_drop_db",
+    "traffic_load_pct",
+    "physical_link_up",
+    "upstream_reachable",
+    "grid_available",
+    "generator_running",
+    "fan_operational",
+    "rectifier_normal",
+    "radio_operational"
+  ],
+  "feature_count": 33,
+  "timesteps": 24,
+  "classes_used_for_training": [
+    "NORMAL"
+  ],
+  "fault_labels_used_for_training": false,
+  "outer_test_used_for_training": false,
+  "random_state": 42,
+  "threshold_percentile": 99.0,
+  "threshold_calibration": "held_out_NORMAL_outer_training_sequences",
+  "autoencoder": {
+    "type": "PyTorchTemporalConvolutionalAutoencoder",
+    "selected_epoch": 100,
+    "best_validation_loss": 0.24697234398788875,
+    "learning_rate": 0.001,
+    "device_used": "cpu"
+  },
+  "isolation_forest": {
+    "type": "IsolationForest",
+    "n_estimators": 300
+  }
+}
