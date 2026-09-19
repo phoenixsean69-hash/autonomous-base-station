@@ -1,0 +1,64 @@
+{
+  "schema": "abs.ml.ensemble.v1",
+  "ensemble_name": "fault_domain_ensemble_v2",
+  "target": "fault_domain",
+  "dataset_sha256": "22f86c9befbb8721e5fa857f477b204e3fce2f150b6e14f41f4dd32ba604c733",
+  "feature_columns": [
+    "shelter_temp_c",
+    "humidity_pct",
+    "pa_temp_c",
+    "pa_temp_trend_c_per_min",
+    "pa_shelter_delta_c",
+    "vibration_rms_mps2",
+    "vibration_std_mps2",
+    "vibration_peak_to_peak_mps2",
+    "vibration_dominant_hz",
+    "dc_voltage_v",
+    "dc_current_a",
+    "dc_power_w",
+    "battery_voltage_v",
+    "battery_soc_pct",
+    "battery_soc_trend_pct_per_min",
+    "rf_forward_w",
+    "rf_reflection_ratio_pct",
+    "rf_reflected_w",
+    "vswr",
+    "return_loss_db",
+    "latency_ms",
+    "latency_jitter_ms",
+    "packet_loss_pct",
+    "rssi_dbm",
+    "rssi_drop_db",
+    "traffic_load_pct",
+    "physical_link_up",
+    "upstream_reachable",
+    "grid_available",
+    "generator_running",
+    "fan_operational",
+    "rectifier_normal",
+    "radio_operational"
+  ],
+  "feature_count": 33,
+  "test_size": 0.2,
+  "random_state": 42,
+  "components": [
+    "fault_domain_random_forest_v2",
+    "fault_domain_xgboost_v2",
+    "fault_domain_deep_mlp_v2"
+  ],
+  "rules": {
+    "equal_soft_vote": {
+      "weights": {
+        "random_forest": 0.3333333333333333,
+        "xgboost": 0.3333333333333333,
+        "deep_mlp": 0.3333333333333333
+      },
+      "weight_tuning": "none"
+    },
+    "majority_hard_vote": {
+      "rule": "two_of_three",
+      "tie_break": "equal_soft_vote"
+    }
+  },
+  "fairness_note": "No ensemble weights were tuned on the test set."
+}
