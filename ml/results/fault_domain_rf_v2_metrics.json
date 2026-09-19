@@ -1,0 +1,219 @@
+{
+  "schema": "abs.ml.metrics.v1",
+  "model_name": "fault_domain_random_forest",
+  "dataset_sha256": "22f86c9befbb8721e5fa857f477b204e3fce2f150b6e14f41f4dd32ba604c733",
+  "dataset_rows": 16000,
+  "training_rows": 12800,
+  "test_rows": 3200,
+  "accuracy": 0.85875,
+  "balanced_accuracy": 0.85875,
+  "macro_precision": 0.8626920304544392,
+  "macro_recall": 0.85875,
+  "macro_f1": 0.8559215659206469,
+  "oob_score": 0.85953125,
+  "label_order": [
+    "NORMAL",
+    "LOCAL",
+    "UPSTREAM",
+    "MIXED"
+  ],
+  "confusion_matrix": [
+    [
+      767,
+      19,
+      11,
+      3
+    ],
+    [
+      73,
+      689,
+      15,
+      23
+    ],
+    [
+      26,
+      2,
+      737,
+      35
+    ],
+    [
+      9,
+      84,
+      152,
+      555
+    ]
+  ],
+  "classification_report": {
+    "NORMAL": {
+      "precision": 0.8765714285714286,
+      "recall": 0.95875,
+      "f1-score": 0.9158208955223881,
+      "support": 800.0
+    },
+    "LOCAL": {
+      "precision": 0.8677581863979849,
+      "recall": 0.86125,
+      "f1-score": 0.8644918444165621,
+      "support": 800.0
+    },
+    "UPSTREAM": {
+      "precision": 0.805464480874317,
+      "recall": 0.92125,
+      "f1-score": 0.8594752186588921,
+      "support": 800.0
+    },
+    "MIXED": {
+      "precision": 0.900974025974026,
+      "recall": 0.69375,
+      "f1-score": 0.7838983050847458,
+      "support": 800.0
+    },
+    "accuracy": 0.85875,
+    "macro avg": {
+      "precision": 0.8626920304544392,
+      "recall": 0.85875,
+      "f1-score": 0.8559215659206469,
+      "support": 3200.0
+    },
+    "weighted avg": {
+      "precision": 0.8626920304544392,
+      "recall": 0.85875,
+      "f1-score": 0.8559215659206469,
+      "support": 3200.0
+    }
+  },
+  "feature_importance": [
+    {
+      "feature": "packet_loss_pct",
+      "importance": 0.14322779001861144
+    },
+    {
+      "feature": "battery_soc_trend_pct_per_min",
+      "importance": 0.12791931663839642
+    },
+    {
+      "feature": "latency_ms",
+      "importance": 0.12551341959616477
+    },
+    {
+      "feature": "latency_jitter_ms",
+      "importance": 0.06763055511996523
+    },
+    {
+      "feature": "rssi_drop_db",
+      "importance": 0.06197703519016463
+    },
+    {
+      "feature": "pa_temp_trend_c_per_min",
+      "importance": 0.056609051968929305
+    },
+    {
+      "feature": "rf_forward_w",
+      "importance": 0.04463118793524755
+    },
+    {
+      "feature": "rssi_dbm",
+      "importance": 0.029939241836745036
+    },
+    {
+      "feature": "vibration_peak_to_peak_mps2",
+      "importance": 0.026363926776213346
+    },
+    {
+      "feature": "vibration_std_mps2",
+      "importance": 0.02451211822436262
+    },
+    {
+      "feature": "traffic_load_pct",
+      "importance": 0.023337445893117727
+    },
+    {
+      "feature": "vibration_rms_mps2",
+      "importance": 0.022347467957371622
+    },
+    {
+      "feature": "rf_reflection_ratio_pct",
+      "importance": 0.021649637007123718
+    },
+    {
+      "feature": "pa_shelter_delta_c",
+      "importance": 0.020818243354401144
+    },
+    {
+      "feature": "vswr",
+      "importance": 0.020525475913881458
+    },
+    {
+      "feature": "dc_voltage_v",
+      "importance": 0.020508246336954843
+    },
+    {
+      "feature": "return_loss_db",
+      "importance": 0.020423686254944007
+    },
+    {
+      "feature": "pa_temp_c",
+      "importance": 0.01813031830706472
+    },
+    {
+      "feature": "rf_reflected_w",
+      "importance": 0.01662985584135828
+    },
+    {
+      "feature": "shelter_temp_c",
+      "importance": 0.016352239581207823
+    },
+    {
+      "feature": "upstream_reachable",
+      "importance": 0.01122190203464387
+    },
+    {
+      "feature": "grid_available",
+      "importance": 0.011008423791270674
+    },
+    {
+      "feature": "battery_soc_pct",
+      "importance": 0.01092215137189408
+    },
+    {
+      "feature": "battery_voltage_v",
+      "importance": 0.010262647515148108
+    },
+    {
+      "feature": "dc_current_a",
+      "importance": 0.008596326558542958
+    },
+    {
+      "feature": "radio_operational",
+      "importance": 0.008260018635290507
+    },
+    {
+      "feature": "dc_power_w",
+      "importance": 0.00821298786884236
+    },
+    {
+      "feature": "vibration_dominant_hz",
+      "importance": 0.0059958599453571225
+    },
+    {
+      "feature": "humidity_pct",
+      "importance": 0.0059536882062204465
+    },
+    {
+      "feature": "fan_operational",
+      "importance": 0.004094463823049915
+    },
+    {
+      "feature": "physical_link_up",
+      "importance": 0.002398622368288266
+    },
+    {
+      "feature": "rectifier_normal",
+      "importance": 0.002041910113842311
+    },
+    {
+      "feature": "generator_running",
+      "importance": 0.001984738015383835
+    }
+  ]
+}
