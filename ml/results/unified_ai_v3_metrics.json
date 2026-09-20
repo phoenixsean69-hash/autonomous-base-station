@@ -1,0 +1,29 @@
+{
+  "schema": "abs.ai.unified.metrics.v1",
+  "dataset_sha256": "b0d85e2ff9131489aee74eff52e0c8560ef5ca852ec1099f1b9a850963703812",
+  "test_rows": 2400,
+  "fault_domain_accuracy": 0.9091666666666667,
+  "anomaly": {
+    "normal_false_positive_rate": 0.011666666666666667,
+    "known_fault_detection_rate": 0.4683333333333333
+  },
+  "end_to_end_root_cause": {
+    "local_rows": 1200,
+    "local_accuracy_including_domain_routing": 0.8525,
+    "upstream_rows": 1200,
+    "upstream_accuracy_including_domain_routing": 0.9625,
+    "mixed_rows": 600,
+    "mixed_exact_domain_and_both_causes_accuracy": 0.7583333333333333,
+    "all_sequence_exact_hierarchical_accuracy": 0.8933333333333333
+  },
+  "energy_recommendation_distribution": {
+    "FULL": 1159,
+    "ECO": 1199,
+    "REDUCED": 39,
+    "EMERGENCY": 3
+  },
+  "guardrail_contract": {
+    "ai_output_is_pre_guardrail": true,
+    "final_mode_authority": "deterministic_safety_guardrails"
+  }
+}
