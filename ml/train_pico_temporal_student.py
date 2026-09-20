@@ -209,6 +209,20 @@ def train_fixed_epochs(
     return model
 
 
+def format_c_float(
+    value: float,
+) -> str:
+    text = f"{float(value):.9g}"
+
+    if (
+        "." not in text and
+        "e" not in text.lower()
+    ):
+        text += ".0"
+
+    return text + "f"
+
+
 def format_float_array(
     name: str,
     values: np.ndarray,
@@ -236,7 +250,7 @@ def format_float_array(
         lines.append(
             "    " +
             ", ".join(
-                f"{float(v):.9g}f"
+                format_c_float(v)
                 for v in chunk
             )
         )

@@ -53,47 +53,104 @@ def send_chunked(
         )
 
 
+# FRAGMENT_SAFE_PICO_RESULT_READER_V1
 def wait_result(
     port,
     timeout: float = 8.0,
 ):
+    """
+    Read RFC2217 data until a complete newline-terminated PICO_RESULT arrives.
+
+    pyserial read()/readline() may return partial UART lines when the socket
+    timeout expires. Keep every fragment until '\n' is actually received.
+    """
     deadline = (
-        time.time() +
+        time.monotonic() +
         timeout
     )
 
-    while time.time() < deadline:
-        raw = port.readline()
+    pending = bytearray()
+
+    while time.monotonic() < deadline:
+        waiting = int(
+            getattr(
+                port,
+                "in_waiting",
+                0,
+            )
+            or 0
+        )
+
+        raw = port.read(
+            waiting
+            if waiting > 0
+            else 1
+        )
 
         if not raw:
             continue
 
-        line = raw.decode(
-            "utf-8",
-            errors="replace",
-        ).strip()
+        pending.extend(
+            raw
+        )
 
-        if not line:
-            continue
+        while b"\n" in pending:
+            raw_line, _, remainder = (
+                pending.partition(
+                    b"\n"
+                )
+            )
 
-        if line.startswith(
-            PREFIX
-        ):
+            pending = bytearray(
+                remainder
+            )
+
+            line = raw_line.rstrip(
+                b"\r"
+            ).decode(
+                "utf-8",
+                errors="replace",
+            ).strip()
+
+            if not line:
+                continue
+
+            if not line.startswith(
+                PREFIX
+            ):
+                continue
+
+            payload = line[
+                len(
+                    PREFIX
+                ):
+            ]
+
             try:
                 return json.loads(
-                    line[
-                        len(
-                            PREFIX
-                        ):
-                    ]
+                    payload
                 )
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as exc:
                 print(
-                    "[WARN] malformed PICO_RESULT JSON"
+                    "[WARN] complete PICO_RESULT line "
+                    f"contained invalid JSON: {exc}"
                 )
+
+    if pending:
+        preview = pending[
+            :120
+        ].decode(
+            "utf-8",
+            errors="replace",
+        )
+
+        print(
+            "[WARN] PICO_RESULT timeout with "
+            f"{len(pending)} uncompleted buffered bytes: "
+            f"{preview!r}"
+        )
 
     return None
-
 
 def main() -> int:
     parser = argparse.ArgumentParser()

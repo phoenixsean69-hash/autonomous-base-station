@@ -1,7 +1,7 @@
 {
   "schema": "abs.ml.root_cause.v1",
   "model_name": "hierarchical_root_cause_v3",
-  "dataset_sha256": "b0d85e2ff9131489aee74eff52e0c8560ef5ca852ec1099f1b9a850963703812",
+  "dataset_sha256": "feefc8a513d0799ebb7ed0b1edda2a5f94d61a1ecfd71442500938e423408062",
   "feature_columns": [
     "shelter_temp_c",
     "humidity_pct",
@@ -72,8 +72,8 @@
       "TRAFFIC_OVERLOAD"
     ],
     "model_type": "PyTorchTCN",
-    "selected_epoch": 36,
-    "best_validation_loss": 0.11869323899348577
+    "selected_epoch": 14,
+    "best_validation_loss": 0.11687536272737716
   },
   "upstream_head": {
     "classes": [
@@ -83,8 +83,8 @@
       "UPSTREAM_OUTAGE"
     ],
     "model_type": "PyTorchTCN",
-    "selected_epoch": 26,
-    "best_validation_loss": 0.0010994802242041463
+    "selected_epoch": 9,
+    "best_validation_loss": 0.0038930348120629786
   },
   "comparison_baseline": "XGBoost using only final timestep for each eligible root-cause head",
   "conditioned_evaluation": true,

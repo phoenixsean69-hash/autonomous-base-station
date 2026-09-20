@@ -1,7 +1,7 @@
 {
   "schema": "abs.ml.anomaly.v1",
   "model_name": "temporal_anomaly_v3",
-  "dataset_sha256": "b0d85e2ff9131489aee74eff52e0c8560ef5ca852ec1099f1b9a850963703812",
+  "dataset_sha256": "feefc8a513d0799ebb7ed0b1edda2a5f94d61a1ecfd71442500938e423408062",
   "feature_columns": [
     "shelter_temp_c",
     "humidity_pct",
@@ -50,7 +50,7 @@
   "autoencoder": {
     "type": "PyTorchTemporalConvolutionalAutoencoder",
     "selected_epoch": 100,
-    "best_validation_loss": 0.24697234398788875,
+    "best_validation_loss": 0.27491845589837216,
     "learning_rate": 0.001,
     "device_used": "cpu"
   },
