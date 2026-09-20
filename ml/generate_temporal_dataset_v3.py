@@ -504,6 +504,121 @@ def recompute_temporal_features(
     )
 
 
+def make_upstream_temporal_target(
+    baseline: dict,
+    upstream_cause: str,
+    rng: random.Random,
+    counters: Counter,
+) -> dict:
+    """
+    Generate upstream targets including remote/core outages where the local
+    physical link remains healthy.
+
+    Important case:
+        physical_link_up = 1
+        upstream_reachable = 0
+
+    Latency, packet loss and RSSI may remain nominal because the failure can
+    exist beyond the locally measured backhaul segment.
+    """
+    if upstream_cause == "UPSTREAM_OUTAGE":
+        profile_roll = rng.random()
+
+        # Route/core/reachability-only outage.
+        if profile_roll < 0.80:
+            target = baseline.copy()
+
+            target["physical_link_up"] = 1
+            target["upstream_reachable"] = 0
+
+            target["latency_ms"] = v1.clamp(
+                baseline["latency_ms"] + rng.uniform(-4.0, 12.0),
+                20.0,
+                90.0,
+            )
+
+            target["latency_jitter_ms"] = v1.clamp(
+                baseline["latency_jitter_ms"] + rng.uniform(-1.0, 2.5),
+                0.2,
+                12.0,
+            )
+
+            target["packet_loss_pct"] = v1.clamp(
+                baseline["packet_loss_pct"] + rng.uniform(-0.2, 1.0),
+                0.0,
+                3.5,
+            )
+
+            target["rssi_dbm"] = v1.clamp(
+                baseline["rssi_dbm"] + rng.uniform(-2.0, 2.0),
+                -68.0,
+                -46.0,
+            )
+
+            target["rssi_drop_db"] = v1.clamp(
+                baseline["rssi_drop_db"] + rng.uniform(-0.5, 1.0),
+                0.0,
+                3.5,
+            )
+
+            counters[
+                "upstream_profile:REACHABILITY_ONLY_OUTAGE"
+            ] += 1
+
+            return target
+
+        # Mild route/core outage.
+        if profile_roll < 0.93:
+            target = baseline.copy()
+
+            target["physical_link_up"] = 1
+            target["upstream_reachable"] = 0
+
+            target["latency_ms"] = max(
+                baseline["latency_ms"],
+                rng.uniform(55.0, 110.0),
+            )
+
+            target["latency_jitter_ms"] = max(
+                baseline["latency_jitter_ms"],
+                rng.uniform(2.0, 12.0),
+            )
+
+            target["packet_loss_pct"] = max(
+                baseline["packet_loss_pct"],
+                rng.uniform(0.5, 4.0),
+            )
+
+            target["rssi_dbm"] = v1.clamp(
+                baseline["rssi_dbm"] + rng.uniform(-2.5, 1.5),
+                -72.0,
+                -44.0,
+            )
+
+            target["rssi_drop_db"] = max(
+                baseline["rssi_drop_db"],
+                rng.uniform(0.0, 4.0),
+            )
+
+            counters[
+                "upstream_profile:ROUTE_CORE_OUTAGE"
+            ] += 1
+
+            return target
+
+    counters[
+        "upstream_profile:PHYSICAL_OR_DEGRADED"
+    ] += 1
+
+    return v2.make_fault_sample(
+        baseline,
+        "UPSTREAM",
+        "NONE",
+        upstream_cause,
+        rng,
+        counters,
+    )
+
 def build_sequence(
     domain: str,
     local_cause: str,
@@ -576,10 +691,8 @@ def build_sequence(
         "UPSTREAM",
         "MIXED",
     }:
-        upstream_target = v2.make_fault_sample(
+        upstream_target = make_upstream_temporal_target(
             baseline,
-            "UPSTREAM",
-            "NONE",
             upstream_cause,
             rng,
             counters,
@@ -1036,6 +1149,7 @@ def main() -> None:
             "measurement_noise",
             "slow_environment_drift",
             "recomputed_temporal_trends",
+            "reachability_only_upstream_outages",
         ],
         "diagnostics": dict(
             counters
