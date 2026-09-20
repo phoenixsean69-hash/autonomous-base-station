@@ -19,3 +19,4 @@ ml/models/fault_domain_xgboost_v2.json
 ml/models/*.pt
 ml/data/*.npz
 ml/data/dataset_v3_manifest.json
+bridge/runtime/
