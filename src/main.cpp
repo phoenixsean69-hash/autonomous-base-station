@@ -55,6 +55,11 @@ const unsigned long DS18B20_CONVERSION_MS = 750;
 
 const unsigned long TELEMETRY_INTERVAL_MS = 2000;
 
+// AI recommendations normally arrive every ~5 seconds.
+// If no fresh command arrives for 15 seconds, firmware
+// automatically falls back to its local deterministic policy.
+const unsigned long AI_COMMAND_TIMEOUT_MS = 15000;
+
 const float GRAVITY = 9.80665;
 
 // ====================================================
@@ -670,6 +675,32 @@ String operatingModeReason = "STARTING";
 String requestedOperatingMode = "UNKNOWN";
 String requestedOperatingModeReason = "STARTING";
 
+// ----------------------------------------------------
+// AI RECOMMENDATION INPUT
+// ----------------------------------------------------
+//
+// ABS_AI_CMD is produced by the laptop-side temporal AI.
+//
+// IMPORTANT:
+// These values are recommendations only. The deterministic
+// critical-energy, major-fault, traffic, degraded-service,
+// recovery and dwell guardrails remain authoritative.
+//
+String aiRecommendedMode = "NONE";
+String aiRecommendationReason = "NO AI COMMAND";
+String aiFaultDomain = "UNKNOWN";
+
+float aiDomainConfidence = 0.0f;
+float aiAnomalyScore = 0.0f;
+
+bool aiAnomalyFlag = false;
+bool aiCommandEverReceived = false;
+
+unsigned long lastAiCommandTime = 0;
+
+String aiCommandStatus = "NOT_RECEIVED";
+String aiSerialBuffer = "";
+
 // Guardrail / recovery explanation state.
 String guardrailStatus = "STARTING";
 String recoveryState = "STABLE";
@@ -1209,6 +1240,463 @@ String determineEnergyAction(
 }
 
 // ====================================================
+// AI COMMAND PROTOCOL
+// ====================================================
+//
+// Laptop -> ESP32:
+//
+// ABS_AI_CMD|{
+//   "schema":"abs.ai.cmd.v1",
+//   "recommended_mode":"ECO",
+//   "reason":"...",
+//   "fault_domain":"NORMAL",
+//   "domain_confidence":0.91,
+//   "anomaly_flag":false,
+//   "anomaly_score":0.08
+// }
+//
+// Firmware always validates the command and then applies
+// deterministic safety guardrails before changing mode.
+// ====================================================
+
+bool extractAiStringField(
+    const String &json,
+    const char *key,
+    String &value)
+{
+  String marker =
+      "\"" +
+      String(key) +
+      "\":\"";
+
+  int start =
+      json.indexOf(marker);
+
+  if (start < 0)
+  {
+    return false;
+  }
+
+  start +=
+      marker.length();
+
+  int end =
+      json.indexOf(
+          '"',
+          start
+      );
+
+  if (end < 0)
+  {
+    return false;
+  }
+
+  value =
+      json.substring(
+          start,
+          end
+      );
+
+  return true;
+}
+
+
+bool extractAiFloatField(
+    const String &json,
+    const char *key,
+    float &value)
+{
+  String marker =
+      "\"" +
+      String(key) +
+      "\":";
+
+  int start =
+      json.indexOf(marker);
+
+  if (start < 0)
+  {
+    return false;
+  }
+
+  start +=
+      marker.length();
+
+  int end =
+      start;
+
+  while (end < json.length())
+  {
+    char c =
+        json.charAt(end);
+
+    bool numeric =
+        (
+            c >= '0' &&
+            c <= '9'
+        ) ||
+        c == '-' ||
+        c == '+' ||
+        c == '.' ||
+        c == 'e' ||
+        c == 'E';
+
+    if (!numeric)
+    {
+      break;
+    }
+
+    end++;
+  }
+
+  if (end <= start)
+  {
+    return false;
+  }
+
+  value =
+      json.substring(
+          start,
+          end
+      ).toFloat();
+
+  return true;
+}
+
+
+bool extractAiBoolField(
+    const String &json,
+    const char *key,
+    bool &value)
+{
+  String marker =
+      "\"" +
+      String(key) +
+      "\":";
+
+  int start =
+      json.indexOf(marker);
+
+  if (start < 0)
+  {
+    return false;
+  }
+
+  start +=
+      marker.length();
+
+  if (
+      json.substring(
+          start,
+          start + 4
+      ) == "true")
+  {
+    value = true;
+    return true;
+  }
+
+  if (
+      json.substring(
+          start,
+          start + 5
+      ) == "false")
+  {
+    value = false;
+    return true;
+  }
+
+  return false;
+}
+
+
+bool isValidAiMode(
+    const String &mode)
+{
+  return
+      (
+          mode == "FULL" ||
+          mode == "ECO" ||
+          mode == "REDUCED" ||
+          mode == "EMERGENCY"
+      );
+}
+
+
+unsigned long getAiCommandAgeMs()
+{
+  if (!aiCommandEverReceived)
+  {
+    return 0;
+  }
+
+  return
+      millis() -
+      lastAiCommandTime;
+}
+
+
+bool isAiCommandFresh()
+{
+  if (!aiCommandEverReceived)
+  {
+    aiCommandStatus =
+        "NOT_RECEIVED";
+
+    return false;
+  }
+
+  if (
+      getAiCommandAgeMs() >
+      AI_COMMAND_TIMEOUT_MS)
+  {
+    aiCommandStatus =
+        "STALE";
+
+    return false;
+  }
+
+  aiCommandStatus =
+      "FRESH";
+
+  return true;
+}
+
+
+void printAiAck(
+    bool accepted,
+    const String &reason)
+{
+  Serial.print(
+      "ABS_AI_ACK|{\"schema\":\"abs.ai.ack.v1\","
+      "\"accepted\":"
+  );
+
+  Serial.print(
+      accepted
+          ? "true"
+          : "false"
+  );
+
+  Serial.print(
+      ",\"reason\":\""
+  );
+
+  Serial.print(reason);
+
+  Serial.print(
+      "\",\"recommended_mode\":\""
+  );
+
+  Serial.print(
+      aiRecommendedMode
+  );
+
+  Serial.println(
+      "\"}"
+  );
+}
+
+
+void handleAiCommandLine(
+    String line)
+{
+  line.trim();
+
+  if (
+      !line.startsWith(
+          "ABS_AI_CMD|"
+      ))
+  {
+    return;
+  }
+
+  String json =
+      line.substring(
+          11
+      );
+
+  String schema;
+  String recommendedMode;
+  String reason;
+  String faultDomain;
+
+  float domainConfidence = 0.0f;
+  float anomalyScore = 0.0f;
+
+  bool anomalyFlag = false;
+
+  bool valid =
+      extractAiStringField(
+          json,
+          "schema",
+          schema
+      ) &&
+      extractAiStringField(
+          json,
+          "recommended_mode",
+          recommendedMode
+      ) &&
+      extractAiStringField(
+          json,
+          "reason",
+          reason
+      ) &&
+      extractAiStringField(
+          json,
+          "fault_domain",
+          faultDomain
+      ) &&
+      extractAiFloatField(
+          json,
+          "domain_confidence",
+          domainConfidence
+      ) &&
+      extractAiBoolField(
+          json,
+          "anomaly_flag",
+          anomalyFlag
+      ) &&
+      extractAiFloatField(
+          json,
+          "anomaly_score",
+          anomalyScore
+      );
+
+  if (!valid)
+  {
+    printAiAck(
+        false,
+        "MISSING_OR_INVALID_FIELD"
+    );
+
+    return;
+  }
+
+  if (
+      schema !=
+      "abs.ai.cmd.v1")
+  {
+    printAiAck(
+        false,
+        "UNSUPPORTED_SCHEMA"
+    );
+
+    return;
+  }
+
+  if (
+      !isValidAiMode(
+          recommendedMode
+      ))
+  {
+    printAiAck(
+        false,
+        "INVALID_MODE"
+    );
+
+    return;
+  }
+
+  if (
+      domainConfidence < 0.0f ||
+      domainConfidence > 1.0f ||
+      anomalyScore < 0.0f)
+  {
+    printAiAck(
+        false,
+        "INVALID_AI_NUMERIC_RANGE"
+    );
+
+    return;
+  }
+
+  aiRecommendedMode =
+      recommendedMode;
+
+  aiRecommendationReason =
+      reason;
+
+  aiFaultDomain =
+      faultDomain;
+
+  aiDomainConfidence =
+      domainConfidence;
+
+  aiAnomalyFlag =
+      anomalyFlag;
+
+  aiAnomalyScore =
+      anomalyScore;
+
+  lastAiCommandTime =
+      millis();
+
+  aiCommandEverReceived =
+      true;
+
+  aiCommandStatus =
+      "FRESH";
+
+  printAiAck(
+      true,
+      "ACCEPTED"
+  );
+}
+
+
+void serviceAiCommandSerial()
+{
+  while (
+      Serial.available() >
+      0)
+  {
+    char c =
+        Serial.read();
+
+    if (c == '\r')
+    {
+      continue;
+    }
+
+    if (c == '\n')
+    {
+      if (
+          aiSerialBuffer.length() >
+          0)
+      {
+        handleAiCommandLine(
+            aiSerialBuffer
+        );
+
+        aiSerialBuffer =
+            "";
+      }
+
+      continue;
+    }
+
+    if (
+        aiSerialBuffer.length() <
+        768)
+    {
+      aiSerialBuffer +=
+          c;
+    }
+    else
+    {
+      aiSerialBuffer =
+          "";
+
+      printAiAck(
+          false,
+          "COMMAND_TOO_LONG"
+      );
+    }
+  }
+}
+
+
+// ====================================================
 // GUARDED OPERATING-MODE CONTROLLER
 // ====================================================
 
@@ -1324,7 +1812,9 @@ String determineRequestedOperatingMode()
   // --------------------------------------------------
   // CRITICAL BACKUP ENERGY
   // --------------------------------------------------
-
+  //
+  // Always authoritative. AI cannot override this.
+  //
   if (
       !gridAvailable &&
       !generatorRunning &&
@@ -1342,7 +1832,10 @@ String determineRequestedOperatingMode()
   // --------------------------------------------------
   // MAJOR FAULT
   // --------------------------------------------------
-
+  //
+  // Always authoritative. Maximum service/recovery capacity
+  // takes priority over an AI energy-saving recommendation.
+  //
   if (isMajorFaultActive())
   {
     requestedOperatingModeReason =
@@ -1357,7 +1850,9 @@ String determineRequestedOperatingMode()
   // --------------------------------------------------
   // BATTERY CONSERVATION
   // --------------------------------------------------
-
+  //
+  // Existing deterministic fallback remains authoritative.
+  //
   if (
       !gridAvailable &&
       !generatorRunning)
@@ -1368,96 +1863,170 @@ String determineRequestedOperatingMode()
     return "ECO";
   }
 
-  // --------------------------------------------------
-  // TRAFFIC POLICY WITH HYSTERESIS
-  // --------------------------------------------------
-
   String candidateMode =
       "ECO";
 
   String candidateReason =
       "MODERATE TRAFFIC";
 
-  // FULL always enters immediately at 65%.
+  bool aiFresh =
+      isAiCommandFresh();
+
+  // --------------------------------------------------
+  // AI PRE-GUARDRAIL RECOMMENDATION
+  // --------------------------------------------------
+
+  if (aiFresh)
+  {
+    // EMERGENCY is a safety state and may only be entered
+    // after the local critical-energy rule above independently
+    // confirms it. A non-critical AI EMERGENCY request is
+    // therefore clamped to ECO.
+    if (
+        aiRecommendedMode ==
+        "EMERGENCY")
+    {
+      candidateMode =
+          "ECO";
+
+      candidateReason =
+          "AI EMERGENCY CLAMPED TO ECO";
+
+      guardrailStatus =
+          "AI EMERGENCY BLOCKED - LOCAL SAFETY CHECK";
+    }
+    else
+    {
+      candidateMode =
+          aiRecommendedMode;
+
+      candidateReason =
+          "AI: " +
+          aiRecommendationReason;
+    }
+  }
+
+  // --------------------------------------------------
+  // LOCAL FALLBACK POLICY
+  // --------------------------------------------------
+  //
+  // If AI is absent/stale, the previous deterministic
+  // traffic policy remains fully operational.
+  //
+  else
+  {
+    if (
+        trafficLoad >=
+        TRAFFIC_FULL_ENTER_PCT)
+    {
+      candidateMode =
+          "FULL";
+
+      candidateReason =
+          "HIGH TRAFFIC";
+    }
+
+    else if (
+        operatingMode == "FULL" &&
+        trafficLoad >=
+            TRAFFIC_FULL_EXIT_PCT)
+    {
+      candidateMode =
+          "FULL";
+
+      candidateReason =
+          "FULL TRAFFIC HYSTERESIS";
+    }
+
+    else if (
+        operatingMode == "REDUCED")
+    {
+      if (
+          trafficLoad >=
+          TRAFFIC_REDUCED_EXIT_PCT)
+      {
+        candidateMode =
+            "ECO";
+
+        candidateReason =
+            "TRAFFIC RECOVERY";
+      }
+      else
+      {
+        candidateMode =
+            "REDUCED";
+
+        candidateReason =
+            "LOW TRAFFIC HYSTERESIS";
+      }
+    }
+
+    else if (
+        trafficLoad <
+        TRAFFIC_REDUCED_ENTER_PCT)
+    {
+      candidateMode =
+          "REDUCED";
+
+      candidateReason =
+          "LOW TRAFFIC";
+    }
+
+    else
+    {
+      candidateMode =
+          "ECO";
+
+      candidateReason =
+          "MODERATE TRAFFIC";
+    }
+  }
+
+  // --------------------------------------------------
+  // HIGH-TRAFFIC CAPACITY GUARDRAIL
+  // --------------------------------------------------
+  //
+  // This guardrail is applied AFTER the AI recommendation.
+  // AI is not allowed to reduce service capacity while the
+  // local site reports high traffic.
+  //
   if (
       trafficLoad >=
-      TRAFFIC_FULL_ENTER_PCT)
+      TRAFFIC_FULL_ENTER_PCT &&
+      candidateMode !=
+          "FULL")
   {
     candidateMode =
         "FULL";
 
     candidateReason =
-        "HIGH TRAFFIC";
+        "HIGH TRAFFIC GUARDRAIL";
+
+    guardrailStatus =
+        "FORCED FULL - HIGH TRAFFIC";
   }
 
-  // If already FULL, remain FULL until traffic drops below
-  // the lower 55% exit threshold.
   else if (
       operatingMode == "FULL" &&
       trafficLoad >=
-          TRAFFIC_FULL_EXIT_PCT)
+          TRAFFIC_FULL_EXIT_PCT &&
+      candidateMode !=
+          "FULL")
   {
     candidateMode =
         "FULL";
 
     candidateReason =
         "FULL TRAFFIC HYSTERESIS";
-  }
 
-  // If already REDUCED, do not return to ECO until traffic
-  // reaches the upper 25% exit threshold.
-  else if (
-      operatingMode == "REDUCED")
-  {
-    if (
-        trafficLoad >=
-        TRAFFIC_REDUCED_EXIT_PCT)
-    {
-      candidateMode =
-          "ECO";
-
-      candidateReason =
-          "TRAFFIC RECOVERY";
-    }
-    else
-    {
-      candidateMode =
-          "REDUCED";
-
-      candidateReason =
-          "LOW TRAFFIC HYSTERESIS";
-    }
-  }
-
-  // When not already REDUCED, only enter REDUCED below 15%.
-  else if (
-      trafficLoad <
-      TRAFFIC_REDUCED_ENTER_PCT)
-  {
-    candidateMode =
-        "REDUCED";
-
-    candidateReason =
-        "LOW TRAFFIC";
-  }
-
-  // Otherwise ECO.
-  else
-  {
-    candidateMode =
-        "ECO";
-
-    candidateReason =
-        "MODERATE TRAFFIC";
+    guardrailStatus =
+        "FULL HOLD - TRAFFIC HYSTERESIS";
   }
 
   // --------------------------------------------------
   // DEGRADED-SERVICE MINIMUM MODE
   // --------------------------------------------------
-  //
-  // A degraded site is prevented from entering REDUCED.
-  // It receives at least ECO capacity.
-  //
+
   if (
       isDegradedGuardrailActive() &&
       candidateMode == "REDUCED")
@@ -4474,6 +5043,57 @@ void printMachineReadableTelemetry()
   Serial.print("\"");
 
   // --------------------------------------------------
+  // AI COMMAND / DIAGNOSIS REFERENCE
+  // --------------------------------------------------
+  //
+  // These are output/status fields only. They are explicitly
+  // forbidden as future ML features.
+  //
+  isAiCommandFresh();
+
+  Serial.print(",\"ai_command_status\":\"");
+  Serial.print(aiCommandStatus);
+  Serial.print("\"");
+
+  Serial.print(",\"ai_recommended_mode\":\"");
+  Serial.print(aiRecommendedMode);
+  Serial.print("\"");
+
+  Serial.print(",\"ai_recommendation_reason\":\"");
+  Serial.print(aiRecommendationReason);
+  Serial.print("\"");
+
+  Serial.print(",\"ai_fault_domain\":\"");
+  Serial.print(aiFaultDomain);
+  Serial.print("\"");
+
+  Serial.print(",\"ai_domain_confidence\":");
+  Serial.print(aiDomainConfidence, 4);
+
+  Serial.print(",\"ai_anomaly_flag\":");
+  Serial.print(
+      aiAnomalyFlag
+          ? "true"
+          : "false"
+  );
+
+  Serial.print(",\"ai_anomaly_score\":");
+  Serial.print(aiAnomalyScore, 4);
+
+  Serial.print(",\"ai_command_age_ms\":");
+
+  if (aiCommandEverReceived)
+  {
+    Serial.print(
+        getAiCommandAgeMs()
+    );
+  }
+  else
+  {
+    Serial.print(-1);
+  }
+
+  // --------------------------------------------------
   // ENERGY / CONTROL
   // --------------------------------------------------
 
@@ -5899,8 +6519,13 @@ void printTelemetry()
   );
   Serial.println(" %");
 
+  Serial.print(
+      "Mode Source         : "
+  );
   Serial.println(
-      "Mode Source         : RULE-BASED BASELINE POLICY"
+      isAiCommandFresh()
+          ? "AI RECOMMENDATION + DETERMINISTIC GUARDRAILS"
+          : "LOCAL FALLBACK + DETERMINISTIC GUARDRAILS"
   );
 
   // --------------------------------------------------
@@ -6046,12 +6671,18 @@ void printTelemetry()
       "Stage               : SIGNAL PROCESSING + GUARDED CONTROL + STRUCTURED TELEMETRY"
   );
 
+  Serial.print(
+      "AI Command Status   : "
+  );
   Serial.println(
-      "AI Classifier       : NOT YET ACTIVE"
+      aiCommandStatus
   );
 
+  Serial.print(
+      "AI Recommended Mode : "
+  );
   Serial.println(
-      "Energy AI           : NOT YET ACTIVE"
+      aiRecommendedMode
   );
 
   Serial.println(
@@ -6345,6 +6976,15 @@ void loop()
 {
   unsigned long now =
       millis();
+
+  // ==================================================
+  // AI COMMAND INPUT
+  // ==================================================
+  //
+  // Non-blocking serial parser. Any accepted recommendation
+  // is consumed by the next 50 ms guarded control refresh.
+  //
+  serviceAiCommandSerial();
 
   // ==================================================
   // FAST CONTROLS

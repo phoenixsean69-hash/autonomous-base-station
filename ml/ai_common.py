@@ -50,6 +50,14 @@ FORBIDDEN_LEAKAGE_COLUMNS = {
     "recovery_state",
     "energy_saving_pct",
     "mode_change_count",
+    "ai_command_status",
+    "ai_recommended_mode",
+    "ai_recommendation_reason",
+    "ai_fault_domain",
+    "ai_domain_confidence",
+    "ai_anomaly_flag",
+    "ai_anomaly_score",
+    "ai_command_age_ms",
 }
 
 
