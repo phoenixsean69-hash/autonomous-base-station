@@ -1,0 +1,73 @@
+{
+  "schema": "abs.ml.pico.student.metrics.v1",
+  "model_name": "pico_temporal_student_v1",
+  "test_rows": 2400,
+  "accuracy": 0.8933333333333333,
+  "balanced_accuracy": 0.8933333333333333,
+  "macro_f1": 0.893154282658418,
+  "confusion_matrix": [
+    [
+      560,
+      28,
+      10,
+      2
+    ],
+    [
+      43,
+      532,
+      8,
+      17
+    ],
+    [
+      18,
+      8,
+      538,
+      36
+    ],
+    [
+      1,
+      27,
+      58,
+      514
+    ]
+  ],
+  "classification_report": {
+    "NORMAL": {
+      "precision": 0.9003215434083601,
+      "recall": 0.9333333333333333,
+      "f1-score": 0.9165302782324058,
+      "support": 600.0
+    },
+    "LOCAL": {
+      "precision": 0.8941176470588236,
+      "recall": 0.8866666666666667,
+      "f1-score": 0.8903765690376569,
+      "support": 600.0
+    },
+    "UPSTREAM": {
+      "precision": 0.8762214983713354,
+      "recall": 0.8966666666666666,
+      "f1-score": 0.886326194398682,
+      "support": 600.0
+    },
+    "MIXED": {
+      "precision": 0.9033391915641477,
+      "recall": 0.8566666666666667,
+      "f1-score": 0.8793840889649273,
+      "support": 600.0
+    },
+    "accuracy": 0.8933333333333333,
+    "macro avg": {
+      "precision": 0.8934999701006667,
+      "recall": 0.8933333333333333,
+      "f1-score": 0.893154282658418,
+      "support": 2400.0
+    },
+    "weighted avg": {
+      "precision": 0.8934999701006666,
+      "recall": 0.8933333333333333,
+      "f1-score": 0.8931542826584179,
+      "support": 2400.0
+    }
+  }
+}

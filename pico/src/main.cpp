@@ -1,73 +1,48 @@
 #include <Arduino.h>
+#include <math.h>
+
+#include "pico_temporal_student_v1.h"
 
 // ============================================================
 // AUTONOMOUS BASE STATION
-// RASPBERRY PI PICO - EMBEDDED AI NODE
+// RASPBERRY PI PICO - EMBEDDED TEMPORAL AI NODE
 //
-// Stage 1:
-//   Receive machine-readable telemetry
-//   Validate ABS telemetry schema
-//   Extract selected AI features
-//   Produce structured acknowledgement
+// Real workflow:
+//   ESP32 -> capture 24 real sampled ABS_JSON frames
+//   stop ESP32 Wokwi
+//   start Pico Wokwi
+//   replay captured 120-second window
 //
-// AI model deployment comes later.
+// Embedded model:
+//   24 x 33 temporal input
+//   Dense(792 -> 24) + ReLU + Dense(24 -> 4)
+//
+// AI output:
+//   NORMAL / LOCAL / UPSTREAM / MIXED
+//
+// Rule-derived ESP32 labels remain REFERENCE ONLY.
+// They are never part of the 33 embedded AI features.
 // ============================================================
 
 static const unsigned long UART_BAUD = 115200;
 
 static const char *TELEMETRY_PREFIX = "ABS_JSON|";
 static const char *SUPPORTED_SCHEMA = "abs.v1";
+static const char *AI_MODEL_NAME = "TEMPORAL_MLP_STUDENT_V1";
 
 String receiveBuffer;
 
-// ============================================================
-// DEMO TELEMETRY
-// ============================================================
-//
-// Type:
-//
-//   DEMO
-//
-// into the Wokwi serial monitor to test the receiver without
-// having to paste a complete ESP32 telemetry line.
-//
-const char *DEMO_PACKET =
-    "ABS_JSON|{"
-    "\"schema\":\"abs.v1\","
-    "\"timestamp_ms\":32668,"
-    "\"pa_temp_c\":42.00,"
-    "\"battery_soc_pct\":75.84,"
-    "\"rf_forward_w\":73.309,"
-    "\"rf_reflected_w\":1.954,"
-    "\"vswr\":1.390,"
-    "\"latency_ms\":43.85,"
-    "\"packet_loss_pct\":0.781,"
-    "\"rssi_dbm\":-55.26,"
-    "\"traffic_load_pct\":34.21,"
-    "\"physical_link_up\":true,"
-    "\"upstream_reachable\":true,"
-    "\"grid_available\":true,"
-    "\"fan_operational\":true,"
-    "\"rectifier_normal\":true,"
-    "\"radio_operational\":true,"
-    "\"fault_label\":\"NORMAL\","
-    "\"operating_mode\":\"ECO\","
-    "\"guardrail_status\":\"PASSED\""
-    "}";
+float temporalWindow[
+    PICO_MODEL_TIMESTEPS
+][
+    PICO_MODEL_FEATURES
+];
+
+uint16_t temporalCount = 0;
 
 
 // ============================================================
-// JSON FIELD HELPERS
-// ============================================================
-//
-// These lightweight functions deliberately avoid a JSON
-// library for Receiver V1.
-//
-// The ESP32 telemetry format is under our control, so we can
-// extract the small feature subset required by the Pico.
-//
-// A complete structured parser can be introduced later if the
-// embedded model requires the entire record.
+// LIGHTWEIGHT JSON HELPERS
 // ============================================================
 
 bool extractStringField(
@@ -94,7 +69,8 @@ bool extractStringField(
   int end =
       json.indexOf(
           '"',
-          start);
+          start
+      );
 
   if (end < 0)
   {
@@ -104,7 +80,8 @@ bool extractStringField(
   value =
       json.substring(
           start,
-          end);
+          end
+      );
 
   return true;
 }
@@ -140,7 +117,10 @@ bool extractFloatField(
         json.charAt(end);
 
     bool numeric =
-        (c >= '0' && c <= '9') ||
+        (
+            c >= '0' &&
+            c <= '9'
+        ) ||
         c == '-' ||
         c == '+' ||
         c == '.' ||
@@ -163,8 +143,8 @@ bool extractFloatField(
   value =
       json.substring(
           start,
-          end)
-          .toFloat();
+          end
+      ).toFloat();
 
   return true;
 }
@@ -194,7 +174,8 @@ bool extractBoolField(
   if (
       json.substring(
           start,
-          start + 4) == "true")
+          start + 4
+      ) == "true")
   {
     value = true;
     return true;
@@ -203,7 +184,8 @@ bool extractBoolField(
   if (
       json.substring(
           start,
-          start + 5) == "false")
+          start + 5
+      ) == "false")
   {
     value = false;
     return true;
@@ -214,29 +196,783 @@ bool extractBoolField(
 
 
 // ============================================================
-// RESPONSE HELPERS
+// FEATURE EXTRACTION
+// ============================================================
+//
+// Exact model feature order must match the generated header:
+//
+//  0 shelter_temp_c
+//  1 humidity_pct
+//  2 pa_temp_c
+//  3 pa_temp_trend_c_per_min
+//  4 pa_shelter_delta_c
+//  5 vibration_rms_mps2
+//  6 vibration_std_mps2
+//  7 vibration_peak_to_peak_mps2
+//  8 vibration_dominant_hz
+//  9 dc_voltage_v
+// 10 dc_current_a
+// 11 dc_power_w
+// 12 battery_voltage_v
+// 13 battery_soc_pct
+// 14 battery_soc_trend_pct_per_min
+// 15 rf_forward_w
+// 16 rf_reflection_ratio_pct
+// 17 rf_reflected_w
+// 18 vswr
+// 19 return_loss_db
+// 20 latency_ms
+// 21 latency_jitter_ms
+// 22 packet_loss_pct
+// 23 rssi_dbm
+// 24 rssi_drop_db
+// 25 traffic_load_pct
+// 26 physical_link_up
+// 27 upstream_reachable
+// 28 grid_available
+// 29 generator_running
+// 30 fan_operational
+// 31 rectifier_normal
+// 32 radio_operational
+// ============================================================
+
+bool extractModelFeatures(
+    const String &json,
+    float *features)
+{
+  bool physicalLinkUp = false;
+  bool upstreamReachable = false;
+  bool gridAvailable = false;
+  bool generatorRunning = false;
+  bool fanOperational = false;
+  bool rectifierNormal = false;
+  bool radioOperational = false;
+
+  bool valid =
+      extractFloatField(
+          json,
+          "shelter_temp_c",
+          features[0]
+      ) &&
+
+      extractFloatField(
+          json,
+          "humidity_pct",
+          features[1]
+      ) &&
+
+      extractFloatField(
+          json,
+          "pa_temp_c",
+          features[2]
+      ) &&
+
+      extractFloatField(
+          json,
+          "pa_temp_trend_c_per_min",
+          features[3]
+      ) &&
+
+      extractFloatField(
+          json,
+          "pa_shelter_delta_c",
+          features[4]
+      ) &&
+
+      extractFloatField(
+          json,
+          "vibration_rms_mps2",
+          features[5]
+      ) &&
+
+      extractFloatField(
+          json,
+          "vibration_std_mps2",
+          features[6]
+      ) &&
+
+      extractFloatField(
+          json,
+          "vibration_peak_to_peak_mps2",
+          features[7]
+      ) &&
+
+      extractFloatField(
+          json,
+          "vibration_dominant_hz",
+          features[8]
+      ) &&
+
+      extractFloatField(
+          json,
+          "dc_voltage_v",
+          features[9]
+      ) &&
+
+      extractFloatField(
+          json,
+          "dc_current_a",
+          features[10]
+      ) &&
+
+      extractFloatField(
+          json,
+          "dc_power_w",
+          features[11]
+      ) &&
+
+      extractFloatField(
+          json,
+          "battery_voltage_v",
+          features[12]
+      ) &&
+
+      extractFloatField(
+          json,
+          "battery_soc_pct",
+          features[13]
+      ) &&
+
+      extractFloatField(
+          json,
+          "battery_soc_trend_pct_per_min",
+          features[14]
+      ) &&
+
+      extractFloatField(
+          json,
+          "rf_forward_w",
+          features[15]
+      ) &&
+
+      extractFloatField(
+          json,
+          "rf_reflection_ratio_pct",
+          features[16]
+      ) &&
+
+      extractFloatField(
+          json,
+          "rf_reflected_w",
+          features[17]
+      ) &&
+
+      extractFloatField(
+          json,
+          "vswr",
+          features[18]
+      ) &&
+
+      extractFloatField(
+          json,
+          "return_loss_db",
+          features[19]
+      ) &&
+
+      extractFloatField(
+          json,
+          "latency_ms",
+          features[20]
+      ) &&
+
+      extractFloatField(
+          json,
+          "latency_jitter_ms",
+          features[21]
+      ) &&
+
+      extractFloatField(
+          json,
+          "packet_loss_pct",
+          features[22]
+      ) &&
+
+      extractFloatField(
+          json,
+          "rssi_dbm",
+          features[23]
+      ) &&
+
+      extractFloatField(
+          json,
+          "rssi_drop_db",
+          features[24]
+      ) &&
+
+      extractFloatField(
+          json,
+          "traffic_load_pct",
+          features[25]
+      ) &&
+
+      extractBoolField(
+          json,
+          "physical_link_up",
+          physicalLinkUp
+      ) &&
+
+      extractBoolField(
+          json,
+          "upstream_reachable",
+          upstreamReachable
+      ) &&
+
+      extractBoolField(
+          json,
+          "grid_available",
+          gridAvailable
+      ) &&
+
+      extractBoolField(
+          json,
+          "generator_running",
+          generatorRunning
+      ) &&
+
+      extractBoolField(
+          json,
+          "fan_operational",
+          fanOperational
+      ) &&
+
+      extractBoolField(
+          json,
+          "rectifier_normal",
+          rectifierNormal
+      ) &&
+
+      extractBoolField(
+          json,
+          "radio_operational",
+          radioOperational
+      );
+
+  features[26] =
+      physicalLinkUp
+          ? 1.0f
+          : 0.0f;
+
+  features[27] =
+      upstreamReachable
+          ? 1.0f
+          : 0.0f;
+
+  features[28] =
+      gridAvailable
+          ? 1.0f
+          : 0.0f;
+
+  features[29] =
+      generatorRunning
+          ? 1.0f
+          : 0.0f;
+
+  features[30] =
+      fanOperational
+          ? 1.0f
+          : 0.0f;
+
+  features[31] =
+      rectifierNormal
+          ? 1.0f
+          : 0.0f;
+
+  features[32] =
+      radioOperational
+          ? 1.0f
+          : 0.0f;
+
+  return valid;
+}
+
+
+// ============================================================
+// TEMPORAL WINDOW
+// ============================================================
+
+void addTemporalFrame(
+    const float *features)
+{
+  if (
+      temporalCount <
+      PICO_MODEL_TIMESTEPS)
+  {
+    for (
+        uint16_t feature = 0;
+        feature <
+        PICO_MODEL_FEATURES;
+        feature++)
+    {
+      temporalWindow[
+          temporalCount
+      ][
+          feature
+      ] =
+          features[
+              feature
+          ];
+    }
+
+    temporalCount++;
+
+    return;
+  }
+
+  for (
+      uint16_t timestep = 1;
+      timestep <
+      PICO_MODEL_TIMESTEPS;
+      timestep++)
+  {
+    for (
+        uint16_t feature = 0;
+        feature <
+        PICO_MODEL_FEATURES;
+        feature++)
+    {
+      temporalWindow[
+          timestep - 1
+      ][
+          feature
+      ] =
+          temporalWindow[
+              timestep
+          ][
+              feature
+          ];
+    }
+  }
+
+  for (
+      uint16_t feature = 0;
+      feature <
+      PICO_MODEL_FEATURES;
+      feature++)
+  {
+    temporalWindow[
+        PICO_MODEL_TIMESTEPS - 1
+    ][
+        feature
+    ] =
+        features[
+            feature
+        ];
+  }
+}
+
+
+// ============================================================
+// EMBEDDED MODEL INFERENCE
+// ============================================================
+
+void runEmbeddedModel(
+    String &faultDomain,
+    float &confidence)
+{
+  float hidden[
+      PICO_MODEL_HIDDEN
+  ];
+
+  for (
+      uint16_t h = 0;
+      h <
+      PICO_MODEL_HIDDEN;
+      h++)
+  {
+    float sum =
+        PICO_MODEL_B1[
+            h
+        ];
+
+    for (
+        uint16_t timestep = 0;
+        timestep <
+        PICO_MODEL_TIMESTEPS;
+        timestep++)
+    {
+      for (
+          uint16_t feature = 0;
+          feature <
+          PICO_MODEL_FEATURES;
+          feature++)
+      {
+        uint16_t flatIndex =
+            timestep *
+            PICO_MODEL_FEATURES +
+            feature;
+
+        float scale =
+            PICO_MODEL_SCALE[
+                flatIndex
+            ];
+
+        if (
+            fabsf(
+                scale
+            ) <
+            1e-12f)
+        {
+          scale =
+              1.0f;
+        }
+
+        float normalized =
+            (
+                temporalWindow[
+                    timestep
+                ][
+                    feature
+                ] -
+                PICO_MODEL_MEAN[
+                    flatIndex
+                ]
+            ) /
+            scale;
+
+        sum +=
+            normalized *
+            PICO_MODEL_W1[
+                h *
+                PICO_MODEL_INPUTS +
+                flatIndex
+            ];
+      }
+    }
+
+    hidden[
+        h
+    ] =
+        (
+            sum >
+            0.0f
+        )
+            ? sum
+            : 0.0f;
+  }
+
+  float logits[
+      PICO_MODEL_CLASSES
+  ];
+
+  float maxLogit =
+      -1.0e30f;
+
+  for (
+      uint16_t klass = 0;
+      klass <
+      PICO_MODEL_CLASSES;
+      klass++)
+  {
+    float sum =
+        PICO_MODEL_B2[
+            klass
+        ];
+
+    for (
+        uint16_t h = 0;
+        h <
+        PICO_MODEL_HIDDEN;
+        h++)
+    {
+      sum +=
+          hidden[
+              h
+          ] *
+          PICO_MODEL_W2[
+              klass *
+              PICO_MODEL_HIDDEN +
+              h
+          ];
+    }
+
+    logits[
+        klass
+    ] =
+        sum;
+
+    if (
+        sum >
+        maxLogit)
+    {
+      maxLogit =
+          sum;
+    }
+  }
+
+  float probabilities[
+      PICO_MODEL_CLASSES
+  ];
+
+  float denominator =
+      0.0f;
+
+  for (
+      uint16_t klass = 0;
+      klass <
+      PICO_MODEL_CLASSES;
+      klass++)
+  {
+    probabilities[
+        klass
+    ] =
+        expf(
+            logits[
+                klass
+            ] -
+            maxLogit
+        );
+
+    denominator +=
+        probabilities[
+            klass
+        ];
+  }
+
+  uint16_t bestClass =
+      0;
+
+  float bestProbability =
+      0.0f;
+
+  for (
+      uint16_t klass = 0;
+      klass <
+      PICO_MODEL_CLASSES;
+      klass++)
+  {
+    float probability =
+        (
+            denominator >
+            0.0f
+        )
+            ? (
+                probabilities[
+                    klass
+                ] /
+                denominator
+            )
+            : 0.0f;
+
+    if (
+        klass == 0 ||
+        probability >
+        bestProbability)
+    {
+      bestProbability =
+          probability;
+
+      bestClass =
+          klass;
+    }
+  }
+
+  faultDomain =
+      PICO_MODEL_LABELS[
+          bestClass
+      ];
+
+  confidence =
+      bestProbability;
+}
+
+
+// ============================================================
+// EMBEDDED CONTROL RECOMMENDATION
+// ============================================================
+//
+// This is a conservative deterministic policy driven by the
+// embedded AI fault-domain result. It is NOT a separately
+// learned energy model and it does not bypass ESP32 safety
+// guardrails.
+// ============================================================
+
+String recommendMode(
+    const String &faultDomain,
+    const float *latestFeatures)
+{
+  float batterySoc =
+      latestFeatures[
+          13
+      ];
+
+  float traffic =
+      latestFeatures[
+          25
+      ];
+
+  bool gridAvailable =
+      latestFeatures[
+          28
+      ] >
+      0.5f;
+
+  bool generatorRunning =
+      latestFeatures[
+          29
+      ] >
+      0.5f;
+
+  if (
+      !gridAvailable &&
+      !generatorRunning &&
+      batterySoc <=
+          25.0f)
+  {
+    return "EMERGENCY";
+  }
+
+  if (
+      faultDomain ==
+          "LOCAL" ||
+      faultDomain ==
+          "MIXED")
+  {
+    return "FULL";
+  }
+
+  if (
+      faultDomain ==
+      "UPSTREAM")
+  {
+    return "ECO";
+  }
+
+  if (
+      traffic >=
+      65.0f)
+  {
+    return "FULL";
+  }
+
+  if (
+      traffic <
+      15.0f)
+  {
+    return "REDUCED";
+  }
+
+  return "ECO";
+}
+
+
+// ============================================================
+// RESPONSE
 // ============================================================
 
 void printRejectedPacket(
     const String &reason)
 {
-  Serial1.println();
-  Serial1.println(
-      "[ PICO TELEMETRY REJECTED ]");
-
   Serial1.print(
-      "Reason              : ");
-  Serial1.println(reason);
-
-  Serial1.print(
-      "PICO_RESULT|{\"schema\":\"pico.v1\","
+      "PICO_RESULT|{"
+      "\"schema\":\"pico.ai.v1\","
       "\"telemetry_ok\":false,"
-      "\"reason\":\"");
+      "\"reason\":\""
+  );
 
-  Serial1.print(reason);
+  Serial1.print(
+      reason
+  );
 
   Serial1.println(
-      "\"}");
+      "\"}"
+  );
+}
+
+
+void printResult(
+    const String &sourceFaultLabel,
+    const String &sourceOperatingMode,
+    bool ready,
+    const String &faultDomain,
+    float confidence,
+    const String &recommendedMode)
+{
+  Serial1.print(
+      "PICO_RESULT|{"
+      "\"schema\":\"pico.ai.v1\","
+      "\"telemetry_ok\":true,"
+      "\"source_schema\":\"abs.v1\","
+      "\"window_count\":"
+  );
+
+  Serial1.print(
+      temporalCount
+  );
+
+  Serial1.print(
+      ",\"window_ready\":"
+  );
+
+  Serial1.print(
+      ready
+          ? "true"
+          : "false"
+  );
+
+  Serial1.print(
+      ",\"ai_model\":\""
+  );
+
+  Serial1.print(
+      AI_MODEL_NAME
+  );
+
+  Serial1.print(
+      "\",\"source_fault_label\":\""
+  );
+
+  Serial1.print(
+      sourceFaultLabel
+  );
+
+  Serial1.print(
+      "\",\"source_operating_mode\":\""
+  );
+
+  Serial1.print(
+      sourceOperatingMode
+  );
+
+  Serial1.print(
+      "\""
+  );
+
+  if (ready)
+  {
+    Serial1.print(
+        ",\"fault_domain\":\""
+    );
+
+    Serial1.print(
+        faultDomain
+    );
+
+    Serial1.print(
+        "\",\"confidence\":"
+    );
+
+    Serial1.print(
+        confidence,
+        6
+    );
+
+    Serial1.print(
+        ",\"recommended_mode\":\""
+    );
+
+    Serial1.print(
+        recommendedMode
+    );
+
+    Serial1.print(
+        "\",\"final_mode_authority\":"
+        "\"ESP32_DETERMINISTIC_GUARDRAILS\""
+    );
+  }
+
+  Serial1.println(
+      "}"
+  );
 }
 
 
@@ -249,33 +985,21 @@ void handleTelemetryLine(
 {
   line.trim();
 
-  if (line.length() == 0)
+  if (
+      line.length() ==
+      0)
   {
     return;
   }
 
-  // ----------------------------------------------------------
-  // BUILT-IN DEMO COMMAND
-  // ----------------------------------------------------------
-
-  if (line == "DEMO")
-  {
-    Serial1.println();
-    Serial1.println(
-        "[ DEMO PACKET INJECTED ]");
-
-    line =
-        String(DEMO_PACKET);
-  }
-
-  // ----------------------------------------------------------
-  // CHECK TRANSPORT PREFIX
-  // ----------------------------------------------------------
-
-  if (!line.startsWith(TELEMETRY_PREFIX))
+  if (
+      !line.startsWith(
+          TELEMETRY_PREFIX
+      ))
   {
     printRejectedPacket(
-        "INVALID_PREFIX");
+        "INVALID_PREFIX"
+    );
 
     return;
   }
@@ -283,367 +1007,166 @@ void handleTelemetryLine(
   String json =
       line.substring(
           strlen(
-              TELEMETRY_PREFIX));
-
-  // ----------------------------------------------------------
-  // REQUIRED FIELDS
-  // ----------------------------------------------------------
+              TELEMETRY_PREFIX
+          )
+      );
 
   String schema;
-  String sourceFaultLabel;
-  String sourceOperatingMode;
-  String guardrailStatus;
+  String sourceFaultLabel =
+      "UNKNOWN";
 
-  float paTemperature = 0.0f;
-  float batterySoc = 0.0f;
-  float rfForward = 0.0f;
-  float rfReflected = 0.0f;
-  float vswr = 0.0f;
-  float latency = 0.0f;
-  float packetLoss = 0.0f;
-  float rssi = 0.0f;
-  float trafficLoad = 0.0f;
+  String sourceOperatingMode =
+      "UNKNOWN";
 
-  bool physicalLinkUp = false;
-  bool upstreamReachable = false;
-  bool gridAvailable = false;
-  bool fanOperational = false;
-  bool rectifierNormal = false;
-  bool radioOperational = false;
-
-  bool valid =
+  bool schemaOk =
       extractStringField(
           json,
           "schema",
-          schema) &&
+          schema
+      );
 
-      extractFloatField(
-          json,
-          "pa_temp_c",
-          paTemperature) &&
-
-      extractFloatField(
-          json,
-          "battery_soc_pct",
-          batterySoc) &&
-
-      extractFloatField(
-          json,
-          "rf_forward_w",
-          rfForward) &&
-
-      extractFloatField(
-          json,
-          "rf_reflected_w",
-          rfReflected) &&
-
-      extractFloatField(
-          json,
-          "vswr",
-          vswr) &&
-
-      extractFloatField(
-          json,
-          "latency_ms",
-          latency) &&
-
-      extractFloatField(
-          json,
-          "packet_loss_pct",
-          packetLoss) &&
-
-      extractFloatField(
-          json,
-          "rssi_dbm",
-          rssi) &&
-
-      extractFloatField(
-          json,
-          "traffic_load_pct",
-          trafficLoad) &&
-
-      extractBoolField(
-          json,
-          "physical_link_up",
-          physicalLinkUp) &&
-
-      extractBoolField(
-          json,
-          "upstream_reachable",
-          upstreamReachable) &&
-
-      extractBoolField(
-          json,
-          "grid_available",
-          gridAvailable) &&
-
-      extractBoolField(
-          json,
-          "fan_operational",
-          fanOperational) &&
-
-      extractBoolField(
-          json,
-          "rectifier_normal",
-          rectifierNormal) &&
-
-      extractBoolField(
-          json,
-          "radio_operational",
-          radioOperational) &&
-
-      extractStringField(
-          json,
-          "fault_label",
-          sourceFaultLabel) &&
-
-      extractStringField(
-          json,
-          "operating_mode",
-          sourceOperatingMode) &&
-
-      extractStringField(
-          json,
-          "guardrail_status",
-          guardrailStatus);
-
-  if (!valid)
+  if (
+      !schemaOk ||
+      schema !=
+          SUPPORTED_SCHEMA)
   {
     printRejectedPacket(
-        "MISSING_REQUIRED_FIELD");
+        "UNSUPPORTED_SCHEMA"
+    );
 
     return;
   }
 
-  // ----------------------------------------------------------
-  // SCHEMA CHECK
-  // ----------------------------------------------------------
+  float features[
+      PICO_MODEL_FEATURES
+  ];
 
-  if (schema != SUPPORTED_SCHEMA)
+  if (
+      !extractModelFeatures(
+          json,
+          features
+      ))
   {
     printRejectedPacket(
-        "UNSUPPORTED_SCHEMA");
+        "MISSING_MODEL_FEATURE"
+    );
 
     return;
   }
 
-  // Blink the built-in LED each time a valid telemetry packet
-  // reaches the embedded AI node.
-  digitalWrite(
-      LED_BUILTIN,
-      HIGH);
+  // These are comparison/reference fields only.
+  // They never enter the model feature vector.
+  extractStringField(
+      json,
+      "fault_label",
+      sourceFaultLabel
+  );
 
-  // ----------------------------------------------------------
-  // HUMAN-READABLE PICO REPORT
-  // ----------------------------------------------------------
+  extractStringField(
+      json,
+      "operating_mode",
+      sourceOperatingMode
+  );
 
-  Serial1.println();
-  Serial1.println(
-      "================================================");
-  Serial1.println(
-      "          RASPBERRY PI PICO AI NODE");
-  Serial1.println(
-      "================================================");
-
-  Serial1.println();
-
-  Serial1.println(
-      "[ TELEMETRY RECEIVER ]");
-
-  Serial1.println(
-      "Telemetry Received  : YES");
-
-  Serial1.print(
-      "Schema              : ");
-  Serial1.println(schema);
-
-  Serial1.println();
-
-  Serial1.println(
-      "[ SELECTED AI FEATURES ]");
-
-  Serial1.print(
-      "PA Temperature      : ");
-  Serial1.print(
-      paTemperature,
-      2);
-  Serial1.println(
-      " C");
-
-  Serial1.print(
-      "Battery SoC         : ");
-  Serial1.print(
-      batterySoc,
-      2);
-  Serial1.println(
-      " %");
-
-  Serial1.print(
-      "RF Forward Power    : ");
-  Serial1.print(
-      rfForward,
-      3);
-  Serial1.println(
-      " W");
-
-  Serial1.print(
-      "RF Reflected Power  : ");
-  Serial1.print(
-      rfReflected,
-      3);
-  Serial1.println(
-      " W");
-
-  Serial1.print(
-      "VSWR                : ");
-  Serial1.println(
-      vswr,
-      3);
-
-  Serial1.print(
-      "Latency             : ");
-  Serial1.print(
-      latency,
-      2);
-  Serial1.println(
-      " ms");
-
-  Serial1.print(
-      "Packet Loss         : ");
-  Serial1.print(
-      packetLoss,
-      3);
-  Serial1.println(
-      " %");
-
-  Serial1.print(
-      "RSSI                : ");
-  Serial1.print(
-      rssi,
-      2);
-  Serial1.println(
-      " dBm");
-
-  Serial1.print(
-      "Traffic Load        : ");
-  Serial1.print(
-      trafficLoad,
-      2);
-  Serial1.println(
-      " %");
-
-  Serial1.println();
-
-  Serial1.println(
-      "[ SITE STATES ]");
-
-  Serial1.print(
-      "Physical Link       : ");
-  Serial1.println(
-      physicalLinkUp
-          ? "UP"
-          : "DOWN");
-
-  Serial1.print(
-      "Upstream Reachable  : ");
-  Serial1.println(
-      upstreamReachable
-          ? "YES"
-          : "NO");
-
-  Serial1.print(
-      "Grid Available      : ");
-  Serial1.println(
-      gridAvailable
-          ? "YES"
-          : "NO");
-
-  Serial1.print(
-      "Cooling Fan         : ");
-  Serial1.println(
-      fanOperational
-          ? "OPERATIONAL"
-          : "FAILED");
-
-  Serial1.print(
-      "Rectifier           : ");
-  Serial1.println(
-      rectifierNormal
-          ? "NORMAL"
-          : "FAULT");
-
-  Serial1.print(
-      "Radio               : ");
-  Serial1.println(
-      radioOperational
-          ? "OPERATIONAL"
-          : "FAULT");
-
-  Serial1.println();
-
-  Serial1.println(
-      "[ CURRENT RULE-BASED REFERENCES ]");
-
-  Serial1.print(
-      "Ground Truth Fault  : ");
-  Serial1.println(
-      sourceFaultLabel);
-
-  Serial1.print(
-      "ESP32 Energy Mode   : ");
-  Serial1.println(
-      sourceOperatingMode);
-
-  Serial1.print(
-      "Guardrail Status    : ");
-  Serial1.println(
-      guardrailStatus);
-
-  Serial1.println();
-
-  Serial1.println(
-      "[ EMBEDDED AI ]");
-
-  Serial1.println(
-      "AI Model            : NOT YET LOADED");
-
-  Serial1.println(
-      "AI Diagnosis        : NOT YET ACTIVE");
-
-  Serial1.println(
-      "Energy AI           : NOT YET ACTIVE");
-
-  // ----------------------------------------------------------
-  // MACHINE-READABLE PICO RESPONSE
-  // ----------------------------------------------------------
-
-  Serial1.print(
-      "PICO_RESULT|{"
-      "\"schema\":\"pico.v1\","
-      "\"telemetry_ok\":true,"
-      "\"source_schema\":\"");
-
-  Serial1.print(
-      schema);
-
-  Serial1.print(
-      "\",\"source_fault_label\":\"");
-
-  Serial1.print(
-      sourceFaultLabel);
-
-  Serial1.print(
-      "\",\"source_operating_mode\":\"");
-
-  Serial1.print(
-      sourceOperatingMode);
-
-  Serial1.println(
-      "\",\"ai_model\":\"NOT_LOADED\"}");
+  addTemporalFrame(
+      features
+  );
 
   digitalWrite(
       LED_BUILTIN,
-      LOW);
+      HIGH
+  );
+
+  bool ready =
+      temporalCount >=
+      PICO_MODEL_TIMESTEPS;
+
+  String faultDomain =
+      "WARMUP";
+
+  float confidence =
+      0.0f;
+
+  String recommendedMode =
+      "PENDING";
+
+  if (ready)
+  {
+    runEmbeddedModel(
+        faultDomain,
+        confidence
+    );
+
+    recommendedMode =
+        recommendMode(
+            faultDomain,
+            features
+        );
+  }
+
+  Serial1.print(
+      "[PICO] window="
+  );
+
+  Serial1.print(
+      temporalCount
+  );
+
+  Serial1.print(
+      "/"
+  );
+
+  Serial1.print(
+      PICO_MODEL_TIMESTEPS
+  );
+
+  if (ready)
+  {
+    Serial1.print(
+        " | AI="
+    );
+
+    Serial1.print(
+        faultDomain
+    );
+
+    Serial1.print(
+        " ("
+    );
+
+    Serial1.print(
+        confidence,
+        4
+    );
+
+    Serial1.print(
+        ") | mode="
+    );
+
+    Serial1.println(
+        recommendedMode
+    );
+  }
+  else
+  {
+    Serial1.println(
+        " | AI WARMUP"
+    );
+  }
+
+  printResult(
+      sourceFaultLabel,
+      sourceOperatingMode,
+      ready,
+      faultDomain,
+      confidence,
+      recommendedMode
+  );
+
+  digitalWrite(
+      LED_BUILTIN,
+      LOW
+  );
 }
 
 
@@ -655,50 +1178,68 @@ void setup()
 {
   pinMode(
       LED_BUILTIN,
-      OUTPUT);
+      OUTPUT
+  );
 
   digitalWrite(
       LED_BUILTIN,
-      LOW);
+      LOW
+  );
 
-  // Serial1 = Pico UART0
-  // GP0 = TX
-  // GP1 = RX
-  //
-  // In the Wokwi Pico project, the Serial Monitor is connected
-  // to these pins so it acts as the telemetry source.
   Serial1.begin(
-      UART_BAUD);
+      UART_BAUD
+  );
 
-  delay(500);
-
-  Serial1.println();
-  Serial1.println(
-      "================================================");
-  Serial1.println(
-      " AUTONOMOUS BASE STATION - PICO AI NODE");
-  Serial1.println(
-      "================================================");
-
-  Serial1.println(
-      "Status              : ONLINE");
-
-  Serial1.println(
-      "UART                : 115200 baud");
-
-  Serial1.println(
-      "Expected Schema     : abs.v1");
-
-  Serial1.println(
-      "AI Model            : NOT YET LOADED");
+  delay(
+      500
+  );
 
   Serial1.println();
+  Serial1.println(
+      "================================================"
+  );
+  Serial1.println(
+      " AUTONOMOUS BASE STATION - PICO TEMPORAL AI"
+  );
+  Serial1.println(
+      "================================================"
+  );
 
   Serial1.println(
-      "Paste an ABS_JSON|{...} telemetry line");
+      "Status              : ONLINE"
+  );
 
   Serial1.println(
-      "or type DEMO and press Enter.");
+      "Expected Schema     : abs.v1"
+  );
+
+  Serial1.print(
+      "AI Model            : "
+  );
+
+  Serial1.println(
+      AI_MODEL_NAME
+  );
+
+  Serial1.print(
+      "Temporal Window     : "
+  );
+
+  Serial1.print(
+      PICO_MODEL_TIMESTEPS
+  );
+
+  Serial1.print(
+      " x "
+  );
+
+  Serial1.println(
+      PICO_MODEL_FEATURES
+  );
+
+  Serial1.println(
+      "Final Mode Authority: ESP32 DETERMINISTIC GUARDRAILS"
+  );
 }
 
 
@@ -708,42 +1249,54 @@ void setup()
 
 void loop()
 {
-  // Non-blocking line receiver.
-  while (Serial1.available() > 0)
+  while (
+      Serial1.available() >
+      0)
   {
     char c =
-        (char)Serial1.read();
+        (
+            char
+        )Serial1.read();
 
-    if (c == '\r')
+    if (
+        c == '\r')
     {
       continue;
     }
 
-    if (c == '\n')
+    if (
+        c == '\n')
     {
-      if (receiveBuffer.length() > 0)
+      if (
+          receiveBuffer.length() >
+          0)
       {
         handleTelemetryLine(
-            receiveBuffer);
+            receiveBuffer
+        );
 
-        receiveBuffer = "";
+        receiveBuffer =
+            "";
       }
 
       continue;
     }
 
-    // Prevent a malformed sender from consuming all available
-    // RAM with an unterminated line.
-    if (receiveBuffer.length() < 8192)
+    if (
+        receiveBuffer.length() <
+        8192)
     {
-      receiveBuffer += c;
+      receiveBuffer +=
+          c;
     }
     else
     {
-      receiveBuffer = "";
+      receiveBuffer =
+          "";
 
       printRejectedPacket(
-          "PACKET_TOO_LARGE");
+          "PACKET_TOO_LARGE"
+      );
     }
   }
 }
