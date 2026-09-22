@@ -112,7 +112,7 @@
       "type": "wokwi-lcd2004",
       "id": "lcdDcVoltage",
       "top": 45,
-      "left": 865,
+      "left": 730,
       "attrs": {
         "pins": "i2c",
         "i2cAddress": "0x20",
@@ -458,6 +458,18 @@
       "left": 970,
       "attrs": {
         "text": "LEFT: FAULT   RIGHT: OPERATIONAL"
+      }
+    },
+    {
+      "type": "wokwi-lcd2004",
+      "id": "lcdAiRecommendations",
+      "top": 45,
+      "left": 1080,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x21",
+        "background": "green",
+        "color": "black"
       }
     }
   ],
@@ -856,6 +868,30 @@
       "radioSwitch:3",
       "esp32:3V3",
       "red",
+      []
+    ],
+    [
+      "lcdAiRecommendations:VCC",
+      "esp32:VIN",
+      "red",
+      []
+    ],
+    [
+      "lcdAiRecommendations:GND",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "lcdAiRecommendations:SDA",
+      "esp32:D21",
+      "green",
+      []
+    ],
+    [
+      "lcdAiRecommendations:SCL",
+      "esp32:D22",
+      "blue",
       []
     ]
   ],

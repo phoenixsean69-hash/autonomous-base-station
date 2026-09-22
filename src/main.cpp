@@ -290,6 +290,12 @@ LiquidCrystal_I2C lcdDcVoltage(
     4
 );
 
+LiquidCrystal_I2C lcdAiRecommendations(
+    0x21,
+    20,
+    4
+);
+
 // ====================================================
 // GLOBAL MEASUREMENTS
 // ====================================================
@@ -687,6 +693,11 @@ String lastLCDLine0 = "";
 String lastLCDLine1 = "";
 String lastLCDLine2 = "";
 String lastLCDLine3 = "";
+
+String lastAiLCDLine0 = "";
+String lastAiLCDLine1 = "";
+String lastAiLCDLine2 = "";
+String lastAiLCDLine3 = "";
 
 // ====================================================
 // LCD HELPERS
@@ -1567,13 +1578,6 @@ void handleAiCommandLine(
 
   aiCommandStatus =
       "FRESH";
-
-  // Show the latest AI recommendation on the single LCD.
-  lcdPage =
-      3;
-
-  lastLCDPageTime =
-      millis();
 
   printAiAck(
       true,
@@ -4298,6 +4302,10 @@ void handleDS18B20(
 
 void initialiseLCDs()
 {
+  // --------------------------------------------------
+  // LCD 1 - LIVE VALUES
+  // --------------------------------------------------
+
   lcdDcVoltage.init();
   lcdDcVoltage.backlight();
   lcdDcVoltage.clear();
@@ -4305,7 +4313,7 @@ void initialiseLCDs()
   writeLCDLine(
       lcdDcVoltage,
       0,
-      "AUTONOMOUS BASE STN"
+      "LIVE VALUES"
   );
 
   writeLCDLine(
@@ -4317,7 +4325,7 @@ void initialiseLCDs()
   writeLCDLine(
       lcdDcVoltage,
       2,
-      "Sensors + AI + Ctrl"
+      "Sensors / Network"
   );
 
   writeLCDLine(
@@ -4326,23 +4334,55 @@ void initialiseLCDs()
       "Starting..."
   );
 
+  // --------------------------------------------------
+  // LCD 2 - AI RECOMMENDATIONS
+  // --------------------------------------------------
+
+  lcdAiRecommendations.init();
+  lcdAiRecommendations.backlight();
+  lcdAiRecommendations.clear();
+
+  writeLCDLine(
+      lcdAiRecommendations,
+      0,
+      "AI RECOMMENDATIONS"
+  );
+
+  writeLCDLine(
+      lcdAiRecommendations,
+      1,
+      "Waiting for AI..."
+  );
+
+  writeLCDLine(
+      lcdAiRecommendations,
+      2,
+      "FINAL:STARTING"
+  );
+
+  writeLCDLine(
+      lcdAiRecommendations,
+      3,
+      "GUARD:STARTING"
+  );
+
   lastLCDPageTime =
       millis();
 }
 
 
 // ====================================================
-// 20x4 ROTATING STATUS DISPLAY
+// DUAL 20x4 LCD REFRESH
 // ====================================================
 //
-// Four information-dense pages replace the old one-value
-// screens. The serial terminal continues to print the full
-// detailed telemetry stream.
+// LCD 1 rotates through live sensor/site/network values.
+// LCD 2 always shows the latest AI diagnosis,
+// recommendation, final applied mode and guardrail result.
 //
 void refreshLCDs(
     bool force = false)
 {
-  const uint8_t LCD_PAGE_COUNT = 4;
+  const uint8_t LCD_PAGE_COUNT = 3;
 
   unsigned long now =
       millis();
@@ -4365,6 +4405,10 @@ void refreshLCDs(
         true;
   }
 
+  // ==================================================
+  // LCD 1 - LIVE VALUES
+  // ==================================================
+
   String line0;
   String line1;
   String line2;
@@ -4372,6 +4416,9 @@ void refreshLCDs(
 
   switch (lcdPage)
   {
+    // --------------------------------------------------
+    // PAGE 1 - MAIN ELECTRICAL / THERMAL VALUES
+    // --------------------------------------------------
     case 0:
       line0 =
           "V" +
@@ -4424,6 +4471,9 @@ void refreshLCDs(
           "%";
       break;
 
+    // --------------------------------------------------
+    // PAGE 2 - RF / BACKHAUL VALUES
+    // --------------------------------------------------
     case 1:
       line0 =
           "RF F" +
@@ -4475,7 +4525,11 @@ void refreshLCDs(
           );
       break;
 
+    // --------------------------------------------------
+    // PAGE 3 - POWER SOURCE / EQUIPMENT VALUES
+    // --------------------------------------------------
     case 2:
+    default:
       line0 =
           String("GRID:") +
           (
@@ -4523,43 +4577,6 @@ void refreshLCDs(
               1
           ) +
           "%";
-      break;
-
-    case 3:
-    default:
-      line0 =
-          "AI:" +
-          aiFaultDomain +
-          " " +
-          String(
-              aiDomainConfidence *
-              100.0f,
-              1
-          ) +
-          "%";
-
-      line1 =
-          String("ANOM:") +
-          (
-              aiAnomalyFlag
-                  ? "YES"
-                  : "NO"
-          ) +
-          " S:" +
-          String(
-              aiAnomalyScore,
-              2
-          );
-
-      line2 =
-          "REC:" +
-          aiRecommendedMode +
-          " FINAL:" +
-          operatingMode;
-
-      line3 =
-          "GUARD:" +
-          guardrailStatus;
       break;
   }
 
@@ -4641,6 +4658,145 @@ void refreshLCDs(
 
     lastLCDLine3 =
         padded3;
+  }
+
+  // ==================================================
+  // LCD 2 - AI RECOMMENDATIONS
+  // ==================================================
+
+  String aiLine0;
+  String aiLine1;
+  String aiLine2;
+  String aiLine3;
+
+  if (aiCommandEverReceived)
+  {
+    aiLine0 =
+        "AI:" +
+        aiFaultDomain +
+        " " +
+        String(
+            aiDomainConfidence *
+            100.0f,
+            1
+        ) +
+        "%";
+
+    aiLine1 =
+        "REC:" +
+        aiRecommendedMode +
+        " AN:" +
+        (
+            aiAnomalyFlag
+                ? "YES"
+                : "NO"
+        );
+
+    aiLine2 =
+        "FINAL:" +
+        operatingMode +
+        " REQ:" +
+        requestedOperatingMode;
+
+    aiLine3 =
+        "GUARD:" +
+        guardrailStatus;
+  }
+  else
+  {
+    aiLine0 =
+        "AI:WAITING";
+
+    aiLine1 =
+        "REC:NONE";
+
+    aiLine2 =
+        "FINAL:" +
+        operatingMode;
+
+    aiLine3 =
+        "GUARD:" +
+        guardrailStatus;
+  }
+
+  String aiPadded0 =
+      padLCDText(
+          aiLine0
+      );
+
+  String aiPadded1 =
+      padLCDText(
+          aiLine1
+      );
+
+  String aiPadded2 =
+      padLCDText(
+          aiLine2
+      );
+
+  String aiPadded3 =
+      padLCDText(
+          aiLine3
+      );
+
+  if (
+      force ||
+      aiPadded0 !=
+          lastAiLCDLine0)
+  {
+    writeLCDLine(
+        lcdAiRecommendations,
+        0,
+        aiLine0
+    );
+
+    lastAiLCDLine0 =
+        aiPadded0;
+  }
+
+  if (
+      force ||
+      aiPadded1 !=
+          lastAiLCDLine1)
+  {
+    writeLCDLine(
+        lcdAiRecommendations,
+        1,
+        aiLine1
+    );
+
+    lastAiLCDLine1 =
+        aiPadded1;
+  }
+
+  if (
+      force ||
+      aiPadded2 !=
+          lastAiLCDLine2)
+  {
+    writeLCDLine(
+        lcdAiRecommendations,
+        2,
+        aiLine2
+    );
+
+    lastAiLCDLine2 =
+        aiPadded2;
+  }
+
+  if (
+      force ||
+      aiPadded3 !=
+          lastAiLCDLine3)
+  {
+    writeLCDLine(
+        lcdAiRecommendations,
+        3,
+        aiLine3
+    );
+
+    lastAiLCDLine3 =
+        aiPadded3;
   }
 }
 
