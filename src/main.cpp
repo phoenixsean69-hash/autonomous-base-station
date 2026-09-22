@@ -49,6 +49,7 @@ const unsigned long FAST_INPUT_INTERVAL_MS = 50;
 const unsigned long LCD_REFRESH_INTERVAL_MS = 100;
 const unsigned long LCD_PAGE_INTERVAL_MS = 3000;
 const unsigned long AI_LCD_PAGE_INTERVAL_MS = 3500;
+const unsigned long PICO_LCD_PAGE_INTERVAL_MS = 2500;
 const unsigned long MPU_INTERVAL_MS = 20;
 const unsigned long DHT_INTERVAL_MS = 2000;
 
@@ -771,6 +772,9 @@ unsigned long lastLCDPageTime = 0;
 
 uint8_t aiLcdPage = 0;
 unsigned long lastAiLCDPageTime = 0;
+
+uint8_t picoLcdPage = 0;
+unsigned long lastPicoLCDPageTime = 0;
 
 String lastLCDLine0 = "";
 String lastLCDLine1 = "";
@@ -5082,6 +5086,9 @@ void initialiseLCDs()
 
   lastAiLCDPageTime =
       millis();
+
+  lastPicoLCDPageTime =
+      millis();
 }
 
 
@@ -5128,6 +5135,24 @@ void refreshLCDs(
         AI_PAGE_COUNT;
 
     lastAiLCDPageTime =
+        now;
+
+    force =
+        true;
+  }
+
+  if (
+      now - lastPicoLCDPageTime >=
+      PICO_LCD_PAGE_INTERVAL_MS)
+  {
+    picoLcdPage =
+        (
+            picoLcdPage +
+            1
+        ) %
+        4;
+
+    lastPicoLCDPageTime =
         now;
 
     force =
@@ -5870,82 +5895,209 @@ void refreshLCDs(
   // ==================================================
   // LCD 3 - PICO DECISION / ACTUATION
   // ==================================================
+  //
+  // This display rotates through the complete actuation chain:
+  // decision -> generator command -> power context -> verification.
+  //
 
-  String picoLine0 =
-      "PICO ACTUATION";
-
+  String picoLine0;
   String picoLine1;
   String picoLine2;
   String picoLine3;
 
-  if (isPicoDecisionFresh())
+  if (!isPicoDecisionFresh())
   {
+    picoLine0 =
+        "PICO CONTROL STALE";
+
     picoLine1 =
-        "Mode " +
-        picoModeDecision +
-        " -> " +
-        operatingMode;
+        "Holding actuators";
 
     picoLine2 =
-        "Gen " +
-        picoGeneratorAction +
-        " -> " +
+        String("Generator ") +
         (
             generatorRunning
-                ? "RUN"
-                : "STOP"
+                ? "RUNNING"
+                : "STOPPED"
         );
 
     picoLine3 =
-        "Src " +
-        picoPowerSourceDecision +
-        " " +
-        picoActuationStatus;
+        "ESP32 fallback active";
   }
   else
   {
-    picoLine1 =
-        "Pico decision stale";
+    switch (picoLcdPage)
+    {
+      case 0:
+        picoLine0 =
+            "PICO DECISION";
 
-    picoLine2 =
-        String("Gen hold -> ") +
-        (
-            generatorRunning
-                ? "RUN"
-                : "STOP"
-        );
+        picoLine1 =
+            "Mode " +
+            picoModeDecision +
+            " -> " +
+            operatingMode;
 
-    picoLine3 =
-        "Safe fallback active";
+        picoLine2 =
+            "Source " +
+            picoPowerSourceDecision;
+
+        picoLine3 =
+            "Status " +
+            picoDecisionStatus;
+        break;
+
+      case 1:
+        picoLine0 =
+            "GENERATOR CONTROL";
+
+        picoLine1 =
+            "Command " +
+            picoGeneratorAction;
+
+        picoLine2 =
+            String("GPIO17 ") +
+            (
+                generatorRunning
+                    ? "HIGH"
+                    : "LOW"
+            );
+
+        picoLine3 =
+            String("State ") +
+            (
+                generatorRunning
+                    ? "RUNNING"
+                    : "STOPPED"
+            );
+        break;
+
+      case 2:
+        picoLine0 =
+            "POWER DECISION";
+
+        picoLine1 =
+            String("Grid ") +
+            (
+                gridAvailable
+                    ? "AVAILABLE"
+                    : "FAILED"
+            );
+
+        picoLine2 =
+            "Battery " +
+            String(
+                batterySOC,
+                1
+            ) +
+            "%";
+
+        picoLine3 =
+            "Use " +
+            picoPowerSourceDecision;
+        break;
+
+      case 3:
+      default:
+        picoLine0 =
+            "ACTION RESULT";
+
+        picoLine1 =
+            picoDecisionReason;
+
+        picoLine2 =
+            "Actuation " +
+            picoActuationStatus;
+
+        picoLine3 =
+            String("Actual Gen ") +
+            (
+                generatorRunning
+                    ? "RUNNING"
+                    : "STOPPED"
+            );
+        break;
+    }
   }
 
-  String picoPadded0 = padLCDText(picoLine0);
-  String picoPadded1 = padLCDText(picoLine1);
-  String picoPadded2 = padLCDText(picoLine2);
-  String picoPadded3 = padLCDText(picoLine3);
+  String picoPadded0 =
+      padLCDText(
+          picoLine0
+      );
 
-  if (force || picoPadded0 != lastPicoLCDLine0)
+  String picoPadded1 =
+      padLCDText(
+          picoLine1
+      );
+
+  String picoPadded2 =
+      padLCDText(
+          picoLine2
+      );
+
+  String picoPadded3 =
+      padLCDText(
+          picoLine3
+      );
+
+  if (
+      force ||
+      picoPadded0 !=
+          lastPicoLCDLine0)
   {
-    writeLCDLine(lcdPicoActions, 0, picoLine0);
-    lastPicoLCDLine0 = picoPadded0;
+    writeLCDLine(
+        lcdPicoActions,
+        0,
+        picoLine0
+    );
+
+    lastPicoLCDLine0 =
+        picoPadded0;
   }
 
-  if (force || picoPadded1 != lastPicoLCDLine1)
+  if (
+      force ||
+      picoPadded1 !=
+          lastPicoLCDLine1)
   {
-    writeLCDLine(lcdPicoActions, 1, picoLine1);
-    lastPicoLCDLine1 = picoPadded1;
+    writeLCDLine(
+        lcdPicoActions,
+        1,
+        picoLine1
+    );
+
+    lastPicoLCDLine1 =
+        picoPadded1;
   }
 
-  if (force || picoPadded2 != lastPicoLCDLine2)
+  if (
+      force ||
+      picoPadded2 !=
+          lastPicoLCDLine2)
   {
-    writeLCDLine(lcdPicoActions, 2, picoLine2);
-    lastPicoLCDLine2 = picoPadded2;
+    writeLCDLine(
+        lcdPicoActions,
+        2,
+        picoLine2
+    );
+
+    lastPicoLCDLine2 =
+        picoPadded2;
   }
 
-  if (force || picoPadded3 != lastPicoLCDLine3)
+  if (
+      force ||
+      picoPadded3 !=
+          lastPicoLCDLine3)
   {
-    writeLCDLine(lcdPicoActions, 3, picoLine3);
-    lastPicoLCDLine3 = picoPadded3;
+    writeLCDLine(
+        lcdPicoActions,
+        3,
+        picoLine3
+    );
+
+    lastPicoLCDLine3 =
+        picoPadded3;
   }
 }
 
