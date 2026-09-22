@@ -47,7 +47,7 @@
 
 const unsigned long FAST_INPUT_INTERVAL_MS = 50;
 const unsigned long LCD_REFRESH_INTERVAL_MS = 100;
-const unsigned long LCD_PAGE_INTERVAL_MS = 1500;
+const unsigned long LCD_PAGE_INTERVAL_MS = 3000;
 const unsigned long MPU_INTERVAL_MS = 20;
 const unsigned long DHT_INTERVAL_MS = 2000;
 
@@ -286,8 +286,8 @@ DallasTemperature paTemperatureSensor(
 //
 LiquidCrystal_I2C lcdDcVoltage(
     0x20,
-    16,
-    2
+    20,
+    4
 );
 
 // ====================================================
@@ -685,6 +685,8 @@ unsigned long lastLCDPageTime = 0;
 
 String lastLCDLine0 = "";
 String lastLCDLine1 = "";
+String lastLCDLine2 = "";
+String lastLCDLine3 = "";
 
 // ====================================================
 // LCD HELPERS
@@ -693,16 +695,16 @@ String lastLCDLine1 = "";
 String padLCDText(
     String text)
 {
-  if (text.length() > 16)
+  if (text.length() > 20)
   {
     text =
         text.substring(
             0,
-            16
+            20
         );
   }
 
-  while (text.length() < 16)
+  while (text.length() < 20)
   {
     text += " ";
   }
@@ -1568,7 +1570,7 @@ void handleAiCommandLine(
 
   // Show the latest AI recommendation on the single LCD.
   lcdPage =
-      12;
+      3;
 
   lastLCDPageTime =
       millis();
@@ -4303,13 +4305,25 @@ void initialiseLCDs()
   writeLCDLine(
       lcdDcVoltage,
       0,
-      "ABS STARTING..."
+      "AUTONOMOUS BASE STN"
   );
 
   writeLCDLine(
       lcdDcVoltage,
       1,
-      "ONE LCD SYSTEM"
+      "20x4 STATUS DISPLAY"
+  );
+
+  writeLCDLine(
+      lcdDcVoltage,
+      2,
+      "Sensors + AI + Ctrl"
+  );
+
+  writeLCDLine(
+      lcdDcVoltage,
+      3,
+      "Starting..."
   );
 
   lastLCDPageTime =
@@ -4318,18 +4332,17 @@ void initialiseLCDs()
 
 
 // ====================================================
-// SINGLE LCD ROTATING DISPLAY
+// 20x4 ROTATING STATUS DISPLAY
 // ====================================================
 //
-// The terminal still prints the full telemetry exactly as
-// before. This single 16x2 LCD cycles through the same key
-// values that were previously spread across twelve LCDs,
-// plus one AI recommendation page.
+// Four information-dense pages replace the old one-value
+// screens. The serial terminal continues to print the full
+// detailed telemetry stream.
 //
 void refreshLCDs(
     bool force = false)
 {
-  const uint8_t LCD_PAGE_COUNT = 13;
+  const uint8_t LCD_PAGE_COUNT = 4;
 
   unsigned long now =
       millis();
@@ -4354,173 +4367,225 @@ void refreshLCDs(
 
   String line0;
   String line1;
+  String line2;
+  String line3;
 
   switch (lcdPage)
   {
     case 0:
       line0 =
-          "DC BUS VOLTAGE";
-
-      line1 =
+          "V" +
           String(
               dcBusVoltage,
-              2
+              1
           ) +
-          " V";
-      break;
-
-    case 1:
-      line0 =
-          "DC BUS CURRENT";
-
-      line1 =
+          " I" +
           String(
               dcBusCurrent,
-              2
+              1
           ) +
-          " A";
-      break;
-
-    case 2:
-      line0 =
-          "BATTERY";
+          " P" +
+          String(
+              dcPower,
+              0
+          ) +
+          "W";
 
       line1 =
+          "PA" +
           String(
-              batteryVoltage,
-              2
+              paTemperature,
+              1
           ) +
-          "V " +
+          "C BAT" +
           String(
               batterySOC,
+              0
+          ) +
+          "% H" +
+          String(
+              humidity,
+              0
+          ) +
+          "%";
+
+      line2 =
+          "FAULT:" +
+          faultCandidate;
+
+      line3 =
+          "MODE:" +
+          operatingMode +
+          " SAVE:" +
+          String(
+              estimatedEnergySavingPct,
               0
           ) +
           "%";
       break;
 
-    case 3:
+    case 1:
       line0 =
-          "FORWARD RF";
-
-      line1 =
+          "RF F" +
           String(
               rfForwardPower,
-              2
-          ) +
-          " W";
-      break;
-
-    case 4:
-      line0 =
-          "REFLECTED RF";
-
-      line1 =
-          String(
-              rfReflectedPower,
-              2
-          ) +
-          " W";
-      break;
-
-    case 5:
-      line0 =
-          "BACKHAUL STATUS";
-
-      line1 =
-          backhaulCondition;
-      break;
-
-    case 6:
-      line0 =
-          "LATENCY";
-
-      line1 =
-          String(
-              latency,
               1
           ) +
-          " ms";
-      break;
-
-    case 7:
-      line0 =
-          "PACKET LOSS";
+          " R" +
+          String(
+              rfReflectedPower,
+              1
+          ) +
+          "W";
 
       line1 =
+          "VSWR" +
+          String(
+              vswr,
+              2
+          ) +
+          " RF:" +
+          rfHealth;
+
+      line2 =
+          "LAT" +
+          String(
+              latency,
+              0
+          ) +
+          " L" +
           String(
               packetLoss,
               1
           ) +
-          " %";
-      break;
-
-    case 8:
-      line0 =
-          "RSSI";
-
-      line1 =
+          " R" +
           String(
               rssi,
-              1
+              0
+          );
+
+      line3 =
+          String("BH:") +
+          backhaulCondition +
+          " LINK:" +
+          (
+              linkUp
+                  ? "UP"
+                  : "DOWN"
+          );
+      break;
+
+    case 2:
+      line0 =
+          String("GRID:") +
+          (
+              gridAvailable
+                  ? "Y"
+                  : "N"
           ) +
-          " dBm";
-      break;
-
-    case 9:
-      line0 =
-          "POWER SOURCE";
-
-      line1 =
+          " GEN:" +
+          (
+              generatorRunning
+                  ? "ON"
+                  : "OFF"
+          ) +
+          " SRC:" +
           activePowerSource;
-      break;
-
-    case 10:
-      line0 =
-          "TRAFFIC LOAD";
 
       line1 =
+          String("FAN:") +
+          (
+              fanOperational
+                  ? "OK"
+                  : "FAIL"
+          ) +
+          " RECT:" +
+          (
+              rectifierNormal
+                  ? "OK"
+                  : "FAIL"
+          );
+
+      line2 =
+          String("RADIO:") +
+          (
+              radioOperational
+                  ? "OK"
+                  : "FAIL"
+          ) +
+          " LOCAL:" +
+          localSiteStatus;
+
+      line3 =
+          "TRAFFIC:" +
           String(
               trafficLoad,
               1
           ) +
-          " %";
+          "%";
       break;
 
-    case 11:
-      line0 =
-          "OPERATING MODE";
-
-      line1 =
-          operatingMode;
-      break;
-
-    case 12:
+    case 3:
     default:
       line0 =
-          "AI " +
-          aiFaultDomain;
+          "AI:" +
+          aiFaultDomain +
+          " " +
+          String(
+              aiDomainConfidence *
+              100.0f,
+              1
+          ) +
+          "%";
 
       line1 =
-          "REC " +
+          String("ANOM:") +
+          (
+              aiAnomalyFlag
+                  ? "YES"
+                  : "NO"
+          ) +
+          " S:" +
+          String(
+              aiAnomalyScore,
+              2
+          );
+
+      line2 =
+          "REC:" +
           aiRecommendedMode +
-          " " +
-          aiCommandStatus;
+          " FINAL:" +
+          operatingMode;
+
+      line3 =
+          "GUARD:" +
+          guardrailStatus;
       break;
   }
 
-  String paddedLine0 =
+  String padded0 =
       padLCDText(
           line0
       );
 
-  String paddedLine1 =
+  String padded1 =
       padLCDText(
           line1
       );
 
+  String padded2 =
+      padLCDText(
+          line2
+      );
+
+  String padded3 =
+      padLCDText(
+          line3
+      );
+
   if (
       force ||
-      paddedLine0 !=
+      padded0 !=
           lastLCDLine0)
   {
     writeLCDLine(
@@ -4530,12 +4595,12 @@ void refreshLCDs(
     );
 
     lastLCDLine0 =
-        paddedLine0;
+        padded0;
   }
 
   if (
       force ||
-      paddedLine1 !=
+      padded1 !=
           lastLCDLine1)
   {
     writeLCDLine(
@@ -4545,7 +4610,37 @@ void refreshLCDs(
     );
 
     lastLCDLine1 =
-        paddedLine1;
+        padded1;
+  }
+
+  if (
+      force ||
+      padded2 !=
+          lastLCDLine2)
+  {
+    writeLCDLine(
+        lcdDcVoltage,
+        2,
+        line2
+    );
+
+    lastLCDLine2 =
+        padded2;
+  }
+
+  if (
+      force ||
+      padded3 !=
+          lastLCDLine3)
+  {
+    writeLCDLine(
+        lcdDcVoltage,
+        3,
+        line3
+    );
+
+    lastLCDLine3 =
+        padded3;
   }
 }
 

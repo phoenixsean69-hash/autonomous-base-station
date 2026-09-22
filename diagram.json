@@ -109,10 +109,10 @@
       }
     },
     {
-      "type": "wokwi-lcd1602",
+      "type": "wokwi-lcd2004",
       "id": "lcdDcVoltage",
-      "top": 80,
-      "left": 920,
+      "top": 45,
+      "left": 865,
       "attrs": {
         "pins": "i2c",
         "i2cAddress": "0x20",
