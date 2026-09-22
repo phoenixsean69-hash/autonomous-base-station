@@ -48,6 +48,10 @@ AI_ACK_PREFIX = "ABS_AI_ACK|"
 
 SCHEMA = "abs.v1"
 DEFAULT_URL = "rfc2217://localhost:4001"
+DEFAULT_PICO_URL = "rfc2217://localhost:4000"
+
+PICO_RECOMMEND_PREFIX = "PICO_RECOMMEND|"
+PICO_DECISION_PREFIX = "PICO_DECISION|"
 
 
 class Sampler:
@@ -980,6 +984,151 @@ def print_live_ai_report(
     )
 
 
+
+def build_pico_recommendation(
+    result: dict,
+    ai_command: dict,
+    telemetry: dict,
+) -> dict:
+    context = result[
+        "energy_recommendation"
+    ][
+        "latest_operating_context"
+    ]
+
+    grid_available = bool(context["grid_available"])
+    generator_running = bool(context["generator_running"])
+    battery_soc = float(context["battery_soc_pct"])
+
+    # Digital-twin source recommendation:
+    # grid first; battery during a healthy reserve; generator
+    # once grid is unavailable and battery falls to <=40%.
+    if grid_available:
+        power_source = "GRID"
+        generator_recommendation = "STOP"
+    elif battery_soc <= 40.0:
+        power_source = "GENERATOR"
+        generator_recommendation = "START"
+    else:
+        power_source = "BATTERY"
+        generator_recommendation = "STOP"
+
+    return {
+        "schema": "pico.control.recommend.v1",
+        "recommended_mode": ai_command["recommended_mode"],
+        "recommended_power_source": power_source,
+        "generator_recommendation": generator_recommendation,
+        "fault_domain": result["fault_domain"]["label"],
+        "domain_confidence": float(result["fault_domain"]["confidence"]),
+        "anomaly_flag": bool(result["anomaly"]["flagged"]),
+        "battery_soc_pct": battery_soc,
+        "traffic_load_pct": float(context["traffic_load_pct"]),
+        "grid_available": grid_available,
+        "generator_running": generator_running,
+        "reason": ai_command["reason"],
+        "source_timestamp_ms": int(telemetry["timestamp_ms"]),
+    }
+
+
+def send_pico_recommendation(
+    port,
+    recommendation: dict,
+) -> int:
+    payload = (
+        PICO_RECOMMEND_PREFIX +
+        json.dumps(
+            recommendation,
+            separators=(",", ":"),
+        ) +
+        "\n"
+    ).encode("utf-8")
+
+    for start in range(0, len(payload), 64):
+        port.write(payload[start:start + 64])
+        port.flush()
+        time.sleep(0.003)
+
+    return len(payload)
+
+
+def wait_pico_decision(
+    port,
+    timeout: float = 2.0,
+) -> dict | None:
+    deadline = time.monotonic() + timeout
+    pending = bytearray()
+
+    while time.monotonic() < deadline:
+        waiting = int(getattr(port, "in_waiting", 0) or 0)
+        raw = port.read(waiting if waiting > 0 else 1)
+
+        if not raw:
+            continue
+
+        pending.extend(raw)
+
+        while b"\n" in pending:
+            raw_line, _, remainder = pending.partition(b"\n")
+            pending = bytearray(remainder)
+
+            line = raw_line.rstrip(b"\r").decode(
+                "utf-8",
+                errors="replace",
+            ).strip()
+
+            if not line.startswith(PICO_DECISION_PREFIX):
+                continue
+
+            try:
+                return json.loads(line[len(PICO_DECISION_PREFIX):])
+            except json.JSONDecodeError:
+                return None
+
+    return None
+
+
+def attach_pico_decision(
+    ai_command: dict,
+    decision: dict | None,
+) -> None:
+    if decision is not None and decision.get("accepted") is True:
+        ai_command.update(
+            {
+                "control_source": "PICO",
+                "pico_decision_status": "ACCEPTED",
+                "pico_mode_decision": decision.get(
+                    "mode_decision",
+                    ai_command["recommended_mode"],
+                ),
+                "pico_power_source_decision": decision.get(
+                    "power_source_decision",
+                    "UNKNOWN",
+                ),
+                "pico_generator_action": decision.get(
+                    "generator_action",
+                    "HOLD",
+                ),
+                "pico_decision_reason": decision.get(
+                    "decision_reason",
+                    "PICO DECISION",
+                ),
+            }
+        )
+        return
+
+    ai_command.update(
+        {
+            "control_source": "PICO_TIMEOUT",
+            "pico_decision_status": "TIMEOUT",
+            "pico_mode_decision": ai_command["recommended_mode"],
+            "pico_power_source_decision": "HOLD",
+            "pico_generator_action": "HOLD",
+            "pico_decision_reason": "NO PICO DECISION - HOLD ACTUATORS",
+        }
+    )
+
+
+
 def send_ai_command(
     port,
     command: dict,
@@ -1166,6 +1315,7 @@ def smoke(
 def live(
     engine: UnifiedAIEngine,
     url: str,
+    pico_url: str,
     sample_ms: int,
 ) -> int:
     window = engine.new_buffer()
@@ -1185,6 +1335,9 @@ def live(
         f"Endpoint             : {url}"
     )
     print(
+        f"Pico endpoint        : {pico_url}"
+    )
+    print(
         f"Temporal cadence     : "
         f"{sample_ms / 1000.0:.1f} s"
     )
@@ -1195,6 +1348,9 @@ def live(
     )
     print(
         "AI command           : ENABLED"
+    )
+    print(
+        "Decision controller  : RASPBERRY PI PICO"
     )
     print(
         "Final mode authority : ESP32 DETERMINISTIC GUARDRAILS"
@@ -1221,6 +1377,19 @@ def live(
 
     print(
         "[OK] ESP32 connected."
+    )
+
+    pico_port = serial.serial_for_url(
+        pico_url,
+        baudrate=115200,
+        timeout=0.20,
+    )
+
+    time.sleep(0.3)
+    pico_port.reset_input_buffer()
+
+    print(
+        "[OK] Pico decision controller connected."
     )
 
     source = 0
@@ -1416,6 +1585,44 @@ def live(
                 window_count=window.count,
             )
 
+            pico_recommendation = build_pico_recommendation(
+                result,
+                command,
+                telemetry,
+            )
+
+            pico_bytes = send_pico_recommendation(
+                pico_port,
+                pico_recommendation,
+            )
+
+            pico_decision = wait_pico_decision(
+                pico_port
+            )
+
+            attach_pico_decision(
+                command,
+                pico_decision,
+            )
+
+            if (
+                pico_decision is not None and
+                pico_decision.get("accepted") is True
+            ):
+                print(
+                    "  [PICO DECISION] "
+                    f"mode={pico_decision.get('mode_decision')} | "
+                    f"source={pico_decision.get('power_source_decision')} | "
+                    f"generator={pico_decision.get('generator_action')} | "
+                    f"{pico_decision.get('decision_reason')} | "
+                    f"{pico_bytes} bytes"
+                )
+            else:
+                print(
+                    "  [PICO DECISION] TIMEOUT/REJECTED -> "
+                    "actuators HOLD; ESP32 safety fallback remains active"
+                )
+
             command_bytes = send_ai_command(
                 port,
                 command,
@@ -1442,6 +1649,12 @@ def live(
                 ),
                 "ai_command": (
                     command
+                ),
+                "pico_recommendation": (
+                    pico_recommendation
+                ),
+                "pico_decision": (
+                    pico_decision
                 ),
                 "ai_command_sent": True,
                 "final_mode_authority": (
@@ -1502,6 +1715,7 @@ def live(
 
     finally:
         port.close()
+        pico_port.close()
 
     print()
     print(
@@ -1541,6 +1755,11 @@ def main() -> int:
     )
 
     parser.add_argument(
+        "--pico-url",
+        default=DEFAULT_PICO_URL,
+    )
+
+    parser.add_argument(
         "--sample-ms",
         type=int,
         default=5000,
@@ -1565,6 +1784,7 @@ def main() -> int:
     return live(
         engine,
         args.url,
+        args.pico_url,
         args.sample_ms,
     )
 

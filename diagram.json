@@ -336,26 +336,7 @@
       "top": 1740,
       "left": 1065,
       "attrs": {
-        "text": "GENERATOR STATE"
-      }
-    },
-    {
-      "type": "wokwi-slide-switch",
-      "id": "generatorSwitch",
-      "top": 1790,
-      "left": 1125,
-      "attrs": {
-        "value": "",
-        "bounce": "0"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "generatorDirection",
-      "top": 1855,
-      "left": 1030,
-      "attrs": {
-        "text": "LEFT: STOPPED   RIGHT: RUNNING"
+        "text": "GENERATOR ACTUATOR - PICO CONTROLLED"
       }
     },
     {
@@ -470,6 +451,37 @@
         "i2cAddress": "0x21",
         "background": "green",
         "color": "black"
+      }
+    },
+    {
+      "type": "wokwi-lcd2004",
+      "id": "lcdPicoActions",
+      "top": 45,
+      "left": 1430,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x22",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "generatorLed",
+      "top": 1790,
+      "left": 1130,
+      "attrs": {
+        "color": "green",
+        "label": "GENERATOR RUNNING"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "generatorLedResistor",
+      "top": 1800,
+      "left": 1060,
+      "attrs": {
+        "value": "220"
       }
     }
   ],
@@ -745,24 +757,6 @@
       []
     ],
     [
-      "generatorSwitch:1",
-      "esp32:GND.1",
-      "black",
-      []
-    ],
-    [
-      "generatorSwitch:2",
-      "esp32:TX2",
-      "green",
-      []
-    ],
-    [
-      "generatorSwitch:3",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
       "lcdDcVoltage:VCC",
       "esp32:VIN",
       "red",
@@ -892,6 +886,48 @@
       "lcdAiRecommendations:SCL",
       "esp32:D22",
       "blue",
+      []
+    ],
+    [
+      "lcdPicoActions:VCC",
+      "esp32:VIN",
+      "red",
+      []
+    ],
+    [
+      "lcdPicoActions:GND",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "lcdPicoActions:SDA",
+      "esp32:D21",
+      "green",
+      []
+    ],
+    [
+      "lcdPicoActions:SCL",
+      "esp32:D22",
+      "blue",
+      []
+    ],
+    [
+      "esp32:TX2",
+      "generatorLedResistor:1",
+      "green",
+      []
+    ],
+    [
+      "generatorLedResistor:2",
+      "generatorLed:A",
+      "green",
+      []
+    ],
+    [
+      "generatorLed:C",
+      "esp32:GND.2",
+      "black",
       []
     ]
   ],

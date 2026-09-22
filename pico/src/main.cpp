@@ -29,6 +29,10 @@ static const unsigned long UART_BAUD = 115200;
 static const char *TELEMETRY_PREFIX = "ABS_JSON|";
 static const char *SUPPORTED_SCHEMA = "abs.v1";
 static const char *AI_MODEL_NAME = "TEMPORAL_MLP_STUDENT_V1";
+static const char *CONTROL_RECOMMEND_PREFIX = "PICO_RECOMMEND|";
+static const char *CONTROL_RECOMMEND_SCHEMA = "pico.control.recommend.v1";
+static const char *CONTROL_DECISION_PREFIX = "PICO_DECISION|";
+
 
 String receiveBuffer;
 
@@ -856,6 +860,157 @@ String recommendMode(
 
 
 // ============================================================
+// LIVE CONTROL DECISION
+// ============================================================
+//
+// Laptop AI recommends. Pico converts recommendations plus
+// power context into deterministic control decisions. ESP32
+// safety guardrails remain the final authority.
+// ============================================================
+
+void printControlRejected(
+    const String &reason)
+{
+  Serial1.print(CONTROL_DECISION_PREFIX);
+  Serial1.print(
+      "{\"schema\":\"pico.control.decision.v1\","
+      "\"accepted\":false,\"reason\":\""
+  );
+  Serial1.print(reason);
+  Serial1.println("\"}");
+}
+
+
+void printControlDecision(
+    const String &modeDecision,
+    const String &powerSourceDecision,
+    const String &generatorAction,
+    const String &decisionReason,
+    const String &faultDomain,
+    float confidence)
+{
+  Serial1.print(CONTROL_DECISION_PREFIX);
+  Serial1.print(
+      "{\"schema\":\"pico.control.decision.v1\","
+      "\"accepted\":true,\"mode_decision\":\""
+  );
+  Serial1.print(modeDecision);
+  Serial1.print("\",\"power_source_decision\":\"");
+  Serial1.print(powerSourceDecision);
+  Serial1.print("\",\"generator_action\":\"");
+  Serial1.print(generatorAction);
+  Serial1.print("\",\"decision_reason\":\"");
+  Serial1.print(decisionReason);
+  Serial1.print("\",\"fault_domain\":\"");
+  Serial1.print(faultDomain);
+  Serial1.print("\",\"confidence\":");
+  Serial1.print(confidence, 6);
+  Serial1.println("}");
+}
+
+
+void handleControlRecommendationLine(
+    String line)
+{
+  line.trim();
+
+  String json =
+      line.substring(
+          strlen(
+              CONTROL_RECOMMEND_PREFIX
+          )
+      );
+
+  String schema;
+  String recommendedMode;
+  String recommendedPowerSource;
+  String generatorRecommendation;
+  String faultDomain;
+  String recommendationReason;
+
+  float confidence = 0.0f;
+  float batterySoc = 0.0f;
+  float trafficLoad = 0.0f;
+
+  bool gridAvailable = false;
+  bool generatorRunning = false;
+  bool anomalyFlag = false;
+
+  bool valid =
+      extractStringField(json, "schema", schema) &&
+      extractStringField(json, "recommended_mode", recommendedMode) &&
+      extractStringField(json, "recommended_power_source", recommendedPowerSource) &&
+      extractStringField(json, "generator_recommendation", generatorRecommendation) &&
+      extractStringField(json, "fault_domain", faultDomain) &&
+      extractStringField(json, "reason", recommendationReason) &&
+      extractFloatField(json, "domain_confidence", confidence) &&
+      extractFloatField(json, "battery_soc_pct", batterySoc) &&
+      extractFloatField(json, "traffic_load_pct", trafficLoad) &&
+      extractBoolField(json, "grid_available", gridAvailable) &&
+      extractBoolField(json, "generator_running", generatorRunning) &&
+      extractBoolField(json, "anomaly_flag", anomalyFlag);
+
+  if (!valid || schema != CONTROL_RECOMMEND_SCHEMA)
+  {
+    printControlRejected("INVALID_RECOMMENDATION");
+    return;
+  }
+
+  String modeDecision = recommendedMode;
+  String powerSourceDecision = recommendedPowerSource;
+  String generatorAction = "HOLD";
+  String decisionReason = recommendationReason;
+
+  if (!gridAvailable && batterySoc <= 25.0f)
+  {
+    modeDecision = "EMERGENCY";
+    powerSourceDecision = "GENERATOR";
+    generatorAction = "START";
+    decisionReason = "CRITICAL BACKUP ENERGY";
+  }
+  else if (
+      recommendedPowerSource == "GENERATOR" ||
+      generatorRecommendation == "START")
+  {
+    powerSourceDecision = "GENERATOR";
+    generatorAction = "START";
+    decisionReason = "PICO ACCEPTED GENERATOR RECOMMENDATION";
+  }
+  else if (gridAvailable)
+  {
+    powerSourceDecision = "GRID";
+    generatorAction = "STOP";
+    decisionReason = "GRID AVAILABLE";
+  }
+  else if (recommendedPowerSource == "BATTERY")
+  {
+    powerSourceDecision = "BATTERY";
+    generatorAction = "STOP";
+    decisionReason = "BATTERY BACKUP SELECTED";
+  }
+  else
+  {
+    generatorAction = generatorRunning ? "HOLD" : "STOP";
+  }
+
+  if (anomalyFlag && modeDecision == "REDUCED")
+  {
+    modeDecision = "ECO";
+    decisionReason = "ANOMALY CONSERVATIVE ECO";
+  }
+
+  printControlDecision(
+      modeDecision,
+      powerSourceDecision,
+      generatorAction,
+      decisionReason,
+      faultDomain,
+      confidence
+  );
+}
+
+
+// ============================================================
 // RESPONSE
 // ============================================================
 
@@ -1240,6 +1395,10 @@ void setup()
   Serial1.println(
       "Final Mode Authority: ESP32 DETERMINISTIC GUARDRAILS"
   );
+
+  Serial1.println(
+      "Live Control        : AI RECOMMENDATION -> PICO DECISION -> ESP32 ACTUATION"
+  );
 }
 
 
@@ -1271,9 +1430,21 @@ void loop()
           receiveBuffer.length() >
           0)
       {
-        handleTelemetryLine(
-            receiveBuffer
-        );
+        if (
+            receiveBuffer.startsWith(
+                CONTROL_RECOMMEND_PREFIX
+            ))
+        {
+          handleControlRecommendationLine(
+              receiveBuffer
+          );
+        }
+        else
+        {
+          handleTelemetryLine(
+              receiveBuffer
+          );
+        }
 
         receiveBuffer =
             "";

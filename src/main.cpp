@@ -33,7 +33,7 @@
 #define UPSTREAM_REACHABLE_PIN 13
 
 #define GRID_AVAILABLE_PIN 16
-#define GENERATOR_RUNNING_PIN 17
+#define GENERATOR_CONTROL_PIN 17
 
 // Digital-twin operating-condition inputs
 #define TRAFFIC_LOAD_PIN 39
@@ -61,6 +61,7 @@ const unsigned long TELEMETRY_INTERVAL_MS = 2000;
 // If no fresh command arrives for 15 seconds, firmware
 // automatically falls back to its local deterministic policy.
 const unsigned long AI_COMMAND_TIMEOUT_MS = 15000;
+const unsigned long PICO_DECISION_TIMEOUT_MS = 15000;
 
 const float GRAVITY = 9.80665;
 
@@ -293,6 +294,12 @@ LiquidCrystal_I2C lcdDcVoltage(
 
 LiquidCrystal_I2C lcdAiRecommendations(
     0x21,
+    20,
+    4
+);
+
+LiquidCrystal_I2C lcdPicoActions(
+    0x22,
     20,
     4
 );
@@ -703,6 +710,22 @@ String aiCommandStatus = "NOT_RECEIVED";
 String aiMetricsStatus = "NOT_RECEIVED";
 String aiSerialBuffer = "";
 
+// ----------------------------------------------------
+// PICO DECISION / ACTUATOR CONTROL
+// ----------------------------------------------------
+
+String picoControlSource = "WAITING";
+String picoDecisionStatus = "NOT_RECEIVED";
+String picoModeDecision = "NONE";
+String picoPowerSourceDecision = "UNKNOWN";
+String picoGeneratorAction = "HOLD";
+String picoDecisionReason = "NO PICO DECISION";
+String picoActuationStatus = "WAITING";
+
+bool picoDecisionEverReceived = false;
+unsigned long lastPicoDecisionTime = 0;
+
+
 // Guardrail / recovery explanation state.
 String guardrailStatus = "STARTING";
 String recoveryState = "STABLE";
@@ -758,6 +781,11 @@ String lastAiLCDLine0 = "";
 String lastAiLCDLine1 = "";
 String lastAiLCDLine2 = "";
 String lastAiLCDLine3 = "";
+
+String lastPicoLCDLine0 = "";
+String lastPicoLCDLine1 = "";
+String lastPicoLCDLine2 = "";
+String lastPicoLCDLine3 = "";
 
 // ====================================================
 // LCD HELPERS
@@ -1464,6 +1492,73 @@ bool isAiCommandFresh()
 }
 
 
+bool isPicoDecisionFresh()
+{
+  if (!picoDecisionEverReceived)
+  {
+    return false;
+  }
+
+  return
+      millis() -
+      lastPicoDecisionTime <=
+      PICO_DECISION_TIMEOUT_MS;
+}
+
+
+void applyPicoActuatorDecision()
+{
+  if (!isPicoDecisionFresh())
+  {
+    picoActuationStatus =
+        "HELD - PICO STALE";
+
+    // Fail-safe: hold the current generator state if Pico
+    // communication disappears. Never unexpectedly stop a
+    // running backup source because of a transport timeout.
+    return;
+  }
+
+  if (picoGeneratorAction == "START")
+  {
+    digitalWrite(
+        GENERATOR_CONTROL_PIN,
+        HIGH
+    );
+
+    generatorRunning =
+        true;
+
+    picoActuationStatus =
+        "CONFIRMED";
+  }
+  else if (picoGeneratorAction == "STOP")
+  {
+    digitalWrite(
+        GENERATOR_CONTROL_PIN,
+        LOW
+    );
+
+    generatorRunning =
+        false;
+
+    picoActuationStatus =
+        "CONFIRMED";
+  }
+  else
+  {
+    generatorRunning =
+        digitalRead(
+            GENERATOR_CONTROL_PIN
+        ) ==
+        HIGH;
+
+    picoActuationStatus =
+        "HELD";
+  }
+}
+
+
 void printAiAck(
     bool accepted,
     const String &reason)
@@ -1894,6 +1989,53 @@ void handleAiCommandLine(
           ? "COMPLETE"
           : "INCOMPLETE";
 
+  bool picoDecisionFieldsValid =
+      extractAiStringField(
+          json,
+          "control_source",
+          picoControlSource
+      ) &&
+      extractAiStringField(
+          json,
+          "pico_decision_status",
+          picoDecisionStatus
+      ) &&
+      extractAiStringField(
+          json,
+          "pico_mode_decision",
+          picoModeDecision
+      ) &&
+      extractAiStringField(
+          json,
+          "pico_power_source_decision",
+          picoPowerSourceDecision
+      ) &&
+      extractAiStringField(
+          json,
+          "pico_generator_action",
+          picoGeneratorAction
+      ) &&
+      extractAiStringField(
+          json,
+          "pico_decision_reason",
+          picoDecisionReason
+      );
+
+  if (
+      picoDecisionFieldsValid &&
+      picoDecisionStatus == "ACCEPTED" &&
+      isValidAiMode(
+          picoModeDecision
+      ))
+  {
+    picoDecisionEverReceived =
+        true;
+
+    lastPicoDecisionTime =
+        millis();
+  }
+
+
   // A fresh inference updates the values in place.
   // Restart at diagnosis only when the AI state itself changes.
   if (aiDisplayStateChanged)
@@ -1913,6 +2055,8 @@ void handleAiCommandLine(
 
   aiCommandStatus =
       "FRESH";
+
+  applyPicoActuatorDecision();
 
   printAiAck(
       true,
@@ -2155,31 +2299,48 @@ String determineRequestedOperatingMode()
 
   if (aiFresh)
   {
-    // EMERGENCY is a safety state and may only be entered
-    // after the local critical-energy rule above independently
-    // confirms it. A non-critical AI EMERGENCY request is
-    // therefore clamped to ECO.
+    String controllerMode =
+        aiRecommendedMode;
+
+    String controllerReason =
+        "AI: " +
+        aiRecommendationReason;
+
     if (
-        aiRecommendedMode ==
+        isPicoDecisionFresh() &&
+        isValidAiMode(
+            picoModeDecision
+        ))
+    {
+      controllerMode =
+          picoModeDecision;
+
+      controllerReason =
+          "PICO: " +
+          picoDecisionReason;
+    }
+
+    // EMERGENCY remains locally safety-gated.
+    if (
+        controllerMode ==
         "EMERGENCY")
     {
       candidateMode =
           "ECO";
 
       candidateReason =
-          "AI EMERGENCY CLAMPED TO ECO";
+          "EMERGENCY CLAMPED TO ECO";
 
       guardrailStatus =
-          "AI EMERGENCY BLOCKED - LOCAL SAFETY CHECK";
+          "EMERGENCY BLOCKED - LOCAL SAFETY CHECK";
     }
     else
     {
       candidateMode =
-          aiRecommendedMode;
+          controllerMode;
 
       candidateReason =
-          "AI: " +
-          aiRecommendationReason;
+          controllerReason;
     }
   }
 
@@ -3939,7 +4100,7 @@ void readFastInputs()
 
   generatorRunning =
       digitalRead(
-          GENERATOR_RUNNING_PIN
+          GENERATOR_CONTROL_PIN
       ) ==
       HIGH;
 
@@ -4887,6 +5048,35 @@ void initialiseLCDs()
       "Waiting for AI..."
   );
 
+  // LCD 3 - Pico decisions and actual actuator state.
+  lcdPicoActions.init();
+  lcdPicoActions.backlight();
+  lcdPicoActions.clear();
+
+  writeLCDLine(
+      lcdPicoActions,
+      0,
+      "PICO ACTUATION"
+  );
+
+  writeLCDLine(
+      lcdPicoActions,
+      1,
+      "Waiting decision..."
+  );
+
+  writeLCDLine(
+      lcdPicoActions,
+      2,
+      "Generator: STOPPED"
+  );
+
+  writeLCDLine(
+      lcdPicoActions,
+      3,
+      "Safe hold"
+  );
+
   lastLCDPageTime =
       millis();
 
@@ -5676,6 +5866,87 @@ void refreshLCDs(
     );
     lastAiLCDLine3 = aiPadded3;
   }
+
+  // ==================================================
+  // LCD 3 - PICO DECISION / ACTUATION
+  // ==================================================
+
+  String picoLine0 =
+      "PICO ACTUATION";
+
+  String picoLine1;
+  String picoLine2;
+  String picoLine3;
+
+  if (isPicoDecisionFresh())
+  {
+    picoLine1 =
+        "Mode " +
+        picoModeDecision +
+        " -> " +
+        operatingMode;
+
+    picoLine2 =
+        "Gen " +
+        picoGeneratorAction +
+        " -> " +
+        (
+            generatorRunning
+                ? "RUN"
+                : "STOP"
+        );
+
+    picoLine3 =
+        "Src " +
+        picoPowerSourceDecision +
+        " " +
+        picoActuationStatus;
+  }
+  else
+  {
+    picoLine1 =
+        "Pico decision stale";
+
+    picoLine2 =
+        String("Gen hold -> ") +
+        (
+            generatorRunning
+                ? "RUN"
+                : "STOP"
+        );
+
+    picoLine3 =
+        "Safe fallback active";
+  }
+
+  String picoPadded0 = padLCDText(picoLine0);
+  String picoPadded1 = padLCDText(picoLine1);
+  String picoPadded2 = padLCDText(picoLine2);
+  String picoPadded3 = padLCDText(picoLine3);
+
+  if (force || picoPadded0 != lastPicoLCDLine0)
+  {
+    writeLCDLine(lcdPicoActions, 0, picoLine0);
+    lastPicoLCDLine0 = picoPadded0;
+  }
+
+  if (force || picoPadded1 != lastPicoLCDLine1)
+  {
+    writeLCDLine(lcdPicoActions, 1, picoLine1);
+    lastPicoLCDLine1 = picoPadded1;
+  }
+
+  if (force || picoPadded2 != lastPicoLCDLine2)
+  {
+    writeLCDLine(lcdPicoActions, 2, picoLine2);
+    lastPicoLCDLine2 = picoPadded2;
+  }
+
+  if (force || picoPadded3 != lastPicoLCDLine3)
+  {
+    writeLCDLine(lcdPicoActions, 3, picoLine3);
+    lastPicoLCDLine3 = picoPadded3;
+  }
 }
 
 // ====================================================
@@ -6137,6 +6408,44 @@ void printMachineReadableTelemetry()
   }
 
   // --------------------------------------------------
+  // PICO DECISION / ACTUATION
+  // --------------------------------------------------
+
+  Serial.print(",\"pico_control_source\":\"");
+  Serial.print(picoControlSource);
+  Serial.print("\"");
+
+  Serial.print(",\"pico_decision_status\":\"");
+  Serial.print(picoDecisionStatus);
+  Serial.print("\"");
+
+  Serial.print(",\"pico_mode_decision\":\"");
+  Serial.print(picoModeDecision);
+  Serial.print("\"");
+
+  Serial.print(",\"pico_power_source_decision\":\"");
+  Serial.print(picoPowerSourceDecision);
+  Serial.print("\"");
+
+  Serial.print(",\"pico_generator_action\":\"");
+  Serial.print(picoGeneratorAction);
+  Serial.print("\"");
+
+  Serial.print(",\"pico_decision_reason\":\"");
+  Serial.print(picoDecisionReason);
+  Serial.print("\"");
+
+  Serial.print(",\"pico_decision_fresh\":");
+  Serial.print(isPicoDecisionFresh() ? "true" : "false");
+
+  Serial.print(",\"generator_output_active\":");
+  Serial.print(generatorRunning ? "true" : "false");
+
+  Serial.print(",\"pico_actuation_status\":\"");
+  Serial.print(picoActuationStatus);
+  Serial.print("\"");
+
+  // --------------------------------------------------
   // ENERGY / CONTROL
   // --------------------------------------------------
 
@@ -6379,11 +6688,13 @@ void printTelemetry()
       "FAILED"
   );
 
-  printCircuitSwitchLine(
-      "Generator TX2/D17  ",
-      generatorRunning,
-      "RUNNING",
-      "STOPPED"
+  Serial.print(
+      "Generator GPIO17    : "
+  );
+  Serial.println(
+      generatorRunning
+          ? "HIGH | RUNNING"
+          : "LOW  | STOPPED"
   );
 
   printCircuitSwitchLine(
@@ -8242,6 +8553,42 @@ void printTelemetry()
   );
 
   // --------------------------------------------------
+  // PICO DECISION / ACTUATION
+  // --------------------------------------------------
+
+  Serial.println();
+  Serial.println(
+      "[ PICO DECISION / ACTUATION ]"
+  );
+
+  Serial.print("Decision Status      : ");
+  Serial.println(picoDecisionStatus);
+
+  Serial.print("Decision Fresh       : ");
+  Serial.println(isPicoDecisionFresh() ? "YES" : "NO");
+
+  Serial.print("Mode Decision        : ");
+  Serial.println(picoModeDecision);
+
+  Serial.print("Final Applied Mode   : ");
+  Serial.println(operatingMode);
+
+  Serial.print("Power Source Decision: ");
+  Serial.println(picoPowerSourceDecision);
+
+  Serial.print("Generator Command    : ");
+  Serial.println(picoGeneratorAction);
+
+  Serial.print("Generator GPIO17     : ");
+  Serial.println(generatorRunning ? "HIGH / RUNNING" : "LOW / STOPPED");
+
+  Serial.print("Actuation Status     : ");
+  Serial.println(picoActuationStatus);
+
+  Serial.print("Decision Reason      : ");
+  Serial.println(picoDecisionReason);
+
+  // --------------------------------------------------
   // SYSTEM
   // --------------------------------------------------
 
@@ -8428,9 +8775,17 @@ void setup()
   );
 
   pinMode(
-      GENERATOR_RUNNING_PIN,
-      INPUT
+      GENERATOR_CONTROL_PIN,
+      OUTPUT
   );
+
+  digitalWrite(
+      GENERATOR_CONTROL_PIN,
+      LOW
+  );
+
+  generatorRunning =
+      false;
 
   pinMode(
       TRAFFIC_LOAD_PIN,
