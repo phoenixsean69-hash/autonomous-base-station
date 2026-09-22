@@ -6,8 +6,8 @@
     {
       "type": "wokwi-text",
       "id": "localHeading",
-      "top": 20,
-      "left": 30,
+      "top": 25,
+      "left": 35,
       "attrs": {
         "text": "LOCAL / ENVIRONMENTAL SENSING"
       }
@@ -15,8 +15,8 @@
     {
       "type": "wokwi-dht22",
       "id": "dht1",
-      "top": 120,
-      "left": 80,
+      "top": 135,
+      "left": 85,
       "attrs": {
         "temperature": "28",
         "humidity": "45"
@@ -25,33 +25,33 @@
     {
       "type": "wokwi-text",
       "id": "dhtLabel",
-      "top": 85,
-      "left": 55,
+      "top": 90,
+      "left": 50,
       "attrs": {
-        "text": "DHT22 - Shelter Temp / Humidity"
+        "text": "DHT22 - SHELTER TEMPERATURE / HUMIDITY"
       }
     },
     {
       "type": "wokwi-mpu6050",
       "id": "mpu1",
-      "top": 310,
-      "left": 70,
+      "top": 350,
+      "left": 80,
       "attrs": {}
     },
     {
       "type": "wokwi-text",
       "id": "mpuLabel",
-      "top": 270,
-      "left": 65,
+      "top": 305,
+      "left": 55,
       "attrs": {
-        "text": "MPU6050 - Vibration"
+        "text": "MPU6050 - VIBRATION / MOTION"
       }
     },
     {
       "type": "wokwi-ds18b20",
       "id": "paTemp",
-      "top": 500,
-      "left": 90,
+      "top": 550,
+      "left": 85,
       "attrs": {
         "temperature": "42"
       }
@@ -59,7 +59,7 @@
     {
       "type": "wokwi-resistor",
       "id": "dsPullup",
-      "top": 515,
+      "top": 565,
       "left": 180,
       "attrs": {
         "value": "4700"
@@ -68,17 +68,17 @@
     {
       "type": "wokwi-text",
       "id": "dsLabel",
-      "top": 460,
-      "left": 65,
+      "top": 505,
+      "left": 55,
       "attrs": {
-        "text": "DS18B20 - PA Temperature"
+        "text": "DS18B20 - PA TEMPERATURE"
       }
     },
     {
       "type": "wokwi-text",
       "id": "controllerHeading",
-      "top": 150,
-      "left": 390,
+      "top": 760,
+      "left": 90,
       "attrs": {
         "text": "EDGE CONTROLLER"
       }
@@ -86,33 +86,33 @@
     {
       "type": "wokwi-esp32-devkit-v1",
       "id": "esp32",
-      "top": 245,
-      "left": 405,
+      "top": 820,
+      "left": 120,
       "attrs": {}
     },
     {
       "type": "wokwi-text",
       "id": "controllerLabel",
-      "top": 470,
-      "left": 375,
+      "top": 1045,
+      "left": 65,
       "attrs": {
-        "text": "ESP32 - Acquisition / Telemetry"
+        "text": "ESP32 - ACQUISITION / TELEMETRY / ACTUATION"
       }
     },
     {
       "type": "wokwi-text",
       "id": "powerHeading",
-      "top": 10,
-      "left": 835,
+      "top": 455,
+      "left": 980,
       "attrs": {
-        "text": "DC POWER SYSTEM CONTROLS"
+        "text": "DC POWER INPUT CONTROLS"
       }
     },
     {
       "type": "wokwi-lcd2004",
       "id": "lcdDcVoltage",
-      "top": 45,
-      "left": 730,
+      "top": 65,
+      "left": 650,
       "attrs": {
         "pins": "i2c",
         "i2cAddress": "0x20",
@@ -123,8 +123,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "dcVoltage",
-      "top": 210,
-      "left": 715,
+      "top": 570,
+      "left": 690,
       "attrs": {
         "value": "800"
       }
@@ -132,8 +132,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "dcCurrent",
-      "top": 210,
-      "left": 985,
+      "top": 570,
+      "left": 1050,
       "attrs": {
         "value": "350"
       }
@@ -141,8 +141,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "batteryVoltage",
-      "top": 210,
-      "left": 1255,
+      "top": 570,
+      "left": 1410,
       "attrs": {
         "value": "830"
       }
@@ -150,8 +150,8 @@
     {
       "type": "wokwi-text",
       "id": "rfHeading",
-      "top": 355,
-      "left": 900,
+      "top": 790,
+      "left": 1000,
       "attrs": {
         "text": "RF MONITORING CONTROLS"
       }
@@ -159,7 +159,7 @@
     {
       "type": "wokwi-potentiometer",
       "id": "rfForward",
-      "top": 555,
+      "top": 900,
       "left": 820,
       "attrs": {
         "value": "750"
@@ -168,8 +168,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "rfReflected",
-      "top": 555,
-      "left": 1120,
+      "top": 900,
+      "left": 1260,
       "attrs": {
         "value": "20"
       }
@@ -177,8 +177,8 @@
     {
       "type": "wokwi-text",
       "id": "backhaulHeading",
-      "top": 700,
-      "left": 835,
+      "top": 1120,
+      "left": 950,
       "attrs": {
         "text": "BACKHAUL / UPSTREAM NETWORK"
       }
@@ -186,26 +186,26 @@
     {
       "type": "wokwi-text",
       "id": "backhaulStatusHeading",
-      "top": 755,
-      "left": 930,
+      "top": 1170,
+      "left": 985,
       "attrs": {
-        "text": "OVERALL BACKHAUL STATUS"
+        "text": "ANALOG NETWORK METRICS"
       }
     },
     {
       "type": "wokwi-text",
       "id": "metricHeading",
-      "top": 930,
-      "left": 860,
+      "top": 1215,
+      "left": 985,
       "attrs": {
-        "text": "INDEPENDENT BACKHAUL METRICS"
+        "text": "LATENCY / PACKET LOSS / RSSI"
       }
     },
     {
       "type": "wokwi-potentiometer",
       "id": "latencyInput",
-      "top": 1120,
-      "left": 715,
+      "top": 1330,
+      "left": 690,
       "attrs": {
         "value": "35"
       }
@@ -213,8 +213,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "packetLossInput",
-      "top": 1120,
-      "left": 985,
+      "top": 1330,
+      "left": 1050,
       "attrs": {
         "value": "8"
       }
@@ -222,8 +222,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "rssiInput",
-      "top": 1120,
-      "left": 1255,
+      "top": 1330,
+      "left": 1410,
       "attrs": {
         "value": "140"
       }
@@ -231,8 +231,8 @@
     {
       "type": "wokwi-text",
       "id": "digitalHeading",
-      "top": 1260,
-      "left": 880,
+      "top": 1550,
+      "left": 990,
       "attrs": {
         "text": "DIGITAL CONNECTIVITY STATES"
       }
@@ -240,16 +240,16 @@
     {
       "type": "wokwi-text",
       "id": "linkLabel",
-      "top": 1320,
-      "left": 725,
+      "top": 1610,
+      "left": 700,
       "attrs": {
-        "text": "PHYSICAL LINK"
+        "text": "PHYSICAL LINK - GPIO14"
       }
     },
     {
       "type": "wokwi-slide-switch",
       "id": "linkSwitch",
-      "top": 1370,
+      "top": 1660,
       "left": 790,
       "attrs": {
         "value": "1",
@@ -259,26 +259,26 @@
     {
       "type": "wokwi-text",
       "id": "linkDirection",
-      "top": 1435,
-      "left": 720,
+      "top": 1730,
+      "left": 665,
       "attrs": {
-        "text": "LEFT: DOWN   RIGHT: UP"
+        "text": "LEFT=DOWN | RIGHT=UP | ACCEPTABLE=UP"
       }
     },
     {
       "type": "wokwi-text",
       "id": "reachableLabel",
-      "top": 1320,
-      "left": 1050,
+      "top": 1610,
+      "left": 1190,
       "attrs": {
-        "text": "UPSTREAM REACHABLE"
+        "text": "UPSTREAM REACHABLE - GPIO13"
       }
     },
     {
       "type": "wokwi-slide-switch",
       "id": "reachableSwitch",
-      "top": 1370,
-      "left": 1120,
+      "top": 1660,
+      "left": 1300,
       "attrs": {
         "value": "1",
         "bounce": "0"
@@ -287,17 +287,17 @@
     {
       "type": "wokwi-text",
       "id": "reachableDirection",
-      "top": 1435,
-      "left": 1055,
+      "top": 1730,
+      "left": 1165,
       "attrs": {
-        "text": "LEFT: NO   RIGHT: YES"
+        "text": "LEFT=NO | RIGHT=YES | ACCEPTABLE=YES"
       }
     },
     {
       "type": "wokwi-text",
       "id": "energyHeading",
-      "top": 1530,
-      "left": 850,
+      "top": 1870,
+      "left": 955,
       "attrs": {
         "text": "POWER SOURCE / ENERGY MANAGEMENT"
       }
@@ -305,16 +305,16 @@
     {
       "type": "wokwi-text",
       "id": "gridLabel",
-      "top": 1740,
-      "left": 745,
+      "top": 1940,
+      "left": 700,
       "attrs": {
-        "text": "GRID / MAINS STATE"
+        "text": "GRID / MAINS STATE - GPIO16"
       }
     },
     {
       "type": "wokwi-slide-switch",
       "id": "gridSwitch",
-      "top": 1790,
+      "top": 2000,
       "left": 810,
       "attrs": {
         "value": "1",
@@ -324,26 +324,26 @@
     {
       "type": "wokwi-text",
       "id": "gridDirection",
-      "top": 1855,
-      "left": 720,
+      "top": 2070,
+      "left": 660,
       "attrs": {
-        "text": "LEFT: FAILED   RIGHT: AVAILABLE"
+        "text": "LEFT=FAILED | RIGHT=AVAILABLE | NORMAL=AVAILABLE"
       }
     },
     {
       "type": "wokwi-text",
       "id": "generatorLabel",
-      "top": 1740,
-      "left": 1065,
+      "top": 1940,
+      "left": 1180,
       "attrs": {
-        "text": "GENERATOR ACTUATOR - PICO CONTROLLED"
+        "text": "GENERATOR ACTUATOR - GPIO17 / PICO CONTROLLED"
       }
     },
     {
       "type": "wokwi-text",
       "id": "operatingHeading",
-      "top": 1980,
-      "left": 820,
+      "top": 2230,
+      "left": 940,
       "attrs": {
         "text": "OPERATING CONDITIONS / LOCAL EQUIPMENT"
       }
@@ -351,8 +351,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "trafficLoad",
-      "top": 2180,
-      "left": 715,
+      "top": 2350,
+      "left": 700,
       "attrs": {
         "value": "350"
       }
@@ -360,17 +360,17 @@
     {
       "type": "wokwi-text",
       "id": "fanLabel",
-      "top": 2050,
-      "left": 965,
+      "top": 2300,
+      "left": 980,
       "attrs": {
-        "text": "COOLING FAN"
+        "text": "COOLING FAN - GPIO18"
       }
     },
     {
       "type": "wokwi-slide-switch",
       "id": "fanSwitch",
-      "top": 2110,
-      "left": 1020,
+      "top": 2350,
+      "left": 1035,
       "attrs": {
         "value": "1",
         "bounce": "0"
@@ -379,26 +379,26 @@
     {
       "type": "wokwi-text",
       "id": "fanDirection",
-      "top": 2175,
-      "left": 935,
+      "top": 2420,
+      "left": 930,
       "attrs": {
-        "text": "LEFT: FAILED   RIGHT: OPERATIONAL"
+        "text": "LEFT=FAILED | RIGHT=OPERATIONAL | ACCEPTABLE=OPERATIONAL"
       }
     },
     {
       "type": "wokwi-text",
       "id": "rectifierLabel",
-      "top": 2050,
-      "left": 1220,
+      "top": 2300,
+      "left": 1320,
       "attrs": {
-        "text": "RECTIFIER"
+        "text": "RECTIFIER - GPIO19"
       }
     },
     {
       "type": "wokwi-slide-switch",
       "id": "rectifierSwitch",
-      "top": 2110,
-      "left": 1270,
+      "top": 2350,
+      "left": 1370,
       "attrs": {
         "value": "1",
         "bounce": "0"
@@ -407,26 +407,26 @@
     {
       "type": "wokwi-text",
       "id": "rectifierDirection",
-      "top": 2175,
-      "left": 1180,
+      "top": 2420,
+      "left": 1270,
       "attrs": {
-        "text": "LEFT: FAULT   RIGHT: NORMAL"
+        "text": "LEFT=FAULT | RIGHT=NORMAL | ACCEPTABLE=NORMAL"
       }
     },
     {
       "type": "wokwi-text",
       "id": "radioLabel",
-      "top": 2310,
-      "left": 1000,
+      "top": 2570,
+      "left": 1040,
       "attrs": {
-        "text": "RADIO SUBSYSTEM"
+        "text": "RADIO SUBSYSTEM - GPIO23"
       }
     },
     {
       "type": "wokwi-slide-switch",
       "id": "radioSwitch",
-      "top": 2370,
-      "left": 1060,
+      "top": 2620,
+      "left": 1120,
       "attrs": {
         "value": "1",
         "bounce": "0"
@@ -435,17 +435,17 @@
     {
       "type": "wokwi-text",
       "id": "radioDirection",
-      "top": 2435,
+      "top": 2690,
       "left": 970,
       "attrs": {
-        "text": "LEFT: FAULT   RIGHT: OPERATIONAL"
+        "text": "LEFT=FAULT | RIGHT=OPERATIONAL | ACCEPTABLE=OPERATIONAL"
       }
     },
     {
       "type": "wokwi-lcd2004",
       "id": "lcdAiRecommendations",
-      "top": 45,
-      "left": 1080,
+      "top": 65,
+      "left": 1040,
       "attrs": {
         "pins": "i2c",
         "i2cAddress": "0x21",
@@ -456,7 +456,7 @@
     {
       "type": "wokwi-lcd2004",
       "id": "lcdPicoActions",
-      "top": 45,
+      "top": 65,
       "left": 1430,
       "attrs": {
         "pins": "i2c",
@@ -468,8 +468,8 @@
     {
       "type": "wokwi-led",
       "id": "generatorLed",
-      "top": 1790,
-      "left": 1130,
+      "top": 1995,
+      "left": 1320,
       "attrs": {
         "color": "green",
         "label": "GENERATOR RUNNING"
@@ -478,10 +478,334 @@
     {
       "type": "wokwi-resistor",
       "id": "generatorLedResistor",
-      "top": 1800,
-      "left": 1060,
+      "top": 2005,
+      "left": 1220,
       "attrs": {
         "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_dht",
+      "top": 205,
+      "left": 45,
+      "attrs": {
+        "text": "GPIO15 | Temp input -40..80 C | Humidity 0..100% | demo 28 C / 45%"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_mpu",
+      "top": 415,
+      "left": 35,
+      "attrs": {
+        "text": "I2C GPIO21/22 | Dynamic vibration: healthy <1 | degraded 1..3 | fault >=3 m/s2"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_ds18b20",
+      "top": 620,
+      "left": 35,
+      "attrs": {
+        "text": "GPIO4 | PA healthy <65 C | degraded 65..<80 C | fault >=80 C"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_ds_pullup",
+      "top": 650,
+      "left": 55,
+      "attrs": {
+        "text": "4.7 kOhm pull-up resistor: DATA -> 3.3 V"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_esp32",
+      "top": 1080,
+      "left": 35,
+      "attrs": {
+        "text": "ADC inputs + I2C GPIO21/22 | Generator actuator output GPIO17 | USB/serial telemetry"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "layout_display_heading",
+      "top": 10,
+      "left": 760,
+      "attrs": {
+        "text": "SYSTEM DISPLAYS / OPERATOR CONSOLE - ISOLATED FROM INPUT CONTROLS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_lcd_values",
+      "top": 305,
+      "left": 650,
+      "attrs": {
+        "text": "LCD 1 - LIVE STATION VALUES"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_lcd_values",
+      "top": 335,
+      "left": 650,
+      "attrs": {
+        "text": "20x4 I2C | addr 0x20 | SDA GPIO21 | SCL GPIO22"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_lcd_ai",
+      "top": 305,
+      "left": 1040,
+      "attrs": {
+        "text": "LCD 2 - AI DIAGNOSIS / METRICS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_lcd_ai",
+      "top": 335,
+      "left": 1040,
+      "attrs": {
+        "text": "20x4 I2C | addr 0x21 | probabilities / anomaly / recommendations"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_lcd_pico",
+      "top": 305,
+      "left": 1430,
+      "attrs": {
+        "text": "LCD 3 - PICO DECISIONS / ACTIONS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_lcd_pico",
+      "top": 335,
+      "left": 1430,
+      "attrs": {
+        "text": "20x4 I2C | addr 0x22 | decision -> command -> actual state"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_dc_voltage",
+      "top": 515,
+      "left": 645,
+      "attrs": {
+        "text": "DC BUS VOLTAGE - GPIO34"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_dc_voltage",
+      "top": 665,
+      "left": 620,
+      "attrs": {
+        "text": "0..60 V | healthy 44..55 | degraded 40..<44 or >55..58 | fault <40 or >58"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_dc_current",
+      "top": 515,
+      "left": 1015,
+      "attrs": {
+        "text": "DC BUS CURRENT - GPIO35"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_dc_current",
+      "top": 665,
+      "left": 990,
+      "attrs": {
+        "text": "0..30 A | healthy <=20 A | degraded >20..25 A | fault >25 A"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_battery",
+      "top": 515,
+      "left": 1360,
+      "attrs": {
+        "text": "BATTERY VOLTAGE - GPIO32"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_battery",
+      "top": 665,
+      "left": 1320,
+      "attrs": {
+        "text": "0..15 V | SoC: 10.5 V=0%, 12.7 V=100% | grid down: generator recommendation <=40% SoC"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_rf_forward",
+      "top": 850,
+      "left": 770,
+      "attrs": {
+        "text": "RF FORWARD POWER - GPIO33"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_rf_forward",
+      "top": 995,
+      "left": 720,
+      "attrs": {
+        "text": "0..100 W | valid measurement requires forward >0.01 W and reflected < forward"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_rf_reflected",
+      "top": 850,
+      "left": 1220,
+      "attrs": {
+        "text": "RF REFLECTED POWER - GPIO36"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_rf_reflected",
+      "top": 995,
+      "left": 1160,
+      "attrs": {
+        "text": "0..100 W | RF health by VSWR: <1.5 excellent | <2 normal | <3 degraded | >=3 fault"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_latency",
+      "top": 1275,
+      "left": 655,
+      "attrs": {
+        "text": "LATENCY - GPIO25"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_latency",
+      "top": 1425,
+      "left": 600,
+      "attrs": {
+        "text": "10..1000 ms | healthy <200 | degraded 200..<600 | critical >=600 ms"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_packet_loss",
+      "top": 1275,
+      "left": 1000,
+      "attrs": {
+        "text": "PACKET LOSS - GPIO26"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_packet_loss",
+      "top": 1425,
+      "left": 960,
+      "attrs": {
+        "text": "0..100% | healthy <10% | degraded 10..<60% | critical >=60%"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_rssi",
+      "top": 1275,
+      "left": 1380,
+      "attrs": {
+        "text": "RSSI - GPIO27"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_rssi",
+      "top": 1425,
+      "left": 1330,
+      "attrs": {
+        "text": "-45..-120 dBm | healthy >-80 | degraded -80..>-95 | critical <=-95"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_generator",
+      "top": 2070,
+      "left": 1160,
+      "attrs": {
+        "text": "GPIO17 LOW=STOPPED | HIGH=RUNNING | green LED = actual actuator state"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_generator_resistor",
+      "top": 2100,
+      "left": 1180,
+      "attrs": {
+        "text": "Generator indicator series resistor = 220 Ohm"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_traffic",
+      "top": 2300,
+      "left": 650,
+      "attrs": {
+        "text": "TRAFFIC LOAD - GPIO39"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "spec_traffic",
+      "top": 2445,
+      "left": 610,
+      "attrs": {
+        "text": "0..100% | low <15% | high >=65% | hysteresis exit: REDUCED 25%, FULL 55%"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "layout_legend_heading",
+      "top": 2790,
+      "left": 700,
+      "attrs": {
+        "text": "PROJECT HEALTH / CONTROL LEGEND"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "layout_legend_1",
+      "top": 2830,
+      "left": 620,
+      "attrs": {
+        "text": "Green/normal values = expected healthy site | degraded thresholds trigger conservative control"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "layout_legend_2",
+      "top": 2860,
+      "left": 620,
+      "attrs": {
+        "text": "Fault/critical thresholds can force FULL/EMERGENCY via deterministic ESP32 guardrails"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "layout_legend_3",
+      "top": 2890,
+      "left": 620,
+      "attrs": {
+        "text": "AI recommends -> Pico decides -> ESP32 actuates/verifies -> LCD 3 reports actual action"
       }
     }
   ],
