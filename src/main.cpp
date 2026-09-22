@@ -1633,6 +1633,15 @@ void handleAiCommandLine(
     return;
   }
 
+  // Only restart the AI display when the AI decision itself
+  // changes. New 5-second metric updates must NOT reset the
+  // 12-page carousel, otherwise it can never reach later pages.
+  bool aiDisplayStateChanged =
+      !aiCommandEverReceived ||
+      faultDomain != aiFaultDomain ||
+      recommendedMode != aiRecommendedMode ||
+      anomalyFlag != aiAnomalyFlag;
+
   aiRecommendedMode =
       recommendedMode;
 
@@ -1885,12 +1894,16 @@ void handleAiCommandLine(
           ? "COMPLETE"
           : "INCOMPLETE";
 
-  // Start every new result on the human-readable summary page.
-  aiLcdPage =
-      0;
+  // A fresh inference updates the values in place.
+  // Restart at diagnosis only when the AI state itself changes.
+  if (aiDisplayStateChanged)
+  {
+    aiLcdPage =
+        0;
 
-  lastAiLCDPageTime =
-      millis();
+    lastAiLCDPageTime =
+        millis();
+  }
 
   lastAiCommandTime =
       millis();
