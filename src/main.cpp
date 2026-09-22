@@ -48,6 +48,7 @@
 const unsigned long FAST_INPUT_INTERVAL_MS = 50;
 const unsigned long LCD_REFRESH_INTERVAL_MS = 100;
 const unsigned long LCD_PAGE_INTERVAL_MS = 3000;
+const unsigned long AI_LCD_PAGE_INTERVAL_MS = 3500;
 const unsigned long MPU_INTERVAL_MS = 20;
 const unsigned long DHT_INTERVAL_MS = 2000;
 
@@ -634,12 +635,66 @@ String requestedOperatingModeReason = "STARTING";
 String aiRecommendedMode = "NONE";
 String aiRecommendationReason = "NO AI COMMAND";
 String aiFaultDomain = "UNKNOWN";
+String aiDiagnosticState = "WAITING";
 
 float aiDomainConfidence = 0.0f;
+
+float aiProbNormal = 0.0f;
+float aiProbLocal = 0.0f;
+float aiProbUpstream = 0.0f;
+float aiProbMixed = 0.0f;
+
 float aiAnomalyScore = 0.0f;
+float aiAnomalyThreshold = 0.0f;
+float aiAnomalyRatio = 0.0f;
+
+String aiLocalRootCause = "NOT_APPLICABLE";
+String aiUpstreamRootCause = "NOT_APPLICABLE";
+
+float aiLocalRootConfidence = 0.0f;
+float aiUpstreamRootConfidence = 0.0f;
+
+float aiLocalProbCooling = 0.0f;
+float aiLocalProbRadio = 0.0f;
+float aiLocalProbRectifier = 0.0f;
+float aiLocalProbRfMismatch = 0.0f;
+float aiLocalProbBatteryLow = 0.0f;
+float aiLocalProbGridFailure = 0.0f;
+float aiLocalProbVibration = 0.0f;
+float aiLocalProbTraffic = 0.0f;
+
+float aiUpstreamProbCongestion = 0.0f;
+float aiUpstreamProbDegradation = 0.0f;
+float aiUpstreamProbFailure = 0.0f;
+float aiUpstreamProbOutage = 0.0f;
+
+float aiInferenceMs = 0.0f;
+float aiWindowCount = 0.0f;
+float aiWindowSeconds = 0.0f;
+
+float aiContextTrafficPct = 0.0f;
+float aiContextBatterySocPct = 0.0f;
+bool aiContextGridAvailable = false;
+bool aiContextGeneratorRunning = false;
+
+float aiModelDomainAccuracy = 0.0f;
+float aiModelDomainBalancedAccuracy = 0.0f;
+float aiModelDomainMacroF1 = 0.0f;
+float aiModelDomainLogLoss = 0.0f;
+float aiModelLocalHeadAccuracy = 0.0f;
+float aiModelUpstreamHeadAccuracy = 0.0f;
+float aiModelLocalE2EAccuracy = 0.0f;
+float aiModelUpstreamE2EAccuracy = 0.0f;
+float aiModelMixedExactAccuracy = 0.0f;
+float aiModelHierarchyAccuracy = 0.0f;
+float aiModelAnomalyRocAuc = 0.0f;
+float aiModelAnomalyAveragePrecision = 0.0f;
+float aiModelAnomalyFpr = 0.0f;
+float aiModelAnomalyDetectionRate = 0.0f;
 
 bool aiAnomalyFlag = false;
 bool aiCommandEverReceived = false;
+bool aiExtendedMetricsAvailable = false;
 
 unsigned long lastAiCommandTime = 0;
 
@@ -688,6 +743,9 @@ bool ds18b20ConversionPending = false;
 
 uint8_t lcdPage = 0;
 unsigned long lastLCDPageTime = 0;
+
+uint8_t aiLcdPage = 0;
+unsigned long lastAiLCDPageTime = 0;
 
 String lastLCDLine0 = "";
 String lastLCDLine1 = "";
@@ -1570,6 +1628,242 @@ void handleAiCommandLine(
   aiAnomalyScore =
       anomalyScore;
 
+  // --------------------------------------------------
+  // EXTENDED REAL AI METRICS
+  // --------------------------------------------------
+  // Core v1 fields above remain valid. The bridge now sends
+  // the complete live inference vector, root-cause metrics,
+  // runtime metrics and held-out model performance metrics.
+  //
+  aiExtendedMetricsAvailable =
+      extractAiStringField(
+          json,
+          "diagnostic_state",
+          aiDiagnosticState
+      ) &&
+      extractAiFloatField(
+          json,
+          "prob_normal",
+          aiProbNormal
+      ) &&
+      extractAiFloatField(
+          json,
+          "prob_local",
+          aiProbLocal
+      ) &&
+      extractAiFloatField(
+          json,
+          "prob_upstream",
+          aiProbUpstream
+      ) &&
+      extractAiFloatField(
+          json,
+          "prob_mixed",
+          aiProbMixed
+      ) &&
+      extractAiFloatField(
+          json,
+          "anomaly_threshold",
+          aiAnomalyThreshold
+      ) &&
+      extractAiFloatField(
+          json,
+          "anomaly_ratio",
+          aiAnomalyRatio
+      ) &&
+      extractAiStringField(
+          json,
+          "local_root_cause",
+          aiLocalRootCause
+      ) &&
+      extractAiFloatField(
+          json,
+          "local_root_confidence",
+          aiLocalRootConfidence
+      ) &&
+      extractAiStringField(
+          json,
+          "upstream_root_cause",
+          aiUpstreamRootCause
+      ) &&
+      extractAiFloatField(
+          json,
+          "upstream_root_confidence",
+          aiUpstreamRootConfidence
+      ) &&
+      extractAiFloatField(
+          json,
+          "local_prob_cooling",
+          aiLocalProbCooling
+      ) &&
+      extractAiFloatField(
+          json,
+          "local_prob_radio",
+          aiLocalProbRadio
+      ) &&
+      extractAiFloatField(
+          json,
+          "local_prob_rectifier",
+          aiLocalProbRectifier
+      ) &&
+      extractAiFloatField(
+          json,
+          "local_prob_rf_mismatch",
+          aiLocalProbRfMismatch
+      ) &&
+      extractAiFloatField(
+          json,
+          "local_prob_battery_low",
+          aiLocalProbBatteryLow
+      ) &&
+      extractAiFloatField(
+          json,
+          "local_prob_grid_failure",
+          aiLocalProbGridFailure
+      ) &&
+      extractAiFloatField(
+          json,
+          "local_prob_vibration",
+          aiLocalProbVibration
+      ) &&
+      extractAiFloatField(
+          json,
+          "local_prob_traffic",
+          aiLocalProbTraffic
+      ) &&
+      extractAiFloatField(
+          json,
+          "upstream_prob_congestion",
+          aiUpstreamProbCongestion
+      ) &&
+      extractAiFloatField(
+          json,
+          "upstream_prob_degradation",
+          aiUpstreamProbDegradation
+      ) &&
+      extractAiFloatField(
+          json,
+          "upstream_prob_failure",
+          aiUpstreamProbFailure
+      ) &&
+      extractAiFloatField(
+          json,
+          "upstream_prob_outage",
+          aiUpstreamProbOutage
+      ) &&
+      extractAiFloatField(
+          json,
+          "inference_ms",
+          aiInferenceMs
+      ) &&
+      extractAiFloatField(
+          json,
+          "window_count",
+          aiWindowCount
+      ) &&
+      extractAiFloatField(
+          json,
+          "window_seconds",
+          aiWindowSeconds
+      ) &&
+      extractAiFloatField(
+          json,
+          "context_traffic_pct",
+          aiContextTrafficPct
+      ) &&
+      extractAiFloatField(
+          json,
+          "context_battery_soc_pct",
+          aiContextBatterySocPct
+      ) &&
+      extractAiBoolField(
+          json,
+          "context_grid_available",
+          aiContextGridAvailable
+      ) &&
+      extractAiBoolField(
+          json,
+          "context_generator_running",
+          aiContextGeneratorRunning
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_domain_accuracy",
+          aiModelDomainAccuracy
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_domain_balanced_accuracy",
+          aiModelDomainBalancedAccuracy
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_domain_macro_f1",
+          aiModelDomainMacroF1
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_domain_log_loss",
+          aiModelDomainLogLoss
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_local_head_accuracy",
+          aiModelLocalHeadAccuracy
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_upstream_head_accuracy",
+          aiModelUpstreamHeadAccuracy
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_local_e2e_accuracy",
+          aiModelLocalE2EAccuracy
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_upstream_e2e_accuracy",
+          aiModelUpstreamE2EAccuracy
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_mixed_exact_accuracy",
+          aiModelMixedExactAccuracy
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_hierarchy_accuracy",
+          aiModelHierarchyAccuracy
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_anomaly_roc_auc",
+          aiModelAnomalyRocAuc
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_anomaly_average_precision",
+          aiModelAnomalyAveragePrecision
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_anomaly_fpr",
+          aiModelAnomalyFpr
+      ) &&
+      extractAiFloatField(
+          json,
+          "model_anomaly_detection_rate",
+          aiModelAnomalyDetectionRate
+      );
+
+  // Start every new result on the human-readable summary page.
+  aiLcdPage =
+      0;
+
+  lastAiLCDPageTime =
+      millis();
+
   lastAiCommandTime =
       millis();
 
@@ -1619,7 +1913,7 @@ void serviceAiCommandSerial()
 
     if (
         aiSerialBuffer.length() <
-        768)
+        4096)
     {
       aiSerialBuffer +=
           c;
@@ -4297,15 +4591,204 @@ void handleDS18B20(
 }
 
 // ====================================================
+// HUMAN-READABLE AI LCD HELPERS
+// ====================================================
+
+String aiDiagnosisSentence()
+{
+  if (aiFaultDomain == "NORMAL")
+  {
+    return "Site looks normal";
+  }
+
+  if (aiFaultDomain == "LOCAL")
+  {
+    return "Local fault detected";
+  }
+
+  if (aiFaultDomain == "UPSTREAM")
+  {
+    return "Upstream fault found";
+  }
+
+  if (aiFaultDomain == "MIXED")
+  {
+    return "Local + upstream";
+  }
+
+  return "Diagnosis pending";
+}
+
+
+String aiRecommendationSentence()
+{
+  if (aiRecommendedMode == "FULL")
+  {
+    return "Use FULL capacity";
+  }
+
+  if (aiRecommendedMode == "ECO")
+  {
+    return "Use ECO mode";
+  }
+
+  if (aiRecommendedMode == "REDUCED")
+  {
+    return "Use REDUCED mode";
+  }
+
+  if (aiRecommendedMode == "EMERGENCY")
+  {
+    return "Use EMERGENCY mode";
+  }
+
+  return "No recommendation";
+}
+
+
+String aiReasonSentence()
+{
+  if (
+      aiRecommendationReason ==
+      "CRITICAL BACKUP ENERGY")
+  {
+    return "Protect backup power";
+  }
+
+  if (
+      aiRecommendationReason ==
+      "UNCERTAIN / UNKNOWN ABNORMALITY")
+  {
+    return "Keep full capacity";
+  }
+
+  if (
+      aiRecommendationReason ==
+      "LOCAL SERVICE/RECOVERY PRIORITY")
+  {
+    return "Prioritize recovery";
+  }
+
+  if (
+      aiRecommendationReason ==
+      "LOCAL ENERGY CONSERVATION")
+  {
+    return "Conserve site energy";
+  }
+
+  if (
+      aiRecommendationReason ==
+      "BACKHAUL LOSS ENERGY CONSERVATION")
+  {
+    return "Save energy on outage";
+  }
+
+  if (
+      aiRecommendationReason ==
+      "HIGH TRAFFIC")
+  {
+    return "High traffic demand";
+  }
+
+  if (
+      aiRecommendationReason ==
+      "LOW TRAFFIC HEALTHY SITE")
+  {
+    return "Low traffic: save";
+  }
+
+  if (
+      aiRecommendationReason ==
+      "MODERATE LOAD / CONSERVATIVE ECO")
+  {
+    return "Moderate load: ECO";
+  }
+
+  return aiRecommendationReason;
+}
+
+
+String shortLocalCause(
+    const String &cause)
+{
+  if (cause == "COOLING_FAULT")
+  {
+    return "Cooling fault";
+  }
+
+  if (cause == "RADIO_FAULT")
+  {
+    return "Radio fault";
+  }
+
+  if (cause == "RECTIFIER_FAULT")
+  {
+    return "Rectifier fault";
+  }
+
+  if (cause == "RF_MISMATCH")
+  {
+    return "RF mismatch";
+  }
+
+  if (cause == "BATTERY_LOW")
+  {
+    return "Battery low";
+  }
+
+  if (cause == "GRID_FAILURE")
+  {
+    return "Grid failure";
+  }
+
+  if (cause == "MECHANICAL_VIBRATION")
+  {
+    return "Mechanical vibration";
+  }
+
+  if (cause == "TRAFFIC_OVERLOAD")
+  {
+    return "Traffic overload";
+  }
+
+  return "Not applicable";
+}
+
+
+String shortUpstreamCause(
+    const String &cause)
+{
+  if (cause == "BACKHAUL_CONGESTION")
+  {
+    return "Backhaul congestion";
+  }
+
+  if (cause == "UPSTREAM_LINK_DEGRADATION")
+  {
+    return "Link degradation";
+  }
+
+  if (cause == "UPSTREAM_LINK_FAILURE")
+  {
+    return "Upstream link fail";
+  }
+
+  if (cause == "UPSTREAM_OUTAGE")
+  {
+    return "Upstream outage";
+  }
+
+  return "Not applicable";
+}
+
+
+// ====================================================
 // LCD INITIALISATION
 // ====================================================
 
 void initialiseLCDs()
 {
-  // --------------------------------------------------
-  // LCD 1 - LIVE VALUES
-  // --------------------------------------------------
-
+  // LCD 1 - station values.
   lcdDcVoltage.init();
   lcdDcVoltage.backlight();
   lcdDcVoltage.clear();
@@ -4334,10 +4817,7 @@ void initialiseLCDs()
       "Starting..."
   );
 
-  // --------------------------------------------------
-  // LCD 2 - AI RECOMMENDATIONS
-  // --------------------------------------------------
-
+  // LCD 2 - AI explanations + real metrics.
   lcdAiRecommendations.init();
   lcdAiRecommendations.backlight();
   lcdAiRecommendations.clear();
@@ -4345,28 +4825,31 @@ void initialiseLCDs()
   writeLCDLine(
       lcdAiRecommendations,
       0,
-      "AI RECOMMENDATIONS"
+      "AI DIAGNOSTICS"
   );
 
   writeLCDLine(
       lcdAiRecommendations,
       1,
-      "Waiting for AI..."
+      "Collecting 24 frames"
   );
 
   writeLCDLine(
       lcdAiRecommendations,
       2,
-      "FINAL:STARTING"
+      "Window = 120 seconds"
   );
 
   writeLCDLine(
       lcdAiRecommendations,
       3,
-      "GUARD:STARTING"
+      "Waiting for AI..."
   );
 
   lastLCDPageTime =
+      millis();
+
+  lastAiLCDPageTime =
       millis();
 }
 
@@ -4374,15 +4857,12 @@ void initialiseLCDs()
 // ====================================================
 // DUAL 20x4 LCD REFRESH
 // ====================================================
-//
-// LCD 1 rotates through live sensor/site/network values.
-// LCD 2 always shows the latest AI diagnosis,
-// recommendation, final applied mode and guardrail result.
-//
+
 void refreshLCDs(
     bool force = false)
 {
-  const uint8_t LCD_PAGE_COUNT = 3;
+  const uint8_t VALUES_PAGE_COUNT = 3;
+  const uint8_t AI_PAGE_COUNT = 12;
 
   unsigned long now =
       millis();
@@ -4396,9 +4876,27 @@ void refreshLCDs(
             lcdPage +
             1
         ) %
-        LCD_PAGE_COUNT;
+        VALUES_PAGE_COUNT;
 
     lastLCDPageTime =
+        now;
+
+    force =
+        true;
+  }
+
+  if (
+      now - lastAiLCDPageTime >=
+      AI_LCD_PAGE_INTERVAL_MS)
+  {
+    aiLcdPage =
+        (
+            aiLcdPage +
+            1
+        ) %
+        AI_PAGE_COUNT;
+
+    lastAiLCDPageTime =
         now;
 
     force =
@@ -4416,44 +4914,23 @@ void refreshLCDs(
 
   switch (lcdPage)
   {
-    // --------------------------------------------------
-    // PAGE 1 - MAIN ELECTRICAL / THERMAL VALUES
-    // --------------------------------------------------
     case 0:
       line0 =
           "V" +
-          String(
-              dcBusVoltage,
-              1
-          ) +
+          String(dcBusVoltage, 1) +
           " I" +
-          String(
-              dcBusCurrent,
-              1
-          ) +
+          String(dcBusCurrent, 1) +
           " P" +
-          String(
-              dcPower,
-              0
-          ) +
+          String(dcPower, 0) +
           "W";
 
       line1 =
           "PA" +
-          String(
-              paTemperature,
-              1
-          ) +
+          String(paTemperature, 1) +
           "C BAT" +
-          String(
-              batterySOC,
-              0
-          ) +
+          String(batterySOC, 0) +
           "% H" +
-          String(
-              humidity,
-              0
-          ) +
+          String(humidity, 0) +
           "%";
 
       line2 =
@@ -4471,48 +4948,27 @@ void refreshLCDs(
           "%";
       break;
 
-    // --------------------------------------------------
-    // PAGE 2 - RF / BACKHAUL VALUES
-    // --------------------------------------------------
     case 1:
       line0 =
           "RF F" +
-          String(
-              rfForwardPower,
-              1
-          ) +
+          String(rfForwardPower, 1) +
           " R" +
-          String(
-              rfReflectedPower,
-              1
-          ) +
+          String(rfReflectedPower, 1) +
           "W";
 
       line1 =
           "VSWR" +
-          String(
-              vswr,
-              2
-          ) +
+          String(vswr, 2) +
           " RF:" +
           rfHealth;
 
       line2 =
           "LAT" +
-          String(
-              latency,
-              0
-          ) +
+          String(latency, 0) +
           " L" +
-          String(
-              packetLoss,
-              1
-          ) +
+          String(packetLoss, 1) +
           " R" +
-          String(
-              rssi,
-              0
-          );
+          String(rssi, 0);
 
       line3 =
           String("BH:") +
@@ -4525,9 +4981,6 @@ void refreshLCDs(
           );
       break;
 
-    // --------------------------------------------------
-    // PAGE 3 - POWER SOURCE / EQUIPMENT VALUES
-    // --------------------------------------------------
     case 2:
     default:
       line0 =
@@ -4580,88 +5033,61 @@ void refreshLCDs(
       break;
   }
 
-  String padded0 =
-      padLCDText(
-          line0
-      );
-
-  String padded1 =
-      padLCDText(
-          line1
-      );
-
-  String padded2 =
-      padLCDText(
-          line2
-      );
-
-  String padded3 =
-      padLCDText(
-          line3
-      );
+  String padded0 = padLCDText(line0);
+  String padded1 = padLCDText(line1);
+  String padded2 = padLCDText(line2);
+  String padded3 = padLCDText(line3);
 
   if (
       force ||
-      padded0 !=
-          lastLCDLine0)
+      padded0 != lastLCDLine0)
   {
     writeLCDLine(
         lcdDcVoltage,
         0,
         line0
     );
-
-    lastLCDLine0 =
-        padded0;
+    lastLCDLine0 = padded0;
   }
 
   if (
       force ||
-      padded1 !=
-          lastLCDLine1)
+      padded1 != lastLCDLine1)
   {
     writeLCDLine(
         lcdDcVoltage,
         1,
         line1
     );
-
-    lastLCDLine1 =
-        padded1;
+    lastLCDLine1 = padded1;
   }
 
   if (
       force ||
-      padded2 !=
-          lastLCDLine2)
+      padded2 != lastLCDLine2)
   {
     writeLCDLine(
         lcdDcVoltage,
         2,
         line2
     );
-
-    lastLCDLine2 =
-        padded2;
+    lastLCDLine2 = padded2;
   }
 
   if (
       force ||
-      padded3 !=
-          lastLCDLine3)
+      padded3 != lastLCDLine3)
   {
     writeLCDLine(
         lcdDcVoltage,
         3,
         line3
     );
-
-    lastLCDLine3 =
-        padded3;
+    lastLCDLine3 = padded3;
   }
 
   // ==================================================
-  // LCD 2 - AI RECOMMENDATIONS
+  // LCD 2 - READABLE AI + REAL METRICS
   // ==================================================
 
   String aiLine0;
@@ -4669,75 +5095,490 @@ void refreshLCDs(
   String aiLine2;
   String aiLine3;
 
-  if (aiCommandEverReceived)
+  if (!aiCommandEverReceived)
   {
     aiLine0 =
-        "AI:" +
-        aiFaultDomain +
-        " " +
-        String(
-            aiDomainConfidence *
-            100.0f,
-            1
-        ) +
-        "%";
+        "AI DIAGNOSTICS";
 
     aiLine1 =
-        "REC:" +
-        aiRecommendedMode +
-        " AN:" +
-        (
-            aiAnomalyFlag
-                ? "YES"
-                : "NO"
-        );
+        "Collecting 24 frames";
 
     aiLine2 =
-        "FINAL:" +
-        operatingMode +
-        " REQ:" +
-        requestedOperatingMode;
+        "Need 120s history";
 
     aiLine3 =
-        "GUARD:" +
-        guardrailStatus;
+        "Waiting for result";
+  }
+  else if (!aiExtendedMetricsAvailable)
+  {
+    aiLine0 =
+        "AI RESULT RECEIVED";
+
+    aiLine1 =
+        aiDiagnosisSentence();
+
+    aiLine2 =
+        aiRecommendationSentence();
+
+    aiLine3 =
+        "Metrics incomplete";
   }
   else
   {
-    aiLine0 =
-        "AI:WAITING";
+    switch (aiLcdPage)
+    {
+      // ----------------------------------------------
+      // PAGE 1 - HUMAN DIAGNOSIS
+      // ----------------------------------------------
+      case 0:
+        aiLine0 =
+            "AI DIAGNOSIS";
 
-    aiLine1 =
-        "REC:NONE";
+        aiLine1 =
+            aiDiagnosisSentence();
 
-    aiLine2 =
-        "FINAL:" +
-        operatingMode;
+        aiLine2 =
+            "Confidence " +
+            String(
+                aiDomainConfidence *
+                100.0f,
+                1
+            ) +
+            "%";
 
-    aiLine3 =
-        "GUARD:" +
-        guardrailStatus;
+        aiLine3 =
+            "State: " +
+            aiDiagnosticState;
+        break;
+
+      // ----------------------------------------------
+      // PAGE 2 - HUMAN RECOMMENDATION
+      // ----------------------------------------------
+      case 1:
+        aiLine0 =
+            "AI RECOMMENDATION";
+
+        aiLine1 =
+            aiRecommendationSentence();
+
+        aiLine2 =
+            aiReasonSentence();
+
+        aiLine3 =
+            "Final " +
+            operatingMode +
+            " / " +
+            guardrailStatus;
+        break;
+
+      // ----------------------------------------------
+      // PAGE 3 - DOMAIN PROBABILITY VECTOR
+      // ----------------------------------------------
+      case 2:
+        aiLine0 =
+            "DOMAIN PROBABILITY";
+
+        aiLine1 =
+            "Normal " +
+            String(
+                aiProbNormal *
+                100.0f,
+                1
+            ) +
+            "%";
+
+        aiLine2 =
+            "Local " +
+            String(
+                aiProbLocal *
+                100.0f,
+                1
+            ) +
+            "% Up " +
+            String(
+                aiProbUpstream *
+                100.0f,
+                1
+            ) +
+            "%";
+
+        aiLine3 =
+            "Mixed " +
+            String(
+                aiProbMixed *
+                100.0f,
+                1
+            ) +
+            "%";
+        break;
+
+      // ----------------------------------------------
+      // PAGE 4 - ANOMALY METRICS
+      // ----------------------------------------------
+      case 3:
+        aiLine0 =
+            "ANOMALY DETECTOR";
+
+        aiLine1 =
+            aiAnomalyFlag
+                ? "Anomaly detected"
+                : "No anomaly detected";
+
+        aiLine2 =
+            "Score " +
+            String(
+                aiAnomalyScore,
+                3
+            ) +
+            " Th " +
+            String(
+                aiAnomalyThreshold,
+                3
+            );
+
+        aiLine3 =
+            "Ratio " +
+            String(
+                aiAnomalyRatio,
+                2
+            ) +
+            "x";
+        break;
+
+      // ----------------------------------------------
+      // PAGE 5 - ROOT CAUSE WINNERS
+      // ----------------------------------------------
+      case 4:
+        aiLine0 =
+            "ROOT CAUSE";
+
+        if (
+            aiLocalRootCause !=
+            "NOT_APPLICABLE")
+        {
+          aiLine1 =
+              "Local: " +
+              shortLocalCause(
+                  aiLocalRootCause
+              );
+
+          aiLine2 =
+              "Local conf " +
+              String(
+                  aiLocalRootConfidence *
+                  100.0f,
+                  1
+              ) +
+              "%";
+        }
+        else
+        {
+          aiLine1 =
+              "Local: not needed";
+
+          aiLine2 =
+              "No local cause";
+        }
+
+        if (
+            aiUpstreamRootCause !=
+            "NOT_APPLICABLE")
+        {
+          aiLine3 =
+              "Up: " +
+              shortUpstreamCause(
+                  aiUpstreamRootCause
+              );
+        }
+        else
+        {
+          aiLine3 =
+              "Upstream: not needed";
+        }
+        break;
+
+      // ----------------------------------------------
+      // PAGE 6 - LOCAL ROOT PROBABILITIES A
+      // ----------------------------------------------
+      case 5:
+        aiLine0 =
+            "LOCAL ROOT PROBS";
+
+        aiLine1 =
+            "Cool " +
+            String(
+                aiLocalProbCooling *
+                100.0f,
+                1
+            ) +
+            " Rad " +
+            String(
+                aiLocalProbRadio *
+                100.0f,
+                1
+            );
+
+        aiLine2 =
+            "Rect " +
+            String(
+                aiLocalProbRectifier *
+                100.0f,
+                1
+            ) +
+            " RF " +
+            String(
+                aiLocalProbRfMismatch *
+                100.0f,
+                1
+            );
+
+        aiLine3 =
+            "Bat " +
+            String(
+                aiLocalProbBatteryLow *
+                100.0f,
+                1
+            ) +
+            " Grid " +
+            String(
+                aiLocalProbGridFailure *
+                100.0f,
+                1
+            );
+        break;
+
+      // ----------------------------------------------
+      // PAGE 7 - LOCAL ROOT PROBABILITIES B
+      // ----------------------------------------------
+      case 6:
+        aiLine0 =
+            "LOCAL PROBS CONT.";
+
+        aiLine1 =
+            "Vibration " +
+            String(
+                aiLocalProbVibration *
+                100.0f,
+                1
+            ) +
+            "%";
+
+        aiLine2 =
+            "Traffic " +
+            String(
+                aiLocalProbTraffic *
+                100.0f,
+                1
+            ) +
+            "%";
+
+        aiLine3 =
+            "Winner " +
+            shortLocalCause(
+                aiLocalRootCause
+            );
+        break;
+
+      // ----------------------------------------------
+      // PAGE 8 - UPSTREAM ROOT PROBABILITIES
+      // ----------------------------------------------
+      case 7:
+        aiLine0 =
+            "UPSTREAM ROOT PROBS";
+
+        aiLine1 =
+            "Cong " +
+            String(
+                aiUpstreamProbCongestion *
+                100.0f,
+                1
+            ) +
+            " Degr " +
+            String(
+                aiUpstreamProbDegradation *
+                100.0f,
+                1
+            );
+
+        aiLine2 =
+            "Fail " +
+            String(
+                aiUpstreamProbFailure *
+                100.0f,
+                1
+            ) +
+            " Out " +
+            String(
+                aiUpstreamProbOutage *
+                100.0f,
+                1
+            );
+
+        aiLine3 =
+            "Conf " +
+            String(
+                aiUpstreamRootConfidence *
+                100.0f,
+                1
+            ) +
+            "%";
+        break;
+
+      // ----------------------------------------------
+      // PAGE 9 - RUNTIME / TEMPORAL WINDOW
+      // ----------------------------------------------
+      case 8:
+        aiLine0 =
+            "AI RUNTIME";
+
+        aiLine1 =
+            "Window " +
+            String(
+                aiWindowCount,
+                0
+            ) +
+            "/24 = " +
+            String(
+                aiWindowSeconds,
+                0
+            ) +
+            "s";
+
+        aiLine2 =
+            "Inference " +
+            String(
+                aiInferenceMs,
+                1
+            ) +
+            " ms";
+
+        aiLine3 =
+            "Status: " +
+            aiCommandStatus;
+        break;
+
+      // ----------------------------------------------
+      // PAGE 10 - DOMAIN MODEL VALIDATION
+      // ----------------------------------------------
+      case 9:
+        aiLine0 =
+            "MODEL TEST METRICS";
+
+        aiLine1 =
+            "Accuracy " +
+            String(
+                aiModelDomainAccuracy *
+                100.0f,
+                1
+            ) +
+            "%";
+
+        aiLine2 =
+            "Balanced " +
+            String(
+                aiModelDomainBalancedAccuracy *
+                100.0f,
+                1
+            ) +
+            "%";
+
+        aiLine3 =
+            "Macro F1 " +
+            String(
+                aiModelDomainMacroF1 *
+                100.0f,
+                1
+            ) +
+            "%";
+        break;
+
+      // ----------------------------------------------
+      // PAGE 11 - END-TO-END VALIDATION
+      // ----------------------------------------------
+      case 10:
+        aiLine0 =
+            "END-TO-END TEST";
+
+        aiLine1 =
+            "Local " +
+            String(
+                aiModelLocalE2EAccuracy *
+                100.0f,
+                1
+            ) +
+            " Up " +
+            String(
+                aiModelUpstreamE2EAccuracy *
+                100.0f,
+                1
+            );
+
+        aiLine2 =
+            "Mixed exact " +
+            String(
+                aiModelMixedExactAccuracy *
+                100.0f,
+                1
+            ) +
+            "%";
+
+        aiLine3 =
+            "Hierarchy " +
+            String(
+                aiModelHierarchyAccuracy *
+                100.0f,
+                1
+            ) +
+            "%";
+        break;
+
+      // ----------------------------------------------
+      // PAGE 12 - ANOMALY MODEL VALIDATION
+      // ----------------------------------------------
+      case 11:
+      default:
+        aiLine0 =
+            "ANOMALY MODEL TEST";
+
+        aiLine1 =
+            "ROC-AUC " +
+            String(
+                aiModelAnomalyRocAuc *
+                100.0f,
+                1
+            ) +
+            "%";
+
+        aiLine2 =
+            "AP " +
+            String(
+                aiModelAnomalyAveragePrecision *
+                100.0f,
+                1
+            ) +
+            "% FPR " +
+            String(
+                aiModelAnomalyFpr *
+                100.0f,
+                1
+            );
+
+        aiLine3 =
+            "Detect " +
+            String(
+                aiModelAnomalyDetectionRate *
+                100.0f,
+                1
+            ) +
+            "%";
+        break;
+    }
   }
 
-  String aiPadded0 =
-      padLCDText(
-          aiLine0
-      );
-
-  String aiPadded1 =
-      padLCDText(
-          aiLine1
-      );
-
-  String aiPadded2 =
-      padLCDText(
-          aiLine2
-      );
-
-  String aiPadded3 =
-      padLCDText(
-          aiLine3
-      );
+  String aiPadded0 = padLCDText(aiLine0);
+  String aiPadded1 = padLCDText(aiLine1);
+  String aiPadded2 = padLCDText(aiLine2);
+  String aiPadded3 = padLCDText(aiLine3);
 
   if (
       force ||
@@ -4749,9 +5590,7 @@ void refreshLCDs(
         0,
         aiLine0
     );
-
-    lastAiLCDLine0 =
-        aiPadded0;
+    lastAiLCDLine0 = aiPadded0;
   }
 
   if (
@@ -4764,9 +5603,7 @@ void refreshLCDs(
         1,
         aiLine1
     );
-
-    lastAiLCDLine1 =
-        aiPadded1;
+    lastAiLCDLine1 = aiPadded1;
   }
 
   if (
@@ -4779,9 +5616,7 @@ void refreshLCDs(
         2,
         aiLine2
     );
-
-    lastAiLCDLine2 =
-        aiPadded2;
+    lastAiLCDLine2 = aiPadded2;
   }
 
   if (
@@ -4794,9 +5629,7 @@ void refreshLCDs(
         3,
         aiLine3
     );
-
-    lastAiLCDLine3 =
-        aiPadded3;
+    lastAiLCDLine3 = aiPadded3;
   }
 }
 
@@ -5192,6 +6025,58 @@ void printMachineReadableTelemetry()
 
   Serial.print(",\"ai_anomaly_score\":");
   Serial.print(aiAnomalyScore, 4);
+
+  Serial.print(",\"ai_diagnostic_state\":\"");
+  Serial.print(aiDiagnosticState);
+  Serial.print("\"");
+
+  Serial.print(",\"ai_prob_normal\":");
+  Serial.print(aiProbNormal, 6);
+
+  Serial.print(",\"ai_prob_local\":");
+  Serial.print(aiProbLocal, 6);
+
+  Serial.print(",\"ai_prob_upstream\":");
+  Serial.print(aiProbUpstream, 6);
+
+  Serial.print(",\"ai_prob_mixed\":");
+  Serial.print(aiProbMixed, 6);
+
+  Serial.print(",\"ai_anomaly_threshold\":");
+  Serial.print(aiAnomalyThreshold, 6);
+
+  Serial.print(",\"ai_anomaly_ratio\":");
+  Serial.print(aiAnomalyRatio, 6);
+
+  Serial.print(",\"ai_local_root_cause\":\"");
+  Serial.print(aiLocalRootCause);
+  Serial.print("\"");
+
+  Serial.print(",\"ai_local_root_confidence\":");
+  Serial.print(aiLocalRootConfidence, 6);
+
+  Serial.print(",\"ai_upstream_root_cause\":\"");
+  Serial.print(aiUpstreamRootCause);
+  Serial.print("\"");
+
+  Serial.print(",\"ai_upstream_root_confidence\":");
+  Serial.print(aiUpstreamRootConfidence, 6);
+
+  Serial.print(",\"ai_inference_ms\":");
+  Serial.print(aiInferenceMs, 3);
+
+  Serial.print(",\"ai_window_count\":");
+  Serial.print(aiWindowCount, 0);
+
+  Serial.print(",\"ai_window_seconds\":");
+  Serial.print(aiWindowSeconds, 0);
+
+  Serial.print(",\"ai_metrics_complete\":");
+  Serial.print(
+      aiExtendedMetricsAvailable
+          ? "true"
+          : "false"
+  );
 
   Serial.print(",\"ai_command_age_ms\":");
 
@@ -6768,6 +7653,542 @@ void printTelemetry()
 
   Serial.println(
       "Label Source        : RULE-BASED SIMULATION GROUND TRUTH"
+  );
+
+  // --------------------------------------------------
+  // LIVE AI METRICS
+  // --------------------------------------------------
+
+  Serial.println();
+
+  Serial.println(
+      "[ LIVE AI METRICS - REAL MODEL OUTPUT ]"
+  );
+
+  Serial.print(
+      "Diagnostic State     : "
+  );
+  Serial.println(
+      aiDiagnosticState
+  );
+
+  Serial.print(
+      "Fault Domain         : "
+  );
+  Serial.println(
+      aiFaultDomain
+  );
+
+  Serial.print(
+      "Domain Confidence    : "
+  );
+  Serial.print(
+      aiDomainConfidence *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.println(
+      "Domain Probabilities :"
+  );
+
+  Serial.print(
+      "  NORMAL             : "
+  );
+  Serial.print(
+      aiProbNormal *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  LOCAL              : "
+  );
+  Serial.print(
+      aiProbLocal *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  UPSTREAM           : "
+  );
+  Serial.print(
+      aiProbUpstream *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  MIXED              : "
+  );
+  Serial.print(
+      aiProbMixed *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.println();
+
+  Serial.println(
+      "Anomaly Detection    :"
+  );
+
+  Serial.print(
+      "  Flagged            : "
+  );
+  Serial.println(
+      aiAnomalyFlag
+          ? "YES"
+          : "NO"
+  );
+
+  Serial.print(
+      "  Score              : "
+  );
+  Serial.println(
+      aiAnomalyScore,
+      6
+  );
+
+  Serial.print(
+      "  Threshold          : "
+  );
+  Serial.println(
+      aiAnomalyThreshold,
+      6
+  );
+
+  Serial.print(
+      "  Score/Threshold    : "
+  );
+  Serial.print(
+      aiAnomalyRatio,
+      4
+  );
+  Serial.println(" x");
+
+  Serial.println();
+
+  Serial.println(
+      "Local Root Cause     :"
+  );
+
+  Serial.print(
+      "  Winner             : "
+  );
+  Serial.println(
+      aiLocalRootCause
+  );
+
+  Serial.print(
+      "  Confidence         : "
+  );
+  Serial.print(
+      aiLocalRootConfidence *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  COOLING_FAULT      : "
+  );
+  Serial.print(
+      aiLocalProbCooling *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  RADIO_FAULT        : "
+  );
+  Serial.print(
+      aiLocalProbRadio *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  RECTIFIER_FAULT    : "
+  );
+  Serial.print(
+      aiLocalProbRectifier *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  RF_MISMATCH        : "
+  );
+  Serial.print(
+      aiLocalProbRfMismatch *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  BATTERY_LOW        : "
+  );
+  Serial.print(
+      aiLocalProbBatteryLow *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  GRID_FAILURE       : "
+  );
+  Serial.print(
+      aiLocalProbGridFailure *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  MECH_VIBRATION     : "
+  );
+  Serial.print(
+      aiLocalProbVibration *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  TRAFFIC_OVERLOAD   : "
+  );
+  Serial.print(
+      aiLocalProbTraffic *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.println();
+
+  Serial.println(
+      "Upstream Root Cause  :"
+  );
+
+  Serial.print(
+      "  Winner             : "
+  );
+  Serial.println(
+      aiUpstreamRootCause
+  );
+
+  Serial.print(
+      "  Confidence         : "
+  );
+  Serial.print(
+      aiUpstreamRootConfidence *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  CONGESTION         : "
+  );
+  Serial.print(
+      aiUpstreamProbCongestion *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  LINK_DEGRADATION   : "
+  );
+  Serial.print(
+      aiUpstreamProbDegradation *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  LINK_FAILURE       : "
+  );
+  Serial.print(
+      aiUpstreamProbFailure *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  UPSTREAM_OUTAGE    : "
+  );
+  Serial.print(
+      aiUpstreamProbOutage *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.println();
+
+  Serial.println(
+      "AI Recommendation    :"
+  );
+
+  Serial.print(
+      "  Recommended Mode   : "
+  );
+  Serial.println(
+      aiRecommendedMode
+  );
+
+  Serial.print(
+      "  Reason             : "
+  );
+  Serial.println(
+      aiRecommendationReason
+  );
+
+  Serial.print(
+      "  Final Applied Mode : "
+  );
+  Serial.println(
+      operatingMode
+  );
+
+  Serial.print(
+      "  Guardrail          : "
+  );
+  Serial.println(
+      guardrailStatus
+  );
+
+  Serial.println();
+
+  Serial.println(
+      "AI Runtime / Context  :"
+  );
+
+  Serial.print(
+      "  Window             : "
+  );
+  Serial.print(
+      aiWindowCount,
+      0
+  );
+  Serial.print("/24 | ");
+  Serial.print(
+      aiWindowSeconds,
+      0
+  );
+  Serial.println(" s");
+
+  Serial.print(
+      "  Inference Time     : "
+  );
+  Serial.print(
+      aiInferenceMs,
+      3
+  );
+  Serial.println(" ms");
+
+  Serial.print(
+      "  Traffic Used       : "
+  );
+  Serial.print(
+      aiContextTrafficPct,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Battery SoC Used   : "
+  );
+  Serial.print(
+      aiContextBatterySocPct,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Grid Used          : "
+  );
+  Serial.println(
+      aiContextGridAvailable
+          ? "AVAILABLE"
+          : "UNAVAILABLE"
+  );
+
+  Serial.print(
+      "  Generator Used     : "
+  );
+  Serial.println(
+      aiContextGeneratorRunning
+          ? "RUNNING"
+          : "STOPPED"
+  );
+
+  Serial.println();
+
+  Serial.println(
+      "Held-out Model Metrics:"
+  );
+
+  Serial.print(
+      "  Domain Accuracy    : "
+  );
+  Serial.print(
+      aiModelDomainAccuracy *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Balanced Accuracy  : "
+  );
+  Serial.print(
+      aiModelDomainBalancedAccuracy *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Domain Macro F1    : "
+  );
+  Serial.print(
+      aiModelDomainMacroF1 *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Domain Log Loss    : "
+  );
+  Serial.println(
+      aiModelDomainLogLoss,
+      4
+  );
+
+  Serial.print(
+      "  Local Head Acc     : "
+  );
+  Serial.print(
+      aiModelLocalHeadAccuracy *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Upstream Head Acc  : "
+  );
+  Serial.print(
+      aiModelUpstreamHeadAccuracy *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Local E2E Accuracy : "
+  );
+  Serial.print(
+      aiModelLocalE2EAccuracy *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Upstream E2E Acc   : "
+  );
+  Serial.print(
+      aiModelUpstreamE2EAccuracy *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Mixed Exact Acc    : "
+  );
+  Serial.print(
+      aiModelMixedExactAccuracy *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Hierarchy Accuracy : "
+  );
+  Serial.print(
+      aiModelHierarchyAccuracy *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Anomaly ROC-AUC    : "
+  );
+  Serial.print(
+      aiModelAnomalyRocAuc *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Anomaly AP         : "
+  );
+  Serial.print(
+      aiModelAnomalyAveragePrecision *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Anomaly FPR        : "
+  );
+  Serial.print(
+      aiModelAnomalyFpr *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "  Fault Detection    : "
+  );
+  Serial.print(
+      aiModelAnomalyDetectionRate *
+      100.0f,
+      2
+  );
+  Serial.println(" %");
+
+  Serial.print(
+      "Metrics Payload      : "
+  );
+  Serial.println(
+      aiExtendedMetricsAvailable
+          ? "COMPLETE"
+          : "CORE ONLY"
   );
 
   // --------------------------------------------------
