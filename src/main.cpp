@@ -47,6 +47,7 @@
 
 const unsigned long FAST_INPUT_INTERVAL_MS = 50;
 const unsigned long LCD_REFRESH_INTERVAL_MS = 100;
+const unsigned long LCD_PAGE_INTERVAL_MS = 1500;
 const unsigned long MPU_INTERVAL_MS = 20;
 const unsigned long DHT_INTERVAL_MS = 2000;
 
@@ -276,77 +277,15 @@ DallasTemperature paTemperatureSensor(
 );
 
 // ====================================================
-// LCD DISPLAYS
+// SINGLE ROTATING LCD
 // ====================================================
-
+//
+// The original first LCD is retained at I2C address 0x20.
+// It rotates through the values that were previously shown
+// on the separate LCDs.
+//
 LiquidCrystal_I2C lcdDcVoltage(
     0x20,
-    16,
-    2
-);
-
-LiquidCrystal_I2C lcdDcCurrent(
-    0x21,
-    16,
-    2
-);
-
-LiquidCrystal_I2C lcdBattery(
-    0x22,
-    16,
-    2
-);
-
-LiquidCrystal_I2C lcdRfForward(
-    0x23,
-    16,
-    2
-);
-
-LiquidCrystal_I2C lcdRfReflected(
-    0x24,
-    16,
-    2
-);
-
-LiquidCrystal_I2C lcdBackhaul(
-    0x25,
-    16,
-    2
-);
-
-LiquidCrystal_I2C lcdLatency(
-    0x26,
-    16,
-    2
-);
-
-LiquidCrystal_I2C lcdPacketLoss(
-    0x27,
-    16,
-    2
-);
-
-LiquidCrystal_I2C lcdRssi(
-    0x3F,
-    16,
-    2
-);
-
-LiquidCrystal_I2C lcdEnergySource(
-    0x3E,
-    16,
-    2
-);
-
-LiquidCrystal_I2C lcdTrafficLoad(
-    0x3D,
-    16,
-    2
-);
-
-LiquidCrystal_I2C lcdOperatingMode(
-    0x3C,
     16,
     2
 );
@@ -738,24 +677,14 @@ unsigned long lastDS18B20RequestTime = 0;
 bool ds18b20ConversionPending = false;
 
 // ====================================================
-// LCD LAST-DISPLAYED VALUES
+// SINGLE LCD PAGE STATE
 // ====================================================
 
-String lastDcVoltageLCD = "";
-String lastDcCurrentLCD = "";
-String lastBatteryLCD = "";
+uint8_t lcdPage = 0;
+unsigned long lastLCDPageTime = 0;
 
-String lastRfForwardLCD = "";
-String lastRfReflectedLCD = "";
-
-String lastBackhaulLCD = "";
-String lastLatencyLCD = "";
-String lastPacketLossLCD = "";
-String lastRssiLCD = "";
-
-String lastEnergySourceLCD = "";
-String lastTrafficLoadLCD = "";
-String lastOperatingModeLCD = "";
+String lastLCDLine0 = "";
+String lastLCDLine1 = "";
 
 // ====================================================
 // LCD HELPERS
@@ -1636,6 +1565,13 @@ void handleAiCommandLine(
 
   aiCommandStatus =
       "FRESH";
+
+  // Show the latest AI recommendation on the single LCD.
+  lcdPage =
+      12;
+
+  lastLCDPageTime =
+      millis();
 
   printAiAck(
       true,
@@ -4361,330 +4297,256 @@ void handleDS18B20(
 void initialiseLCDs()
 {
   lcdDcVoltage.init();
-  lcdDcCurrent.init();
-  lcdBattery.init();
-
-  lcdRfForward.init();
-  lcdRfReflected.init();
-
-  lcdBackhaul.init();
-  lcdLatency.init();
-  lcdPacketLoss.init();
-  lcdRssi.init();
-
-  lcdEnergySource.init();
-  lcdTrafficLoad.init();
-  lcdOperatingMode.init();
-
   lcdDcVoltage.backlight();
-  lcdDcCurrent.backlight();
-  lcdBattery.backlight();
+  lcdDcVoltage.clear();
 
-  lcdRfForward.backlight();
-  lcdRfReflected.backlight();
-
-  lcdBackhaul.backlight();
-  lcdLatency.backlight();
-  lcdPacketLoss.backlight();
-  lcdRssi.backlight();
-
-  lcdEnergySource.backlight();
-  lcdTrafficLoad.backlight();
-  lcdOperatingMode.backlight();
-
-  // Labels are static: write them only once.
-  setLCDLabel(
+  writeLCDLine(
       lcdDcVoltage,
-      "DC BUS VOLTAGE"
+      0,
+      "ABS STARTING..."
   );
 
-  setLCDLabel(
-      lcdDcCurrent,
-      "DC BUS CURRENT"
-  );
-
-  setLCDLabel(
-      lcdBattery,
-      "BATTERY VOLTAGE"
-  );
-
-  setLCDLabel(
-      lcdRfForward,
-      "FORWARD RF"
-  );
-
-  setLCDLabel(
-      lcdRfReflected,
-      "REFLECTED RF"
-  );
-
-  setLCDLabel(
-      lcdBackhaul,
-      "BACKHAUL STATUS"
-  );
-
-  setLCDLabel(
-      lcdLatency,
-      "LATENCY"
-  );
-
-  setLCDLabel(
-      lcdPacketLoss,
-      "PACKET LOSS"
-  );
-
-  setLCDLabel(
-      lcdRssi,
-      "RSSI"
-  );
-
-  setLCDLabel(
-      lcdEnergySource,
-      "POWER SOURCE"
-  );
-
-  setLCDLabel(
-      lcdOperatingMode,
-      "OPERATING MODE"
-  );
-
-  setLCDLabel(
-      lcdTrafficLoad,
-      "TRAFFIC LOAD"
-  );
-
-  // Initial value rows.
   writeLCDLine(
       lcdDcVoltage,
       1,
-      "Starting..."
+      "ONE LCD SYSTEM"
   );
 
-  writeLCDLine(
-      lcdDcCurrent,
-      1,
-      "Starting..."
-  );
-
-  writeLCDLine(
-      lcdBattery,
-      1,
-      "Starting..."
-  );
-
-  writeLCDLine(
-      lcdRfForward,
-      1,
-      "Starting..."
-  );
-
-  writeLCDLine(
-      lcdRfReflected,
-      1,
-      "Starting..."
-  );
-
-  writeLCDLine(
-      lcdBackhaul,
-      1,
-      "Starting..."
-  );
-
-  writeLCDLine(
-      lcdLatency,
-      1,
-      "Starting..."
-  );
-
-  writeLCDLine(
-      lcdPacketLoss,
-      1,
-      "Starting..."
-  );
-
-  writeLCDLine(
-      lcdRssi,
-      1,
-      "Starting..."
-  );
-
-  writeLCDLine(
-      lcdEnergySource,
-      1,
-      "Starting..."
-  );
-
-  writeLCDLine(
-      lcdTrafficLoad,
-      1,
-      "Starting..."
-  );
-
-  writeLCDLine(
-      lcdOperatingMode,
-      1,
-      "Starting..."
-  );
+  lastLCDPageTime =
+      millis();
 }
 
-// ====================================================
-// RESPONSIVE LCD REFRESH
-// ====================================================
 
+// ====================================================
+// SINGLE LCD ROTATING DISPLAY
+// ====================================================
+//
+// The terminal still prints the full telemetry exactly as
+// before. This single 16x2 LCD cycles through the same key
+// values that were previously spread across twelve LCDs,
+// plus one AI recommendation page.
+//
 void refreshLCDs(
     bool force = false)
 {
-  String dcVoltageText =
-      String(
-          dcBusVoltage,
-          2
-      ) +
-      " V";
+  const uint8_t LCD_PAGE_COUNT = 13;
 
-  String dcCurrentText =
-      String(
-          dcBusCurrent,
-          2
-      ) +
-      " A";
+  unsigned long now =
+      millis();
 
-  String batteryText =
-      String(
-          batteryVoltage,
-          2
-      ) +
-      " V " +
-      String(
-          batterySOC,
-          0
-      ) +
-      "%";
+  if (
+      now - lastLCDPageTime >=
+      LCD_PAGE_INTERVAL_MS)
+  {
+    lcdPage =
+        (
+            lcdPage +
+            1
+        ) %
+        LCD_PAGE_COUNT;
 
-  String rfForwardText =
-      String(
-          rfForwardPower,
-          2
-      ) +
-      " W";
+    lastLCDPageTime =
+        now;
 
-  String rfReflectedText =
-      String(
-          rfReflectedPower,
-          2
-      ) +
-      " W";
+    force =
+        true;
+  }
 
-  String latencyText =
-      String(
-          latency,
-          1
-      ) +
-      " ms";
+  String line0;
+  String line1;
 
-  String packetLossText =
-      String(
-          packetLoss,
-          1
-      ) +
-      " %";
+  switch (lcdPage)
+  {
+    case 0:
+      line0 =
+          "DC BUS VOLTAGE";
 
-  String rssiText =
-      String(
-          rssi,
-          1
-      ) +
-      " dBm";
+      line1 =
+          String(
+              dcBusVoltage,
+              2
+          ) +
+          " V";
+      break;
 
-  String trafficLoadText =
-      String(
-          trafficLoad,
-          1
-      ) +
-      " %";
+    case 1:
+      line0 =
+          "DC BUS CURRENT";
 
-  updateLCDValueIfChanged(
-      lcdDcVoltage,
-      dcVoltageText,
-      lastDcVoltageLCD,
-      force
-  );
+      line1 =
+          String(
+              dcBusCurrent,
+              2
+          ) +
+          " A";
+      break;
 
-  updateLCDValueIfChanged(
-      lcdDcCurrent,
-      dcCurrentText,
-      lastDcCurrentLCD,
-      force
-  );
+    case 2:
+      line0 =
+          "BATTERY";
 
-  updateLCDValueIfChanged(
-      lcdBattery,
-      batteryText,
-      lastBatteryLCD,
-      force
-  );
+      line1 =
+          String(
+              batteryVoltage,
+              2
+          ) +
+          "V " +
+          String(
+              batterySOC,
+              0
+          ) +
+          "%";
+      break;
 
-  updateLCDValueIfChanged(
-      lcdRfForward,
-      rfForwardText,
-      lastRfForwardLCD,
-      force
-  );
+    case 3:
+      line0 =
+          "FORWARD RF";
 
-  updateLCDValueIfChanged(
-      lcdRfReflected,
-      rfReflectedText,
-      lastRfReflectedLCD,
-      force
-  );
+      line1 =
+          String(
+              rfForwardPower,
+              2
+          ) +
+          " W";
+      break;
 
-  updateLCDValueIfChanged(
-      lcdBackhaul,
-      backhaulCondition,
-      lastBackhaulLCD,
-      force
-  );
+    case 4:
+      line0 =
+          "REFLECTED RF";
 
-  updateLCDValueIfChanged(
-      lcdLatency,
-      latencyText,
-      lastLatencyLCD,
-      force
-  );
+      line1 =
+          String(
+              rfReflectedPower,
+              2
+          ) +
+          " W";
+      break;
 
-  updateLCDValueIfChanged(
-      lcdPacketLoss,
-      packetLossText,
-      lastPacketLossLCD,
-      force
-  );
+    case 5:
+      line0 =
+          "BACKHAUL STATUS";
 
-  updateLCDValueIfChanged(
-      lcdRssi,
-      rssiText,
-      lastRssiLCD,
-      force
-  );
+      line1 =
+          backhaulCondition;
+      break;
 
-  updateLCDValueIfChanged(
-      lcdEnergySource,
-      activePowerSource,
-      lastEnergySourceLCD,
-      force
-  );
+    case 6:
+      line0 =
+          "LATENCY";
 
-  updateLCDValueIfChanged(
-      lcdTrafficLoad,
-      trafficLoadText,
-      lastTrafficLoadLCD,
-      force
-  );
+      line1 =
+          String(
+              latency,
+              1
+          ) +
+          " ms";
+      break;
 
-  updateLCDValueIfChanged(
-      lcdOperatingMode,
-      operatingMode,
-      lastOperatingModeLCD,
-      force
-  );
+    case 7:
+      line0 =
+          "PACKET LOSS";
+
+      line1 =
+          String(
+              packetLoss,
+              1
+          ) +
+          " %";
+      break;
+
+    case 8:
+      line0 =
+          "RSSI";
+
+      line1 =
+          String(
+              rssi,
+              1
+          ) +
+          " dBm";
+      break;
+
+    case 9:
+      line0 =
+          "POWER SOURCE";
+
+      line1 =
+          activePowerSource;
+      break;
+
+    case 10:
+      line0 =
+          "TRAFFIC LOAD";
+
+      line1 =
+          String(
+              trafficLoad,
+              1
+          ) +
+          " %";
+      break;
+
+    case 11:
+      line0 =
+          "OPERATING MODE";
+
+      line1 =
+          operatingMode;
+      break;
+
+    case 12:
+    default:
+      line0 =
+          "AI " +
+          aiFaultDomain;
+
+      line1 =
+          "REC " +
+          aiRecommendedMode +
+          " " +
+          aiCommandStatus;
+      break;
+  }
+
+  String paddedLine0 =
+      padLCDText(
+          line0
+      );
+
+  String paddedLine1 =
+      padLCDText(
+          line1
+      );
+
+  if (
+      force ||
+      paddedLine0 !=
+          lastLCDLine0)
+  {
+    writeLCDLine(
+        lcdDcVoltage,
+        0,
+        line0
+    );
+
+    lastLCDLine0 =
+        paddedLine0;
+  }
+
+  if (
+      force ||
+      paddedLine1 !=
+          lastLCDLine1)
+  {
+    writeLCDLine(
+        lcdDcVoltage,
+        1,
+        line1
+    );
+
+    lastLCDLine1 =
+        paddedLine1;
+  }
 }
 
 // ====================================================
