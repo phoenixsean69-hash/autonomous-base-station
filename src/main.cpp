@@ -697,8 +697,10 @@ bool aiCommandEverReceived = false;
 bool aiExtendedMetricsAvailable = false;
 
 unsigned long lastAiCommandTime = 0;
+unsigned long aiLastCommandChars = 0;
 
 String aiCommandStatus = "NOT_RECEIVED";
+String aiMetricsStatus = "NOT_RECEIVED";
 String aiSerialBuffer = "";
 
 // Guardrail / recovery explanation state.
@@ -1491,8 +1493,26 @@ void printAiAck(
       aiRecommendedMode
   );
 
+  Serial.print(
+      "\",\"metrics_complete\":"
+  );
+
+  Serial.print(
+      aiExtendedMetricsAvailable
+          ? "true"
+          : "false"
+  );
+
+  Serial.print(
+      ",\"received_chars\":"
+  );
+
+  Serial.print(
+      aiLastCommandChars
+  );
+
   Serial.println(
-      "\"}"
+      "}"
   );
 }
 
@@ -1509,6 +1529,9 @@ void handleAiCommandLine(
   {
     return;
   }
+
+  aiLastCommandChars =
+      line.length();
 
   String json =
       line.substring(
@@ -1856,6 +1879,11 @@ void handleAiCommandLine(
           "model_anomaly_detection_rate",
           aiModelAnomalyDetectionRate
       );
+
+  aiMetricsStatus =
+      aiExtendedMetricsAvailable
+          ? "COMPLETE"
+          : "INCOMPLETE";
 
   // Start every new result on the human-readable summary page.
   aiLcdPage =
@@ -5118,10 +5146,14 @@ void refreshLCDs(
         aiDiagnosisSentence();
 
     aiLine2 =
-        aiRecommendationSentence();
+        "Transport incomplete";
 
     aiLine3 =
-        "Metrics incomplete";
+        "RX " +
+        String(
+            aiLastCommandChars
+        ) +
+        " chars";
   }
   else
   {
@@ -8186,9 +8218,14 @@ void printTelemetry()
       "Metrics Payload      : "
   );
   Serial.println(
-      aiExtendedMetricsAvailable
-          ? "COMPLETE"
-          : "CORE ONLY"
+      aiMetricsStatus
+  );
+
+  Serial.print(
+      "AI Command RX Chars  : "
+  );
+  Serial.println(
+      aiLastCommandChars
   );
 
   // --------------------------------------------------
@@ -8275,8 +8312,22 @@ void printTelemetry()
 
 void setup()
 {
+  // Full AI result packets are much larger than the original
+  // compact control command. Reserve enough UART receive
+  // buffering BEFORE Serial.begin() so the RFC2217/Wokwi burst
+  // cannot drop the later metrics fields.
+  Serial.setRxBufferSize(
+      8192
+  );
+
   Serial.begin(
       115200
+  );
+
+  // Avoid repeated heap reallocations while assembling a
+  // multi-kilobyte ABS_AI_CMD line.
+  aiSerialBuffer.reserve(
+      4096
   );
 
   delay(500);

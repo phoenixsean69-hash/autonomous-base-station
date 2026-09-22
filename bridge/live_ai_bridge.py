@@ -983,7 +983,7 @@ def print_live_ai_report(
 def send_ai_command(
     port,
     command: dict,
-) -> None:
+) -> int:
     line = (
         AI_COMMAND_PREFIX +
         json.dumps(
@@ -996,13 +996,36 @@ def send_ai_command(
         "\n"
     )
 
-    port.write(
-        line.encode(
-            "utf-8"
-        )
+    payload = line.encode(
+        "utf-8"
     )
 
-    port.flush()
+    # The extended metrics command is roughly 1.5-2 KB.
+    # Pace RFC2217 writes so the simulated ESP32 can drain its
+    # UART receive ring while the packet is arriving.
+    chunk_size = 128
+
+    for start in range(
+        0,
+        len(payload),
+        chunk_size,
+    ):
+        port.write(
+            payload[
+                start:
+                start + chunk_size
+            ]
+        )
+
+        port.flush()
+
+        time.sleep(
+            0.004
+        )
+
+    return len(
+        payload
+    )
 
 
 def save_latest(
@@ -1242,9 +1265,19 @@ def live(
                 ) is True:
                     commands_acked += 1
 
+                    metrics_complete = ack.get(
+                        "metrics_complete"
+                    )
+
+                    received_chars = ack.get(
+                        "received_chars"
+                    )
+
                     print(
                         "  [AI ACK] ACCEPTED | "
-                        f"mode={ack.get('recommended_mode')}"
+                        f"mode={ack.get('recommended_mode')} | "
+                        f"metrics={'COMPLETE' if metrics_complete else 'INCOMPLETE'} | "
+                        f"ESP32_rx_chars={received_chars}"
                     )
                 else:
                     commands_rejected += 1
@@ -1383,7 +1416,7 @@ def live(
                 window_count=window.count,
             )
 
-            send_ai_command(
+            command_bytes = send_ai_command(
                 port,
                 command,
             )
@@ -1443,7 +1476,8 @@ def live(
             print(
                 "  [AI CMD] SENT -> "
                 f"{command['recommended_mode']} | "
-                f"{command['reason']}"
+                f"{command['reason']} | "
+                f"{command_bytes} bytes"
             )
 
             print(
