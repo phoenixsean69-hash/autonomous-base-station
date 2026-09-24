@@ -644,12 +644,8 @@ String aiRecommendedMode = "NONE";
 String aiRecommendationReason = "NO AI COMMAND";
 String aiFaultDomain = "UNKNOWN";
 String aiDiagnosticState = "WAITING";
-String aiTrustDecision = "WAITING";
-String aiTrustReason = "NO TRUST DATA";
 
 float aiDomainConfidence = 0.0f;
-float aiPredictionMargin = 0.0f;
-float aiNormalizedEntropy = 1.0f;
 
 float aiProbNormal = 0.0f;
 float aiProbLocal = 0.0f;
@@ -1775,26 +1771,6 @@ void handleAiCommandLine(
           json,
           "diagnostic_state",
           aiDiagnosticState
-      ) &&
-      extractAiStringField(
-          json,
-          "trust_decision",
-          aiTrustDecision
-      ) &&
-      extractAiStringField(
-          json,
-          "trust_reason",
-          aiTrustReason
-      ) &&
-      extractAiFloatField(
-          json,
-          "prediction_margin",
-          aiPredictionMargin
-      ) &&
-      extractAiFloatField(
-          json,
-          "normalized_entropy",
-          aiNormalizedEntropy
       ) &&
       extractAiFloatField(
           json,
@@ -4938,138 +4914,6 @@ String aiReasonSentence()
 }
 
 
-String aiTrustSentence()
-{
-  if (aiTrustDecision == "ACCEPT")
-  {
-    return "AI result accepted";
-  }
-
-  if (aiTrustDecision == "UNCERTAIN")
-  {
-    return "AI is uncertain";
-  }
-
-  if (aiTrustDecision == "UNKNOWN")
-  {
-    return "Unknown condition";
-  }
-
-  return "Trust check pending";
-}
-
-
-String picoModeSentence()
-{
-  if (picoModeDecision == "FULL")
-  {
-    return "Use full service";
-  }
-
-  if (picoModeDecision == "ECO")
-  {
-    return "Use ECO mode";
-  }
-
-  if (picoModeDecision == "REDUCED")
-  {
-    return "Use reduced mode";
-  }
-
-  if (picoModeDecision == "EMERGENCY")
-  {
-    return "Emergency mode";
-  }
-
-  return "Keep current mode";
-}
-
-
-String picoPowerSentence()
-{
-  if (picoPowerSourceDecision == "GRID")
-  {
-    return "Use grid power";
-  }
-
-  if (picoPowerSourceDecision == "BATTERY")
-  {
-    return "Use battery backup";
-  }
-
-  if (picoPowerSourceDecision == "GENERATOR")
-  {
-    return "Use generator";
-  }
-
-  return "Keep power source";
-}
-
-
-String picoGeneratorSentence()
-{
-  if (picoGeneratorAction == "START")
-  {
-    return "Start generator";
-  }
-
-  if (picoGeneratorAction == "STOP")
-  {
-    return "Stop generator";
-  }
-
-  return "Keep generator state";
-}
-
-
-String picoReasonSentence()
-{
-  if (
-      picoDecisionReason ==
-      "CRITICAL BACKUP ENERGY")
-  {
-    return "Battery very low";
-  }
-
-  if (
-      picoDecisionReason ==
-      "PICO ACCEPTED GENERATOR RECOMMENDATION")
-  {
-    return "Generator required";
-  }
-
-  if (
-      picoDecisionReason ==
-      "GRID AVAILABLE")
-  {
-    return "Grid power healthy";
-  }
-
-  if (
-      picoDecisionReason ==
-      "BATTERY BACKUP SELECTED")
-  {
-    return "Battery backup active";
-  }
-
-  if (
-      picoDecisionReason ==
-      "ANOMALY CONSERVATIVE ECO")
-  {
-    return "Anomaly: keep ECO";
-  }
-
-  if (
-      picoDecisionReason ==
-      "AI UNCERTAIN - HOLD CURRENT STATE")
-  {
-    return "AI unsure - holding";
-  }
-
-  return "Pico safety decision";
-}
-
-
 String shortLocalCause(
     const String &cause)
 {
@@ -5563,7 +5407,8 @@ void refreshLCDs(
             "%";
 
         aiLine3 =
-            aiTrustSentence();
+            "State: " +
+            aiDiagnosticState;
         break;
 
       // ----------------------------------------------
@@ -6063,16 +5908,21 @@ void refreshLCDs(
   if (!isPicoDecisionFresh())
   {
     picoLine0 =
-        "PICO WAITING";
+        "PICO CONTROL STALE";
 
     picoLine1 =
-        "No fresh Pico reply";
+        "Holding actuators";
 
     picoLine2 =
-        "Outputs held safely";
+        String("Generator ") +
+        (
+            generatorRunning
+                ? "RUNNING"
+                : "STOPPED"
+        );
 
     picoLine3 =
-        "ESP32 still in control";
+        "ESP32 fallback active";
   }
   else
   {
@@ -6083,54 +5933,59 @@ void refreshLCDs(
             "PICO DECISION";
 
         picoLine1 =
-            picoModeSentence();
+            "Mode " +
+            picoModeDecision +
+            " -> " +
+            operatingMode;
 
         picoLine2 =
-            picoPowerSentence();
+            "Source " +
+            picoPowerSourceDecision;
 
         picoLine3 =
-            (
-                aiTrustDecision == "ACCEPT"
-                    ? "Decision accepted"
-                    : "AI unsure - holding"
-            );
+            "Status " +
+            picoDecisionStatus;
         break;
 
       case 1:
         picoLine0 =
-            "GENERATOR ACTION";
+            "GENERATOR CONTROL";
 
         picoLine1 =
-            picoGeneratorSentence();
+            "Command " +
+            picoGeneratorAction;
 
         picoLine2 =
+            String("GPIO17 ") +
             (
                 generatorRunning
-                    ? "Generator is running"
-                    : "Generator is stopped"
+                    ? "HIGH"
+                    : "LOW"
             );
 
         picoLine3 =
+            String("State ") +
             (
-                picoGeneratorAction == "HOLD"
-                    ? "No change requested"
-                    : "Action confirmed"
+                generatorRunning
+                    ? "RUNNING"
+                    : "STOPPED"
             );
         break;
 
       case 2:
         picoLine0 =
-            "POWER STATUS";
+            "POWER DECISION";
 
         picoLine1 =
+            String("Grid ") +
             (
                 gridAvailable
-                    ? "Grid is available"
-                    : "Grid has failed"
+                    ? "AVAILABLE"
+                    : "FAILED"
             );
 
         picoLine2 =
-            "Battery: " +
+            "Battery " +
             String(
                 batterySOC,
                 1
@@ -6138,25 +5993,28 @@ void refreshLCDs(
             "%";
 
         picoLine3 =
-            picoPowerSentence();
+            "Use " +
+            picoPowerSourceDecision;
         break;
 
       case 3:
       default:
         picoLine0 =
-            "WHY PICO DECIDED";
+            "ACTION RESULT";
 
         picoLine1 =
-            picoReasonSentence();
+            picoDecisionReason;
 
         picoLine2 =
-            "ESP32 final check";
+            "Actuation " +
+            picoActuationStatus;
 
         picoLine3 =
+            String("Actual Gen ") +
             (
-                picoActuationStatus == "CONFIRMED"
-                    ? "Safe action applied"
-                    : "Action held safely"
+                generatorRunning
+                    ? "RUNNING"
+                    : "STOPPED"
             );
         break;
     }

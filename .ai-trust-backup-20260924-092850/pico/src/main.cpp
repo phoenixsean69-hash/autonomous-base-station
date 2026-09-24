@@ -927,9 +927,6 @@ void handleControlRecommendationLine(
   String generatorRecommendation;
   String faultDomain;
   String recommendationReason;
-  String trustDecision;
-  String trustReason;
-  String currentOperatingMode;
 
   float confidence = 0.0f;
   float batterySoc = 0.0f;
@@ -946,9 +943,6 @@ void handleControlRecommendationLine(
       extractStringField(json, "generator_recommendation", generatorRecommendation) &&
       extractStringField(json, "fault_domain", faultDomain) &&
       extractStringField(json, "reason", recommendationReason) &&
-      extractStringField(json, "trust_decision", trustDecision) &&
-      extractStringField(json, "trust_reason", trustReason) &&
-      extractStringField(json, "current_operating_mode", currentOperatingMode) &&
       extractFloatField(json, "domain_confidence", confidence) &&
       extractFloatField(json, "battery_soc_pct", batterySoc) &&
       extractFloatField(json, "traffic_load_pct", trafficLoad) &&
@@ -973,26 +967,6 @@ void handleControlRecommendationLine(
     powerSourceDecision = "GENERATOR";
     generatorAction = "START";
     decisionReason = "CRITICAL BACKUP ENERGY";
-  }
-  else if (trustDecision != "ACCEPT")
-  {
-    modeDecision = currentOperatingMode;
-
-    if (gridAvailable)
-    {
-      powerSourceDecision = "GRID";
-    }
-    else if (generatorRunning)
-    {
-      powerSourceDecision = "GENERATOR";
-    }
-    else
-    {
-      powerSourceDecision = "BATTERY";
-    }
-
-    generatorAction = "HOLD";
-    decisionReason = "AI UNCERTAIN - HOLD CURRENT STATE";
   }
   else if (
       recommendedPowerSource == "GENERATOR" ||

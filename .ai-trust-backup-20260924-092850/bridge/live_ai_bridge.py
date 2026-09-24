@@ -471,18 +471,6 @@ def build_ai_command(
         "latest_operating_context"
     ]
 
-    trust = result.get(
-        "trust",
-        {
-            "decision": "UNCERTAIN",
-            "reason": "TRUST_DATA_MISSING",
-            "prediction_margin": 0.0,
-            "normalized_entropy": 1.0,
-            "anomaly_ratio": 0.0,
-            "probability_status": "UNKNOWN",
-        },
-    )
-
     return {
         "schema": "abs.ai.cmd.v1",
         "recommended_mode": (
@@ -504,31 +492,6 @@ def build_ai_command(
         "domain_confidence": float(
             domain[
                 "confidence"
-            ]
-        ),
-        "trust_decision": str(
-            trust[
-                "decision"
-            ]
-        ),
-        "trust_reason": str(
-            trust[
-                "reason"
-            ]
-        ),
-        "prediction_margin": float(
-            trust[
-                "prediction_margin"
-            ]
-        ),
-        "normalized_entropy": float(
-            trust[
-                "normalized_entropy"
-            ]
-        ),
-        "trust_probability_status": str(
-            trust[
-                "probability_status"
             ]
         ),
 
@@ -1022,42 +985,6 @@ def print_live_ai_report(
 
 
 
-VALID_CONTROL_MODES = {
-    "FULL",
-    "ECO",
-    "REDUCED",
-    "EMERGENCY",
-}
-
-
-def enforce_trust_hold(
-    command: dict,
-    telemetry: dict,
-) -> None:
-    """
-    Untrusted AI may be displayed and logged, but it may not request a new
-    operating mode. Hold the current valid mode until trust recovers.
-    """
-    if command.get("trust_decision") == "ACCEPT":
-        return
-
-    current_mode = str(
-        telemetry.get(
-            "operating_mode",
-            "ECO",
-        )
-    ).upper()
-
-    if current_mode not in VALID_CONTROL_MODES:
-        current_mode = "ECO"
-
-    command["recommended_mode"] = current_mode
-    command["reason"] = (
-        f"AI {command.get('trust_decision', 'UNCERTAIN')}: "
-        "HOLD CURRENT MODE"
-    )
-
-
 def build_pico_recommendation(
     result: dict,
     ai_command: dict,
@@ -1073,37 +1000,10 @@ def build_pico_recommendation(
     generator_running = bool(context["generator_running"])
     battery_soc = float(context["battery_soc_pct"])
 
-    trust_decision = str(
-        ai_command.get(
-            "trust_decision",
-            "UNCERTAIN",
-        )
-    )
-
-    current_mode = str(
-        telemetry.get(
-            "operating_mode",
-            "ECO",
-        )
-    ).upper()
-
-    if current_mode not in VALID_CONTROL_MODES:
-        current_mode = "ECO"
-
-    # Untrusted AI is not allowed to switch the power source. Critical
-    # backup-energy protection is still independently available on Pico/ESP32.
-    if trust_decision != "ACCEPT":
-        if grid_available:
-            power_source = "GRID"
-        elif generator_running:
-            power_source = "GENERATOR"
-        else:
-            power_source = "BATTERY"
-
-        generator_recommendation = "HOLD"
-
-    # Trusted recommendation path.
-    elif grid_available:
+    # Digital-twin source recommendation:
+    # grid first; battery during a healthy reserve; generator
+    # once grid is unavailable and battery falls to <=40%.
+    if grid_available:
         power_source = "GRID"
         generator_recommendation = "STOP"
     elif battery_soc <= 40.0:
@@ -1121,14 +1021,6 @@ def build_pico_recommendation(
         "fault_domain": result["fault_domain"]["label"],
         "domain_confidence": float(result["fault_domain"]["confidence"]),
         "anomaly_flag": bool(result["anomaly"]["flagged"]),
-        "trust_decision": trust_decision,
-        "trust_reason": str(
-            ai_command.get(
-                "trust_reason",
-                "TRUST_DATA_MISSING",
-            )
-        ),
-        "current_operating_mode": current_mode,
         "battery_soc_pct": battery_soc,
         "traffic_load_pct": float(context["traffic_load_pct"]),
         "grid_available": grid_available,
@@ -1371,11 +1263,6 @@ def smoke(
         result,
         inference_ms=inference_ms,
         window_count=window.count,
-    )
-
-    enforce_trust_hold(
-        command,
-        telemetry,
     )
 
     print()
@@ -1690,11 +1577,6 @@ def live(
                 result,
                 inference_ms=inference_ms,
                 window_count=window.count,
-            )
-
-            enforce_trust_hold(
-                command,
-                telemetry,
             )
 
             print_live_ai_report(

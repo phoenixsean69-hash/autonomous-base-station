@@ -96,113 +96,6 @@ def top_prediction(
     )
 
 
-def assess_prediction_trust(
-    probabilities: np.ndarray,
-    *,
-    fault_domain: str,
-    anomaly_flag: bool,
-    anomaly_score: float,
-    anomaly_threshold: float,
-) -> dict:
-    """
-    Conservative runtime trust gate for the domain classifier.
-
-    Raw softmax is NOT treated as calibrated confidence here. This gate
-    combines top-class probability, class separation, entropy and anomaly
-    disagreement to decide whether automation may trust the diagnosis.
-    """
-    probabilities = np.asarray(
-        probabilities,
-        dtype=np.float64,
-    ).reshape(-1)
-
-    if probabilities.size < 2:
-        raise RuntimeError(
-            "Trust assessment requires at least two classes."
-        )
-
-    ordered = np.sort(
-        probabilities
-    )[::-1]
-
-    confidence = float(
-        ordered[0]
-    )
-
-    runner_up = float(
-        ordered[1]
-    )
-
-    margin = float(
-        confidence -
-        runner_up
-    )
-
-    clipped = np.clip(
-        probabilities,
-        1.0e-12,
-        1.0,
-    )
-
-    entropy = float(
-        -np.sum(
-            clipped *
-            np.log(
-                clipped
-            )
-        )
-    )
-
-    normalized_entropy = float(
-        entropy /
-        np.log(
-            float(
-                probabilities.size
-            )
-        )
-    )
-
-    anomaly_ratio = float(
-        anomaly_score /
-        anomaly_threshold
-        if anomaly_threshold > 0.0
-        else 0.0
-    )
-
-    decision = "ACCEPT"
-    reason = "CLEAR_CLASS_SEPARATION"
-
-    if (
-        fault_domain == "NORMAL" and
-        anomaly_flag
-    ):
-        decision = "UNKNOWN"
-        reason = "NORMAL_CLASS_WITH_ANOMALY"
-
-    elif confidence < 0.60:
-        decision = "UNCERTAIN"
-        reason = "LOW_DOMAIN_CONFIDENCE"
-
-    elif margin < 0.15:
-        decision = "UNCERTAIN"
-        reason = "SMALL_CLASS_MARGIN"
-
-    elif normalized_entropy > 0.75:
-        decision = "UNCERTAIN"
-        reason = "HIGH_CLASS_ENTROPY"
-
-    return {
-        "decision": decision,
-        "reason": reason,
-        "confidence": confidence,
-        "runner_up_probability": runner_up,
-        "prediction_margin": margin,
-        "normalized_entropy": normalized_entropy,
-        "anomaly_ratio": anomaly_ratio,
-        "probability_status": "RAW_SOFTMAX_NOT_CALIBRATED",
-    }
-
-
 def probability_map(
     probabilities: np.ndarray,
     classes: list[str],
@@ -789,7 +682,6 @@ class UnifiedAIEngine:
         local_root_cause: str | None,
         upstream_root_cause: str | None,
         anomaly_flag: bool,
-        trust_decision: str,
     ) -> dict:
         """
         Diagnosis-aware recommendation only.
@@ -836,7 +728,13 @@ class UnifiedAIEngine:
                 "AI PRE-GUARDRAIL: CRITICAL BACKUP ENERGY"
             )
 
-        elif trust_decision != "ACCEPT":
+        elif (
+            domain_confidence < 0.60 or
+            (
+                fault_domain == "NORMAL" and
+                anomaly_flag
+            )
+        ):
             mode = "FULL"
             reason = (
                 "AI PRE-GUARDRAIL: UNCERTAIN / UNKNOWN ABNORMALITY"
@@ -941,14 +839,6 @@ class UnifiedAIEngine:
             self.anomaly_threshold
         )
 
-        trust = assess_prediction_trust(
-            domain_probabilities,
-            fault_domain=fault_domain,
-            anomaly_flag=anomaly_flag,
-            anomaly_score=anomaly_score,
-            anomaly_threshold=self.anomaly_threshold,
-        )
-
         local_root_cause = None
         local_confidence = None
         local_probabilities = None
@@ -993,13 +883,13 @@ class UnifiedAIEngine:
                 self.upstream_classes,
             )
 
-        if trust["decision"] == "UNKNOWN":
+        if (
+            fault_domain == "NORMAL" and
+            anomaly_flag
+        ):
             diagnostic_state = (
                 "UNKNOWN_OR_SUSPICIOUS"
             )
-
-        elif trust["decision"] == "UNCERTAIN":
-            diagnostic_state = "UNCERTAIN"
 
         elif fault_domain == "NORMAL":
             diagnostic_state = "NORMAL"
@@ -1014,7 +904,6 @@ class UnifiedAIEngine:
             local_root_cause=local_root_cause,
             upstream_root_cause=upstream_root_cause,
             anomaly_flag=anomaly_flag,
-            trust_decision=trust["decision"],
         )
 
         return {
@@ -1032,7 +921,6 @@ class UnifiedAIEngine:
             "diagnostic_state": (
                 diagnostic_state
             ),
-            "trust": trust,
             "fault_domain": {
                 "label": fault_domain,
                 "confidence": (
