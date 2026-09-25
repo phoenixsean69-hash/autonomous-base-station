@@ -199,6 +199,55 @@ bool extractBoolField(
 }
 
 
+bool extractUnsignedLongField(
+    const String &json,
+    const char *key,
+    unsigned long &value)
+{
+  String marker =
+      "\"" +
+      String(key) +
+      "\":";
+
+  int start = json.indexOf(marker);
+
+  if (start < 0)
+  {
+    return false;
+  }
+
+  start += marker.length();
+  int end = start;
+
+  while (end < json.length())
+  {
+    char c = json.charAt(end);
+
+    if (c < '0' || c > '9')
+    {
+      break;
+    }
+
+    end++;
+  }
+
+  if (end <= start)
+  {
+    return false;
+  }
+
+  String token = json.substring(start, end);
+
+  value = strtoul(
+      token.c_str(),
+      nullptr,
+      10
+  );
+
+  return true;
+}
+
+
 // ============================================================
 // FEATURE EXTRACTION
 // ============================================================
@@ -887,13 +936,17 @@ void printControlDecision(
     const String &generatorAction,
     const String &decisionReason,
     const String &faultDomain,
-    float confidence)
+    float confidence,
+    unsigned long sourceTimestampMs)
 {
   Serial1.print(CONTROL_DECISION_PREFIX);
   Serial1.print(
-      "{\"schema\":\"pico.control.decision.v1\","
-      "\"accepted\":true,\"mode_decision\":\""
+      "{\"schema\":\"pico.control.decision.v1\"," 
+      "\"accepted\":true,"
+      "\"source_timestamp_ms\":"
   );
+  Serial1.print(sourceTimestampMs);
+  Serial1.print(",\"mode_decision\":\"");
   Serial1.print(modeDecision);
   Serial1.print("\",\"power_source_decision\":\"");
   Serial1.print(powerSourceDecision);
@@ -914,12 +967,7 @@ void handleControlRecommendationLine(
 {
   line.trim();
 
-  String json =
-      line.substring(
-          strlen(
-              CONTROL_RECOMMEND_PREFIX
-          )
-      );
+  String json = line.substring(strlen(CONTROL_RECOMMEND_PREFIX));
 
   String schema;
   String recommendedMode;
@@ -939,6 +987,8 @@ void handleControlRecommendationLine(
   bool generatorRunning = false;
   bool anomalyFlag = false;
 
+  unsigned long sourceTimestampMs = 0;
+
   bool valid =
       extractStringField(json, "schema", schema) &&
       extractStringField(json, "recommended_mode", recommendedMode) &&
@@ -954,7 +1004,8 @@ void handleControlRecommendationLine(
       extractFloatField(json, "traffic_load_pct", trafficLoad) &&
       extractBoolField(json, "grid_available", gridAvailable) &&
       extractBoolField(json, "generator_running", generatorRunning) &&
-      extractBoolField(json, "anomaly_flag", anomalyFlag);
+      extractBoolField(json, "anomaly_flag", anomalyFlag) &&
+      extractUnsignedLongField(json, "source_timestamp_ms", sourceTimestampMs);
 
   if (!valid || schema != CONTROL_RECOMMEND_SCHEMA)
   {
@@ -979,17 +1030,11 @@ void handleControlRecommendationLine(
     modeDecision = currentOperatingMode;
 
     if (gridAvailable)
-    {
       powerSourceDecision = "GRID";
-    }
     else if (generatorRunning)
-    {
       powerSourceDecision = "GENERATOR";
-    }
     else
-    {
       powerSourceDecision = "BATTERY";
-    }
 
     generatorAction = "HOLD";
     decisionReason = "AI UNCERTAIN - HOLD CURRENT STATE";
@@ -1031,10 +1076,10 @@ void handleControlRecommendationLine(
       generatorAction,
       decisionReason,
       faultDomain,
-      confidence
+      confidence,
+      sourceTimestampMs
   );
 }
-
 
 // ============================================================
 // RESPONSE
@@ -1066,96 +1111,43 @@ void printResult(
     bool ready,
     const String &faultDomain,
     float confidence,
-    const String &recommendedMode)
+    const String &recommendedMode,
+    unsigned long sourceTimestampMs)
 {
   Serial1.print(
       "PICO_RESULT|{"
       "\"schema\":\"pico.ai.v1\","
       "\"telemetry_ok\":true,"
       "\"source_schema\":\"abs.v1\","
-      "\"window_count\":"
+      "\"source_timestamp_ms\":"
   );
 
-  Serial1.print(
-      temporalCount
-  );
-
-  Serial1.print(
-      ",\"window_ready\":"
-  );
-
-  Serial1.print(
-      ready
-          ? "true"
-          : "false"
-  );
-
-  Serial1.print(
-      ",\"ai_model\":\""
-  );
-
-  Serial1.print(
-      AI_MODEL_NAME
-  );
-
-  Serial1.print(
-      "\",\"source_fault_label\":\""
-  );
-
-  Serial1.print(
-      sourceFaultLabel
-  );
-
-  Serial1.print(
-      "\",\"source_operating_mode\":\""
-  );
-
-  Serial1.print(
-      sourceOperatingMode
-  );
-
-  Serial1.print(
-      "\""
-  );
+  Serial1.print(sourceTimestampMs);
+  Serial1.print(",\"window_count\":");
+  Serial1.print(temporalCount);
+  Serial1.print(",\"window_ready\":");
+  Serial1.print(ready ? "true" : "false");
+  Serial1.print(",\"ai_model\":\"");
+  Serial1.print(AI_MODEL_NAME);
+  Serial1.print("\",\"source_fault_label\":\"");
+  Serial1.print(sourceFaultLabel);
+  Serial1.print("\",\"source_operating_mode\":\"");
+  Serial1.print(sourceOperatingMode);
+  Serial1.print("\"");
 
   if (ready)
   {
-    Serial1.print(
-        ",\"fault_domain\":\""
-    );
-
-    Serial1.print(
-        faultDomain
-    );
-
-    Serial1.print(
-        "\",\"confidence\":"
-    );
-
-    Serial1.print(
-        confidence,
-        6
-    );
-
-    Serial1.print(
-        ",\"recommended_mode\":\""
-    );
-
-    Serial1.print(
-        recommendedMode
-    );
-
-    Serial1.print(
-        "\",\"final_mode_authority\":"
-        "\"ESP32_DETERMINISTIC_GUARDRAILS\""
-    );
+    Serial1.print(",\"fault_domain\":\"");
+    Serial1.print(faultDomain);
+    Serial1.print("\",\"confidence\":");
+    Serial1.print(confidence, 6);
+    Serial1.print(",\"recommended_mode\":\"");
+    Serial1.print(recommendedMode);
+    Serial1.print("\",\"final_mode_authority\":\"ESP32_DETERMINISTIC_GUARDRAILS\"");
   }
 
-  Serial1.println(
-      "}"
-  );
+  Serial1.println("}");
 }
-
 
 // ============================================================
 // TELEMETRY HANDLER
@@ -1199,6 +1191,15 @@ void handleTelemetryLine(
   String sourceOperatingMode =
       "UNKNOWN";
 
+  unsigned long sourceTimestampMs = 0;
+
+  bool timestampOk =
+      extractUnsignedLongField(
+          json,
+          "timestamp_ms",
+          sourceTimestampMs
+      );
+
   bool schemaOk =
       extractStringField(
           json,
@@ -1208,6 +1209,7 @@ void handleTelemetryLine(
 
   if (
       !schemaOk ||
+      !timestampOk ||
       schema !=
           SUPPORTED_SCHEMA)
   {
@@ -1341,7 +1343,8 @@ void handleTelemetryLine(
       ready,
       faultDomain,
       confidence,
-      recommendedMode
+      recommendedMode,
+      sourceTimestampMs
   );
 
   digitalWrite(

@@ -1294,15 +1294,25 @@ def send_pico_telemetry(
 
 def wait_pico_ai_result(
     port,
-    expected_timestamp_ms: int,
-    timeout: float = 5.0,
+    timeout: float = 1.0,
 ) -> dict | None:
     deadline = time.monotonic() + timeout
     pending = bytearray()
 
     while time.monotonic() < deadline:
-        waiting = int(getattr(port, "in_waiting", 0) or 0)
-        raw = port.read(waiting if waiting > 0 else 1)
+        waiting = int(
+            getattr(
+                port,
+                "in_waiting",
+                0,
+            ) or 0
+        )
+
+        raw = port.read(
+            waiting
+            if waiting > 0
+            else 1
+        )
 
         if not raw:
             continue
@@ -1310,43 +1320,39 @@ def wait_pico_ai_result(
         pending.extend(raw)
 
         while b"\n" in pending:
-            raw_line, _, remainder = pending.partition(b"\n")
-            pending = bytearray(remainder)
+            raw_line, _, remainder = pending.partition(
+                b"\n"
+            )
 
-            line = raw_line.rstrip(b"\r").decode(
+            pending = bytearray(
+                remainder
+            )
+
+            line = raw_line.rstrip(
+                b"\r"
+            ).decode(
                 "utf-8",
                 errors="replace",
             ).strip()
 
-            if not line.startswith(PICO_RESULT_PREFIX):
+            if not line.startswith(
+                PICO_RESULT_PREFIX
+            ):
                 continue
 
             try:
-                result = json.loads(
-                    line[len(PICO_RESULT_PREFIX):]
+                return json.loads(
+                    line[
+                        len(
+                            PICO_RESULT_PREFIX
+                        ):
+                    ]
                 )
             except json.JSONDecodeError:
-                continue
+                return None
 
-            response_timestamp = int(
-                result.get("source_timestamp_ms", -1)
-            )
-
-            if response_timestamp != int(expected_timestamp_ms):
-                print(
-                    "  [PICO SYNC] ignored stale AI result "
-                    f"timestamp={response_timestamp}; "
-                    f"expected={expected_timestamp_ms}"
-                )
-                continue
-
-            return result
-
-    print(
-        "  [PICO AI WAIT] TIMEOUT - "
-        f"no matching PICO_RESULT for timestamp={expected_timestamp_ms}"
-    )
     return None
+
 
 def send_pico_recommendation(
     port,
@@ -1371,8 +1377,7 @@ def send_pico_recommendation(
 
 def wait_pico_decision(
     port,
-    expected_timestamp_ms: int,
-    timeout: float = 5.0,
+    timeout: float = 2.0,
 ) -> dict | None:
     deadline = time.monotonic() + timeout
     pending = bytearray()
@@ -1396,34 +1401,31 @@ def wait_pico_decision(
             ).strip()
 
             if not line.startswith(PICO_DECISION_PREFIX):
-                continue
-
-            try:
-                decision = json.loads(
-                    line[len(PICO_DECISION_PREFIX):]
+                print(
+                    "  [PICO RAW DURING DECISION WAIT] "
+                    + line
                 )
-            except json.JSONDecodeError:
                 continue
 
-            response_timestamp = int(
-                decision.get("source_timestamp_ms", -1)
+            print(
+                "  [PICO RAW DURING DECISION WAIT] "
+                + line
             )
 
-            if response_timestamp != int(expected_timestamp_ms):
+            try:
+                return json.loads(line[len(PICO_DECISION_PREFIX):])
+            except json.JSONDecodeError as exc:
                 print(
-                    "  [PICO SYNC] ignored stale control decision "
-                    f"timestamp={response_timestamp}; "
-                    f"expected={expected_timestamp_ms}"
+                    "  [PICO DECISION JSON ERROR] "
+                    + str(exc)
                 )
-                continue
-
-            return decision
+                return None
 
     print(
-        "  [PICO DECISION WAIT] TIMEOUT - "
-        f"no matching PICO_DECISION for timestamp={expected_timestamp_ms}"
+        "  [PICO DECISION WAIT] TIMEOUT - no PICO_DECISION line seen"
     )
     return None
+
 
 def attach_pico_decision(
     ai_command: dict,
@@ -1890,8 +1892,7 @@ def live(
             )
 
             latest_pico_ai_result = wait_pico_ai_result(
-                pico_port,
-                timestamp_ms,
+                pico_port
             )
 
             if latest_pico_ai_result is None:
@@ -1993,12 +1994,7 @@ def live(
             )
 
             pico_decision = wait_pico_decision(
-                pico_port,
-                int(
-                    pico_recommendation[
-                        "source_timestamp_ms"
-                    ]
-                ),
+                pico_port
             )
 
             attach_pico_decision(
@@ -2194,4 +2190,3 @@ if __name__ == "__main__":
     raise SystemExit(
         main()
     )
-
