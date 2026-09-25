@@ -52,9 +52,9 @@
 
 const unsigned long FAST_INPUT_INTERVAL_MS = 50;
 const unsigned long LCD_REFRESH_INTERVAL_MS = 50;
-const unsigned long LCD_PAGE_INTERVAL_MS = 3000;
-const unsigned long AI_LCD_PAGE_INTERVAL_MS = 3500;
-const unsigned long PICO_LCD_PAGE_INTERVAL_MS = 1200;
+const unsigned long LCD_PAGE_INTERVAL_MS = 2500;
+const unsigned long AI_LCD_PAGE_INTERVAL_MS = 2800;
+const unsigned long PICO_LCD_PAGE_INTERVAL_MS = 2200;
 const unsigned long MPU_INTERVAL_MS = 20;
 const unsigned long DHT_INTERVAL_MS = 2000;
 
@@ -5552,7 +5552,7 @@ String shortLocalCause(
 
   if (cause == "GRID_FAILURE")
   {
-    return "Grid failure";
+    return "GRID FAIL";
   }
 
   if (cause == "MECHANICAL_VIBRATION")
@@ -5562,7 +5562,7 @@ String shortLocalCause(
 
   if (cause == "TRAFFIC_OVERLOAD")
   {
-    return "Traffic high";
+    return "TRAFFIC";
   }
 
   return "Not applicable";
@@ -5574,25 +5574,201 @@ String shortUpstreamCause(
 {
   if (cause == "BACKHAUL_CONGESTION")
   {
-    return "Congestion";
+    return "CONGEST";
   }
 
   if (cause == "UPSTREAM_LINK_DEGRADATION")
   {
-    return "Link degraded";
+    return "DEGRADED";
   }
 
   if (cause == "UPSTREAM_LINK_FAILURE")
   {
-    return "Link failure";
+    return "FAILURE";
   }
 
   if (cause == "UPSTREAM_OUTAGE")
   {
-    return "Outage";
+    return "OUTAGE";
   }
 
   return "Not applicable";
+}
+
+
+
+String lcdKV(
+    const String &key,
+    const String &value)
+{
+  String line =
+      "[" +
+      key +
+      "->" +
+      value +
+      "]";
+
+  if (line.length() > 20)
+  {
+    return "[DISPLAY->OVERFLOW]";
+  }
+
+  return line;
+}
+
+
+String lcdFaultValue()
+{
+  if (faultCandidate == "LOCAL_FAULT")
+  {
+    return "LOCAL";
+  }
+
+  if (faultCandidate == "UPSTREAM_FAULT")
+  {
+    return "UPSTREAM";
+  }
+
+  if (faultCandidate == "MIXED_FAULT")
+  {
+    return "MIXED";
+  }
+
+  return "NORMAL";
+}
+
+
+String lcdAiReasonValue()
+{
+  if (aiRecommendationReason == "CRITICAL BACKUP ENERGY")
+  {
+    return "CRIT POWER";
+  }
+
+  if (aiRecommendationReason == "UNCERTAIN / UNKNOWN ABNORMALITY")
+  {
+    return "AI UNCERTAIN";
+  }
+
+  if (aiRecommendationReason == "LOCAL SERVICE/RECOVERY PRIORITY")
+  {
+    return "RECOVERY";
+  }
+
+  if (aiRecommendationReason == "LOCAL ENERGY CONSERVATION")
+  {
+    return "SAVE ENERGY";
+  }
+
+  if (aiRecommendationReason == "BACKHAUL LOSS ENERGY CONSERVATION")
+  {
+    return "BH OUTAGE";
+  }
+
+  if (aiRecommendationReason == "HIGH TRAFFIC")
+  {
+    return "HIGH TRAFFIC";
+  }
+
+  if (aiRecommendationReason == "LOW TRAFFIC HEALTHY SITE")
+  {
+    return "LOW TRAFFIC";
+  }
+
+  if (aiRecommendationReason == "MODERATE LOAD / CONSERVATIVE ECO")
+  {
+    return "MODERATE LOAD";
+  }
+
+  return "OTHER";
+}
+
+
+String lcdPicoReasonValue()
+{
+  if (picoDecisionReason == "CRITICAL BACKUP ENERGY")
+  {
+    return "BAT LOW";
+  }
+
+  if (picoDecisionReason == "PICO ACCEPTED GENERATOR RECOMMENDATION")
+  {
+    return "GEN REQUIRED";
+  }
+
+  if (picoDecisionReason == "GRID AVAILABLE")
+  {
+    return "GRID HEALTHY";
+  }
+
+  if (picoDecisionReason == "BATTERY BACKUP SELECTED")
+  {
+    return "BAT BACKUP";
+  }
+
+  if (picoDecisionReason == "ANOMALY CONSERVATIVE ECO")
+  {
+    return "ANOMALY ECO";
+  }
+
+  if (picoDecisionReason == "AI UNCERTAIN - HOLD CURRENT STATE")
+  {
+    return "AI UNCERTAIN";
+  }
+
+  return "SAFETY RULE";
+}
+
+
+String lcdGeneratorVerifyValue()
+{
+  if (generatorVerificationState == "RUNNING_CONFIRMED")
+  {
+    return "RUNNING";
+  }
+
+  if (generatorVerificationState == "GENERATOR_STARTING")
+  {
+    return "STARTING";
+  }
+
+  if (generatorVerificationState == "GENERATOR_START_FAILED")
+  {
+    return "START FAIL";
+  }
+
+  if (generatorVerificationState == "GENERATOR_STOPPING")
+  {
+    return "STOPPING";
+  }
+
+  if (generatorVerificationState == "GENERATOR_STOP_FAILED")
+  {
+    return "STOP FAIL";
+  }
+
+  return "STOPPED";
+}
+
+
+String lcdActuationValue()
+{
+  if (picoActuationStatus == "CONFIRMED")
+  {
+    return "CONFIRMED";
+  }
+
+  if (picoActuationStatus == "ESP32 FAST SAFETY")
+  {
+    return "ESP32 SAFE";
+  }
+
+  if (picoActuationStatus == "WAITING")
+  {
+    return "WAITING";
+  }
+
+  return "SAFE HOLD";
 }
 
 
@@ -5600,103 +5776,39 @@ String shortUpstreamCause(
 // LCD INITIALISATION
 // ====================================================
 
+
 void initialiseLCDs()
 {
-  // LCD 1 - station values.
   lcdDcVoltage.init();
   lcdDcVoltage.backlight();
   lcdDcVoltage.clear();
 
-  writeLCDLine(
-      lcdDcVoltage,
-      0,
-      "LIVE VALUES"
-  );
+  writeLCDLine(lcdDcVoltage, 0, lcdKV("SYSTEM", "STARTING"));
+  writeLCDLine(lcdDcVoltage, 1, lcdKV("SENSORS", "INIT"));
+  writeLCDLine(lcdDcVoltage, 2, lcdKV("NETWORK", "INIT"));
+  writeLCDLine(lcdDcVoltage, 3, lcdKV("STATUS", "BOOTING"));
 
-  writeLCDLine(
-      lcdDcVoltage,
-      1,
-      "20x4 STATUS DISPLAY"
-  );
-
-  writeLCDLine(
-      lcdDcVoltage,
-      2,
-      "Sensors / Network"
-  );
-
-  writeLCDLine(
-      lcdDcVoltage,
-      3,
-      "Starting..."
-  );
-
-  // LCD 2 - AI explanations + real metrics.
   lcdAiRecommendations.init();
   lcdAiRecommendations.backlight();
   lcdAiRecommendations.clear();
 
-  writeLCDLine(
-      lcdAiRecommendations,
-      0,
-      "AI DIAGNOSTICS"
-  );
+  writeLCDLine(lcdAiRecommendations, 0, lcdKV("AI", "WARMUP"));
+  writeLCDLine(lcdAiRecommendations, 1, lcdKV("WINDOW", "0/24"));
+  writeLCDLine(lcdAiRecommendations, 2, lcdKV("HISTORY", "120s"));
+  writeLCDLine(lcdAiRecommendations, 3, lcdKV("RESULT", "PENDING"));
 
-  writeLCDLine(
-      lcdAiRecommendations,
-      1,
-      "Collecting 24 frames"
-  );
-
-  writeLCDLine(
-      lcdAiRecommendations,
-      2,
-      "Window = 120 seconds"
-  );
-
-  writeLCDLine(
-      lcdAiRecommendations,
-      3,
-      "Waiting for AI..."
-  );
-
-  // LCD 3 - Pico decisions and actual actuator state.
   lcdPicoActions.init();
   lcdPicoActions.backlight();
   lcdPicoActions.clear();
 
-  writeLCDLine(
-      lcdPicoActions,
-      0,
-      "PICO ACTUATION"
-  );
+  writeLCDLine(lcdPicoActions, 0, lcdKV("PICO", "WAITING"));
+  writeLCDLine(lcdPicoActions, 1, lcdKV("DECISION", "PENDING"));
+  writeLCDLine(lcdPicoActions, 2, lcdKV("GEN_CMD", "HOLD"));
+  writeLCDLine(lcdPicoActions, 3, lcdKV("AUTHORITY", "ESP32"));
 
-  writeLCDLine(
-      lcdPicoActions,
-      1,
-      "Waiting decision..."
-  );
-
-  writeLCDLine(
-      lcdPicoActions,
-      2,
-      "Generator: STOPPED"
-  );
-
-  writeLCDLine(
-      lcdPicoActions,
-      3,
-      "Safe hold"
-  );
-
-  lastLCDPageTime =
-      millis();
-
-  lastAiLCDPageTime =
-      millis();
-
-  lastPicoLCDPageTime =
-      millis();
+  lastLCDPageTime = millis();
+  lastAiLCDPageTime = millis();
+  lastPicoLCDPageTime = millis();
 }
 
 
@@ -5704,72 +5816,36 @@ void initialiseLCDs()
 // DUAL 20x4 LCD REFRESH
 // ====================================================
 
+
 void refreshLCDs(
     bool force = false)
 {
-  const uint8_t VALUES_PAGE_COUNT = 3;
+  const uint8_t VALUES_PAGE_COUNT = 8;
   const uint8_t AI_PAGE_COUNT = 12;
+  const uint8_t PICO_PAGE_COUNT = 4;
 
-  unsigned long now =
-      millis();
+  unsigned long now = millis();
 
-  if (
-      now - lastLCDPageTime >=
-      LCD_PAGE_INTERVAL_MS)
+  if (now - lastLCDPageTime >= LCD_PAGE_INTERVAL_MS)
   {
-    lcdPage =
-        (
-            lcdPage +
-            1
-        ) %
-        VALUES_PAGE_COUNT;
-
-    lastLCDPageTime =
-        now;
-
-    force =
-        true;
+    lcdPage = (lcdPage + 1) % VALUES_PAGE_COUNT;
+    lastLCDPageTime = now;
+    force = true;
   }
 
-  if (
-      now - lastAiLCDPageTime >=
-      AI_LCD_PAGE_INTERVAL_MS)
+  if (now - lastAiLCDPageTime >= AI_LCD_PAGE_INTERVAL_MS)
   {
-    aiLcdPage =
-        (
-            aiLcdPage +
-            1
-        ) %
-        AI_PAGE_COUNT;
-
-    lastAiLCDPageTime =
-        now;
-
-    force =
-        true;
+    aiLcdPage = (aiLcdPage + 1) % AI_PAGE_COUNT;
+    lastAiLCDPageTime = now;
+    force = true;
   }
 
-  if (
-      now - lastPicoLCDPageTime >=
-      PICO_LCD_PAGE_INTERVAL_MS)
+  if (now - lastPicoLCDPageTime >= PICO_LCD_PAGE_INTERVAL_MS)
   {
-    picoLcdPage =
-        (
-            picoLcdPage +
-            1
-        ) %
-        4;
-
-    lastPicoLCDPageTime =
-        now;
-
-    force =
-        true;
+    picoLcdPage = (picoLcdPage + 1) % PICO_PAGE_COUNT;
+    lastPicoLCDPageTime = now;
+    force = true;
   }
-
-  // ==================================================
-  // LCD 1 - LIVE VALUES
-  // ==================================================
 
   String line0;
   String line1;
@@ -5779,131 +5855,75 @@ void refreshLCDs(
   switch (lcdPage)
   {
     case 0:
-      line0 =
-          "V" +
-          String(dcBusVoltage, 1) +
-          " I" +
-          String(dcBusCurrent, 1) +
-          " P" +
-          String(dcPower, 0) +
-          "W";
-
-      line1 =
-          "PA" +
-          String(paTemperature, 1) +
-          " B" +
-          String(batterySOC, 0) +
-          "% H" +
-          String(humidity, 0) +
-          "%";
-
-      line2 =
-          "FAULT:" +
-          faultCandidate;
-
-      line3 =
-          "M:" +
-          shortLCDMode(
-              operatingMode
-          ) +
-          " SAVE:" +
-          String(
-              estimatedEnergySavingPct,
-              0
-          ) +
-          "%";
+      line0 = lcdKV("VOLTAGE", String(dcBusVoltage, 1) + "V");
+      line1 = lcdKV("CURRENT", String(dcBusCurrent, 1) + "A");
+      line2 = lcdKV("POWER", String(dcPower, 0) + "W");
+      line3 = lcdKV("ELECTRIC", electricalHealth);
       break;
 
     case 1:
-      line0 =
-          "F" +
-          String(rfForwardPower, 1) +
-          " R" +
-          String(rfReflectedPower, 1) +
-          "W";
-
-      line1 =
-          "VSWR" +
-          String(vswr, 2) +
-          " RF:" +
-          shortLCDRFHealth(
-              rfHealth
-          );
-
-      line2 =
-          "LAT" +
-          String(latency, 0) +
-          " P" +
-          String(packetLoss, 0) +
-          " R" +
-          String(rssi, 0);
-
-      line3 =
-          "BH:" +
-          shortLCDBackhaul(
-              backhaulCondition
-          ) +
-          " LINK:" +
-          (
-              linkUp
-                  ? "UP"
-                  : "DOWN"
-          );
+      line0 = lcdKV("BATTERY_V", String(batteryVoltage, 2) + "V");
+      line1 = lcdKV("BAT_SOC", String(batterySOC, 1) + "%");
+      line2 = lcdKV("SOURCE", activePowerSource);
+      line3 = lcdKV("GRID", gridAvailable ? "AVAILABLE" : "FAILED");
       break;
 
     case 2:
+      line0 = lcdKV("RF_FORWARD", String(rfForwardPower, 1) + "W");
+      line1 = lcdKV("RF_REFLECT", String(rfReflectedPower, 1) + "W");
+      line2 = lcdKV("VSWR", String(vswr, 2));
+      line3 = lcdKV("RF", rfHealth);
+      break;
+
+    case 3:
+      line0 = lcdKV("LATENCY", String(latency, 0) + "ms");
+      line1 = lcdKV("LOSS", String(packetLoss, 1) + "%");
+      line2 = lcdKV("RSSI", String(rssi, 0) + "dBm");
+      line3 = lcdKV("BACKHAUL", backhaulCondition);
+      break;
+
+    case 4:
+      line0 = lcdKV("LINK", linkUp ? "UP" : "DOWN");
+      line1 = lcdKV(
+          "UPSTREAM",
+          upstreamReachable ? "REACH" : "NO REACH"
+      );
+      line2 = lcdKV("GRID", gridAvailable ? "AVAILABLE" : "FAILED");
+      line3 = lcdKV(
+          "GEN_STATE",
+          generatorRunning ? "RUNNING" : "STOPPED"
+      );
+      break;
+
+    case 5:
+      line0 = lcdKV("FAN", fanOperational ? "OK" : "FAILED");
+      line1 = lcdKV("RECTIFIER", rectifierNormal ? "OK" : "FAULT");
+      line2 = lcdKV("RADIO", radioOperational ? "OK" : "FAULT");
+      line3 = lcdKV("LOCAL", localSiteStatus);
+      break;
+
+    case 6:
+      line0 = lcdKV("FAULT", lcdFaultValue());
+      line1 = lcdKV("MODE", operatingMode);
+      line2 = lcdKV(
+          "SAVE",
+          String(estimatedEnergySavingPct, 0) + "%"
+      );
+      line3 = lcdKV("TRAFFIC", String(trafficLoad, 0) + "%");
+      break;
+
+    case 7:
     default:
-      line0 =
-          String("GRID:") +
-          (
-              gridAvailable
-                  ? "Y"
-                  : "N"
-          ) +
-          " GEN:" +
-          (
-              generatorRunning
-                  ? "ON"
-                  : "OFF"
-          );
-
-      line1 =
-          "SRC:" +
-          shortLCDPowerSource(
-              activePowerSource
-          ) +
-          " LOCAL:" +
-          shortLCDLocalStatus(
-              localSiteStatus
-          );
-
-      line2 =
-          String("FAN:") +
-          (
-              fanOperational
-                  ? "OK"
-                  : "FAIL"
-          ) +
-          " RECT:" +
-          (
-              rectifierNormal
-                  ? "OK"
-                  : "FAIL"
-          );
-
-      line3 =
-          String("RAD:") +
-          (
-              radioOperational
-                  ? "OK"
-                  : "FAIL"
-          ) +
-          " TRF:" +
-          String(
-              trafficLoad,
-              0
-          ) +
-          "%";
+      line0 = lcdKV(
+          "SHELTER",
+          String(shelterTemperature, 1) + "C"
+      );
+      line1 = lcdKV("HUMIDITY", String(humidity, 0) + "%");
+      line2 = lcdKV(
+          "PA_TEMP",
+          String(paTemperature, 1) + "C"
+      );
+      line3 = lcdKV("THERMAL", thermalRiskState);
       break;
   }
 
@@ -5912,57 +5932,29 @@ void refreshLCDs(
   String padded2 = padLCDText(line2);
   String padded3 = padLCDText(line3);
 
-  if (
-      force ||
-      padded0 != lastLCDLine0)
+  if (force || padded0 != lastLCDLine0)
   {
-    writeLCDLine(
-        lcdDcVoltage,
-        0,
-        line0
-    );
+    writeLCDLine(lcdDcVoltage, 0, line0);
     lastLCDLine0 = padded0;
   }
 
-  if (
-      force ||
-      padded1 != lastLCDLine1)
+  if (force || padded1 != lastLCDLine1)
   {
-    writeLCDLine(
-        lcdDcVoltage,
-        1,
-        line1
-    );
+    writeLCDLine(lcdDcVoltage, 1, line1);
     lastLCDLine1 = padded1;
   }
 
-  if (
-      force ||
-      padded2 != lastLCDLine2)
+  if (force || padded2 != lastLCDLine2)
   {
-    writeLCDLine(
-        lcdDcVoltage,
-        2,
-        line2
-    );
+    writeLCDLine(lcdDcVoltage, 2, line2);
     lastLCDLine2 = padded2;
   }
 
-  if (
-      force ||
-      padded3 != lastLCDLine3)
+  if (force || padded3 != lastLCDLine3)
   {
-    writeLCDLine(
-        lcdDcVoltage,
-        3,
-        line3
-    );
+    writeLCDLine(lcdDcVoltage, 3, line3);
     lastLCDLine3 = padded3;
   }
-
-  // ==================================================
-  // LCD 2 - READABLE AI + REAL METRICS
-  // ==================================================
 
   String aiLine0;
   String aiLine1;
@@ -5971,490 +5963,225 @@ void refreshLCDs(
 
   if (!aiCommandEverReceived)
   {
-    aiLine0 =
-        "AI DIAGNOSTICS";
-
-    aiLine1 =
-        "Collecting 24 frames";
-
-    aiLine2 =
-        "Need 120s history";
-
-    aiLine3 =
-        "Waiting for result";
+    aiLine0 = lcdKV("AI", "WARMUP");
+    aiLine1 = lcdKV("WINDOW", "0/24");
+    aiLine2 = lcdKV("HISTORY", "120s");
+    aiLine3 = lcdKV("RESULT", "PENDING");
   }
   else if (!aiExtendedMetricsAvailable)
   {
-    aiLine0 =
-        "AI RESULT RECEIVED";
-
-    aiLine1 =
-        aiDiagnosisSentence();
-
-    aiLine2 =
-        "Transport incomplete";
-
-    aiLine3 =
-        "RX " +
-        String(
-            aiLastCommandChars
-        ) +
-        " chars";
+    aiLine0 = lcdKV("AI", "RECEIVED");
+    aiLine1 = lcdKV("DOMAIN", aiFaultDomain);
+    aiLine2 = lcdKV("METRICS", "PARTIAL");
+    aiLine3 = lcdKV("RX", String(aiLastCommandChars) + "ch");
   }
   else
   {
     switch (aiLcdPage)
     {
-      // ----------------------------------------------
-      // PAGE 1 - HUMAN DIAGNOSIS
-      // ----------------------------------------------
       case 0:
-        aiLine0 =
-            "AI DIAGNOSIS";
-
-        aiLine1 =
-            aiDiagnosisSentence();
-
-        aiLine2 =
-            "Confidence " +
-            String(
-                aiDomainConfidence *
-                100.0f,
-                1
-            ) +
-            "%";
-
-        aiLine3 =
-            aiTrustSentence();
+        aiLine0 = lcdKV("DOMAIN", aiFaultDomain);
+        aiLine1 = lcdKV(
+            "CONFIDENCE",
+            String(aiDomainConfidence * 100.0f, 1) + "%"
+        );
+        aiLine2 = lcdKV("TRUST", aiTrustDecision);
+        aiLine3 = lcdKV("STATE", aiDiagnosticState);
         break;
 
-      // ----------------------------------------------
-      // PAGE 2 - HUMAN RECOMMENDATION
-      // ----------------------------------------------
       case 1:
-        aiLine0 =
-            "AI RECOMMENDATION";
-
-        aiLine1 =
-            aiRecommendationSentence();
-
-        aiLine2 =
-            aiReasonSentence();
-
-        aiLine3 =
-            "Final " +
-            shortLCDMode(
-                operatingMode
-            ) +
-            " Guard:" +
-            (
-                guardrailStatus ==
-                    "PASSED"
-                    ? "OK"
-                    : "ACT"
-            );
+        aiLine0 = lcdKV("AI_MODE", aiRecommendedMode);
+        aiLine1 = lcdKV("APPLIED", operatingMode);
+        aiLine2 = lcdKV("WHY", lcdAiReasonValue());
+        aiLine3 = lcdKV(
+            "GUARDRAIL",
+            guardrailStatus == "PASSED" ? "PASSED" : "ACTIVE"
+        );
         break;
 
-      // ----------------------------------------------
-      // PAGE 3 - DOMAIN PROBABILITY VECTOR
-      // ----------------------------------------------
       case 2:
-        aiLine0 =
-            "DOMAIN PROBABILITY";
-
-        aiLine1 =
-            "Normal " +
-            String(
-                aiProbNormal *
-                100.0f,
-                1
-            ) +
-            "%";
-
-        aiLine2 =
-            "Loc " +
-            String(
-                aiProbLocal *
-                100.0f,
-                1
-            ) +
-            " Up " +
-            String(
-                aiProbUpstream *
-                100.0f,
-                1
-            ) +
-            "%";
-
-        aiLine3 =
-            "Mixed " +
-            String(
-                aiProbMixed *
-                100.0f,
-                1
-            ) +
-            "%";
+        aiLine0 = lcdKV(
+            "P_NORMAL",
+            String(aiProbNormal * 100.0f, 1) + "%"
+        );
+        aiLine1 = lcdKV(
+            "P_LOCAL",
+            String(aiProbLocal * 100.0f, 1) + "%"
+        );
+        aiLine2 = lcdKV(
+            "P_UPSTREAM",
+            String(aiProbUpstream * 100.0f, 1) + "%"
+        );
+        aiLine3 = lcdKV(
+            "P_MIXED",
+            String(aiProbMixed * 100.0f, 1) + "%"
+        );
         break;
 
-      // ----------------------------------------------
-      // PAGE 4 - ANOMALY METRICS
-      // ----------------------------------------------
       case 3:
-        aiLine0 =
-            "ANOMALY DETECTOR";
-
-        aiLine1 =
-            aiAnomalyFlag
-                ? "Anomaly detected"
-                : "No anomaly detected";
-
-        aiLine2 =
-            "Score " +
-            String(
-                aiAnomalyScore,
-                3
-            ) +
-            " Th " +
-            String(
-                aiAnomalyThreshold,
-                3
-            );
-
-        aiLine3 =
-            "Ratio " +
-            String(
-                aiAnomalyRatio,
-                2
-            ) +
-            "x";
+        aiLine0 = lcdKV("ANOMALY", aiAnomalyFlag ? "YES" : "NO");
+        aiLine1 = lcdKV("SCORE", String(aiAnomalyScore, 3));
+        aiLine2 = lcdKV("THRESHOLD", String(aiAnomalyThreshold, 3));
+        aiLine3 = lcdKV("RATIO", String(aiAnomalyRatio, 2) + "x");
         break;
 
-      // ----------------------------------------------
-      // PAGE 5 - ROOT CAUSE WINNERS
-      // ----------------------------------------------
       case 4:
-        aiLine0 =
-            "ROOT CAUSE";
-
-        if (
-            aiLocalRootCause !=
-            "NOT_APPLICABLE")
-        {
-          aiLine1 =
-              "Local: " +
-              shortLocalCause(
-                  aiLocalRootCause
-              );
-
-          aiLine2 =
-              "Local conf " +
-              String(
-                  aiLocalRootConfidence *
-                  100.0f,
-                  1
-              ) +
-              "%";
-        }
-        else
-        {
-          aiLine1 =
-              "Local: not needed";
-
-          aiLine2 =
-              "No local cause";
-        }
-
-        if (
-            aiUpstreamRootCause !=
-            "NOT_APPLICABLE")
-        {
-          aiLine3 =
-              "Up: " +
-              shortUpstreamCause(
-                  aiUpstreamRootCause
-              );
-        }
-        else
-        {
-          aiLine3 =
-              "Upstream: not needed";
-        }
+        aiLine0 = lcdKV(
+            "LOCAL",
+            aiLocalRootCause == "NOT_APPLICABLE"
+                ? "N/A"
+                : shortLocalCause(aiLocalRootCause)
+        );
+        aiLine1 = lcdKV(
+            "L_CONF",
+            String(aiLocalRootConfidence * 100.0f, 1) + "%"
+        );
+        aiLine2 = lcdKV(
+            "UPSTREAM",
+            aiUpstreamRootCause == "NOT_APPLICABLE"
+                ? "N/A"
+                : shortUpstreamCause(aiUpstreamRootCause)
+        );
+        aiLine3 = lcdKV(
+            "U_CONF",
+            String(aiUpstreamRootConfidence * 100.0f, 1) + "%"
+        );
         break;
 
-      // ----------------------------------------------
-      // PAGE 6 - LOCAL ROOT PROBABILITIES A
-      // ----------------------------------------------
       case 5:
-        aiLine0 =
-            "LOCAL ROOT PROBS";
-
-        aiLine1 =
-            "Cool " +
-            String(
-                aiLocalProbCooling *
-                100.0f,
-                1
-            ) +
-            " Rad " +
-            String(
-                aiLocalProbRadio *
-                100.0f,
-                1
-            );
-
-        aiLine2 =
-            "Rect " +
-            String(
-                aiLocalProbRectifier *
-                100.0f,
-                1
-            ) +
-            " RF " +
-            String(
-                aiLocalProbRfMismatch *
-                100.0f,
-                1
-            );
-
-        aiLine3 =
-            "Bat " +
-            String(
-                aiLocalProbBatteryLow *
-                100.0f,
-                1
-            ) +
-            " Grid " +
-            String(
-                aiLocalProbGridFailure *
-                100.0f,
-                1
-            );
+        aiLine0 = lcdKV(
+            "COOLING",
+            String(aiLocalProbCooling * 100.0f, 1) + "%"
+        );
+        aiLine1 = lcdKV(
+            "RADIO",
+            String(aiLocalProbRadio * 100.0f, 1) + "%"
+        );
+        aiLine2 = lcdKV(
+            "RECTIFIER",
+            String(aiLocalProbRectifier * 100.0f, 1) + "%"
+        );
+        aiLine3 = lcdKV(
+            "RF_MISMATCH",
+            String(aiLocalProbRfMismatch * 100.0f, 0) + "%"
+        );
         break;
 
-      // ----------------------------------------------
-      // PAGE 7 - LOCAL ROOT PROBABILITIES B
-      // ----------------------------------------------
       case 6:
-        aiLine0 =
-            "LOCAL PROBS CONT.";
-
-        aiLine1 =
-            "Vibration " +
-            String(
-                aiLocalProbVibration *
-                100.0f,
-                1
-            ) +
-            "%";
-
-        aiLine2 =
-            "Traffic " +
-            String(
-                aiLocalProbTraffic *
-                100.0f,
-                1
-            ) +
-            "%";
-
-        aiLine3 =
-            "Winner " +
-            shortLocalCause(
-                aiLocalRootCause
-            );
+        aiLine0 = lcdKV(
+            "BAT_LOW",
+            String(aiLocalProbBatteryLow * 100.0f, 1) + "%"
+        );
+        aiLine1 = lcdKV(
+            "GRID_FAIL",
+            String(aiLocalProbGridFailure * 100.0f, 1) + "%"
+        );
+        aiLine2 = lcdKV(
+            "VIBRATION",
+            String(aiLocalProbVibration * 100.0f, 1) + "%"
+        );
+        aiLine3 = lcdKV(
+            "TRAFFIC",
+            String(aiLocalProbTraffic * 100.0f, 1) + "%"
+        );
         break;
 
-      // ----------------------------------------------
-      // PAGE 8 - UPSTREAM ROOT PROBABILITIES
-      // ----------------------------------------------
       case 7:
-        aiLine0 =
-            "UPSTREAM ROOT PROBS";
-
-        aiLine1 =
-            "Con" +
-            String(
-                aiUpstreamProbCongestion *
-                100.0f,
-                1
-            ) +
-            " Deg" +
-            String(
-                aiUpstreamProbDegradation *
-                100.0f,
-                1
-            );
-
-        aiLine2 =
-            "Fail" +
-            String(
-                aiUpstreamProbFailure *
-                100.0f,
-                1
-            ) +
-            " Out" +
-            String(
-                aiUpstreamProbOutage *
-                100.0f,
-                1
-            );
-
-        aiLine3 =
-            "Conf " +
-            String(
-                aiUpstreamRootConfidence *
-                100.0f,
-                1
-            ) +
-            "%";
+        aiLine0 = lcdKV(
+            "CONGESTION",
+            String(aiUpstreamProbCongestion * 100.0f, 1) + "%"
+        );
+        aiLine1 = lcdKV(
+            "LINK_DEGR",
+            String(aiUpstreamProbDegradation * 100.0f, 1) + "%"
+        );
+        aiLine2 = lcdKV(
+            "LINK_FAIL",
+            String(aiUpstreamProbFailure * 100.0f, 1) + "%"
+        );
+        aiLine3 = lcdKV(
+            "UP_OUTAGE",
+            String(aiUpstreamProbOutage * 100.0f, 1) + "%"
+        );
         break;
 
-      // ----------------------------------------------
-      // PAGE 9 - RUNTIME / TEMPORAL WINDOW
-      // ----------------------------------------------
       case 8:
-        aiLine0 =
-            "AI RUNTIME";
-
-        aiLine1 =
-            "Window " +
-            String(
-                aiWindowCount,
-                0
-            ) +
-            "/24 = " +
-            String(
-                aiWindowSeconds,
-                0
-            ) +
-            "s";
-
-        aiLine2 =
-            "Inference " +
-            String(
-                aiInferenceMs,
-                1
-            ) +
-            " ms";
-
-        aiLine3 =
-            "Status: " +
-            aiCommandStatus;
+        aiLine0 = lcdKV(
+            "WINDOW",
+            String(aiWindowCount, 0) + "/24"
+        );
+        aiLine1 = lcdKV(
+            "HISTORY",
+            String(aiWindowSeconds, 0) + "s"
+        );
+        aiLine2 = lcdKV(
+            "INFER_MS",
+            String(aiInferenceMs, 1)
+        );
+        aiLine3 = lcdKV(
+            "AI_CMD",
+            aiCommandStatus == "NOT_RECEIVED"
+                ? "NO RX"
+                : aiCommandStatus
+        );
         break;
 
-      // ----------------------------------------------
-      // PAGE 10 - DOMAIN MODEL VALIDATION
-      // ----------------------------------------------
       case 9:
-        aiLine0 =
-            "MODEL TEST METRICS";
-
-        aiLine1 =
-            "Accuracy " +
-            String(
-                aiModelDomainAccuracy *
-                100.0f,
-                1
-            ) +
-            "%";
-
-        aiLine2 =
-            "Balanced " +
-            String(
-                aiModelDomainBalancedAccuracy *
-                100.0f,
-                1
-            ) +
-            "%";
-
-        aiLine3 =
-            "Macro F1 " +
-            String(
-                aiModelDomainMacroF1 *
-                100.0f,
-                1
-            ) +
-            "%";
+        aiLine0 = lcdKV(
+            "ACCURACY",
+            String(aiModelDomainAccuracy * 100.0f, 1) + "%"
+        );
+        aiLine1 = lcdKV(
+            "BAL_ACC",
+            String(aiModelDomainBalancedAccuracy * 100.0f, 1) + "%"
+        );
+        aiLine2 = lcdKV(
+            "MACRO_F1",
+            String(aiModelDomainMacroF1 * 100.0f, 1) + "%"
+        );
+        aiLine3 = lcdKV(
+            "LOGLOSS",
+            String(aiModelDomainLogLoss, 3)
+        );
         break;
 
-      // ----------------------------------------------
-      // PAGE 11 - END-TO-END VALIDATION
-      // ----------------------------------------------
       case 10:
-        aiLine0 =
-            "END-TO-END TEST";
-
-        aiLine1 =
-            "Local " +
-            String(
-                aiModelLocalE2EAccuracy *
-                100.0f,
-                1
-            ) +
-            " Up " +
-            String(
-                aiModelUpstreamE2EAccuracy *
-                100.0f,
-                1
-            );
-
-        aiLine2 =
-            "Mixed exact " +
-            String(
-                aiModelMixedExactAccuracy *
-                100.0f,
-                1
-            ) +
-            "%";
-
-        aiLine3 =
-            "Hierarchy " +
-            String(
-                aiModelHierarchyAccuracy *
-                100.0f,
-                1
-            ) +
-            "%";
+        aiLine0 = lcdKV(
+            "LOCAL_E2E",
+            String(aiModelLocalE2EAccuracy * 100.0f, 1) + "%"
+        );
+        aiLine1 = lcdKV(
+            "UP_E2E",
+            String(aiModelUpstreamE2EAccuracy * 100.0f, 1) + "%"
+        );
+        aiLine2 = lcdKV(
+            "MIXED_EXACT",
+            String(aiModelMixedExactAccuracy * 100.0f, 0) + "%"
+        );
+        aiLine3 = lcdKV(
+            "HIERARCHY",
+            String(aiModelHierarchyAccuracy * 100.0f, 1) + "%"
+        );
         break;
 
-      // ----------------------------------------------
-      // PAGE 12 - ANOMALY MODEL VALIDATION
-      // ----------------------------------------------
       case 11:
       default:
-        aiLine0 =
-            "ANOMALY MODEL TEST";
-
-        aiLine1 =
-            "ROC-AUC " +
-            String(
-                aiModelAnomalyRocAuc *
-                100.0f,
-                1
-            ) +
-            "%";
-
-        aiLine2 =
-            "AP " +
-            String(
-                aiModelAnomalyAveragePrecision *
-                100.0f,
-                1
-            ) +
-            "% FPR " +
-            String(
-                aiModelAnomalyFpr *
-                100.0f,
-                1
-            );
-
-        aiLine3 =
-            "Detect " +
-            String(
-                aiModelAnomalyDetectionRate *
-                100.0f,
-                1
-            ) +
-            "%";
+        aiLine0 = lcdKV(
+            "ROC_AUC",
+            String(aiModelAnomalyRocAuc * 100.0f, 1) + "%"
+        );
+        aiLine1 = lcdKV(
+            "AVG_PREC",
+            String(aiModelAnomalyAveragePrecision * 100.0f, 1) + "%"
+        );
+        aiLine2 = lcdKV(
+            "FPR",
+            String(aiModelAnomalyFpr * 100.0f, 1) + "%"
+        );
+        aiLine3 = lcdKV(
+            "DETECT",
+            String(aiModelAnomalyDetectionRate * 100.0f, 1) + "%"
+        );
         break;
     }
   }
@@ -6464,65 +6191,29 @@ void refreshLCDs(
   String aiPadded2 = padLCDText(aiLine2);
   String aiPadded3 = padLCDText(aiLine3);
 
-  if (
-      force ||
-      aiPadded0 !=
-          lastAiLCDLine0)
+  if (force || aiPadded0 != lastAiLCDLine0)
   {
-    writeLCDLine(
-        lcdAiRecommendations,
-        0,
-        aiLine0
-    );
+    writeLCDLine(lcdAiRecommendations, 0, aiLine0);
     lastAiLCDLine0 = aiPadded0;
   }
 
-  if (
-      force ||
-      aiPadded1 !=
-          lastAiLCDLine1)
+  if (force || aiPadded1 != lastAiLCDLine1)
   {
-    writeLCDLine(
-        lcdAiRecommendations,
-        1,
-        aiLine1
-    );
+    writeLCDLine(lcdAiRecommendations, 1, aiLine1);
     lastAiLCDLine1 = aiPadded1;
   }
 
-  if (
-      force ||
-      aiPadded2 !=
-          lastAiLCDLine2)
+  if (force || aiPadded2 != lastAiLCDLine2)
   {
-    writeLCDLine(
-        lcdAiRecommendations,
-        2,
-        aiLine2
-    );
+    writeLCDLine(lcdAiRecommendations, 2, aiLine2);
     lastAiLCDLine2 = aiPadded2;
   }
 
-  if (
-      force ||
-      aiPadded3 !=
-          lastAiLCDLine3)
+  if (force || aiPadded3 != lastAiLCDLine3)
   {
-    writeLCDLine(
-        lcdAiRecommendations,
-        3,
-        aiLine3
-    );
+    writeLCDLine(lcdAiRecommendations, 3, aiLine3);
     lastAiLCDLine3 = aiPadded3;
   }
-
-  // ==================================================
-  // LCD 3 - PICO DECISION / ACTUATION
-  // ==================================================
-  //
-  // This display rotates through the complete actuation chain:
-  // decision -> generator command -> power context -> verification.
-  //
 
   String picoLine0;
   String picoLine1;
@@ -6531,182 +6222,98 @@ void refreshLCDs(
 
   if (!isPicoDecisionFresh())
   {
-    picoLine0 =
-        "PICO WAITING";
-
-    picoLine1 =
-        "No fresh Pico reply";
-
-    picoLine2 =
-        "Outputs held safely";
-
-    picoLine3 =
-        "ESP32 has control";
+    picoLine0 = lcdKV("PICO", "WAITING");
+    picoLine1 = lcdKV("REPLY", "NOT FRESH");
+    picoLine2 = lcdKV("OUTPUTS", "SAFE HOLD");
+    picoLine3 = lcdKV("AUTHORITY", "ESP32");
   }
   else
   {
     switch (picoLcdPage)
     {
       case 0:
-        picoLine0 =
-            "PICO DECISION";
-
-        picoLine1 =
-            picoModeSentence();
-
-        picoLine2 =
-            picoPowerSentence();
-
+        picoLine0 = lcdKV("MODE", picoModeDecision);
+        picoLine1 = lcdKV("POWER", picoPowerSourceDecision);
+        picoLine2 = lcdKV("TRUST", aiTrustDecision);
         picoLine3 =
-            (
-                aiTrustDecision == "ACCEPT"
-                    ? "Decision accepted"
-                    : "AI unsure - holding"
-            );
+            picoDecisionReason == "CRITICAL BACKUP ENERGY"
+                ? lcdKV("SAFETY", "OVERRIDE")
+                : (
+                    aiTrustDecision == "ACCEPT"
+                        ? lcdKV("STATUS", "ACCEPTED")
+                        : lcdKV("STATUS", "SAFE HOLD")
+                );
         break;
 
       case 1:
-        picoLine0 =
-            "GENERATOR ACTION";
-
-        picoLine1 =
-            picoGeneratorSentence();
-
-        picoLine2 =
-            (
-                generatorRunning
-                    ? "Generator is running"
-                    : "Generator is stopped"
-            );
-
-        picoLine3 =
-            generatorVerificationSentence();
+        picoLine0 = lcdKV("GEN_CMD", picoGeneratorAction);
+        picoLine1 = lcdKV(
+            "GEN_STATE",
+            generatorRunning ? "RUNNING" : "STOPPED"
+        );
+        picoLine2 = lcdKV(
+            "VERIFY",
+            lcdGeneratorVerifyValue()
+        );
+        picoLine3 = lcdKV(
+            "ACTION",
+            lcdActuationValue()
+        );
         break;
 
       case 2:
-        picoLine0 =
-            "POWER STATUS";
-
-        picoLine1 =
-            (
-                gridAvailable
-                    ? "Grid is available"
-                    : "Grid has failed"
-            );
-
-        picoLine2 =
-            "Battery: " +
-            String(
-                batterySOC,
-                1
-            ) +
-            "%";
-
-        picoLine3 =
-            picoPowerSentence();
+        picoLine0 = lcdKV(
+            "GRID",
+            gridAvailable ? "AVAILABLE" : "FAILED"
+        );
+        picoLine1 = lcdKV(
+            "BAT_SOC",
+            String(batterySOC, 1) + "%"
+        );
+        picoLine2 = lcdKV("SOURCE", activePowerSource);
+        picoLine3 = lcdKV("MODE", operatingMode);
         break;
 
       case 3:
       default:
-        picoLine0 =
-            "WHY PICO DECIDED";
-
-        picoLine1 =
-            picoReasonSentence();
-
-        picoLine2 =
-            "ESP32 final check";
-
-        picoLine3 =
-            (
-                picoActuationStatus == "CONFIRMED"
-                    ? "Safe action applied"
-                    : "Action held safely"
-            );
+        picoLine0 = lcdKV("WHY", lcdPicoReasonValue());
+        picoLine1 = lcdKV("ESP32", "FINAL CHECK");
+        picoLine2 = lcdKV("ACTION", lcdActuationValue());
+        picoLine3 = lcdKV("AUTHORITY", "ESP32");
         break;
     }
   }
 
-  String picoPadded0 =
-      padLCDText(
-          picoLine0
-      );
+  String picoPadded0 = padLCDText(picoLine0);
+  String picoPadded1 = padLCDText(picoLine1);
+  String picoPadded2 = padLCDText(picoLine2);
+  String picoPadded3 = padLCDText(picoLine3);
 
-  String picoPadded1 =
-      padLCDText(
-          picoLine1
-      );
-
-  String picoPadded2 =
-      padLCDText(
-          picoLine2
-      );
-
-  String picoPadded3 =
-      padLCDText(
-          picoLine3
-      );
-
-  if (
-      force ||
-      picoPadded0 !=
-          lastPicoLCDLine0)
+  if (force || picoPadded0 != lastPicoLCDLine0)
   {
-    writeLCDLine(
-        lcdPicoActions,
-        0,
-        picoLine0
-    );
-
-    lastPicoLCDLine0 =
-        picoPadded0;
+    writeLCDLine(lcdPicoActions, 0, picoLine0);
+    lastPicoLCDLine0 = picoPadded0;
   }
 
-  if (
-      force ||
-      picoPadded1 !=
-          lastPicoLCDLine1)
+  if (force || picoPadded1 != lastPicoLCDLine1)
   {
-    writeLCDLine(
-        lcdPicoActions,
-        1,
-        picoLine1
-    );
-
-    lastPicoLCDLine1 =
-        picoPadded1;
+    writeLCDLine(lcdPicoActions, 1, picoLine1);
+    lastPicoLCDLine1 = picoPadded1;
   }
 
-  if (
-      force ||
-      picoPadded2 !=
-          lastPicoLCDLine2)
+  if (force || picoPadded2 != lastPicoLCDLine2)
   {
-    writeLCDLine(
-        lcdPicoActions,
-        2,
-        picoLine2
-    );
-
-    lastPicoLCDLine2 =
-        picoPadded2;
+    writeLCDLine(lcdPicoActions, 2, picoLine2);
+    lastPicoLCDLine2 = picoPadded2;
   }
 
-  if (
-      force ||
-      picoPadded3 !=
-          lastPicoLCDLine3)
+  if (force || picoPadded3 != lastPicoLCDLine3)
   {
-    writeLCDLine(
-        lcdPicoActions,
-        3,
-        picoLine3
-    );
-
-    lastPicoLCDLine3 =
-        picoPadded3;
+    writeLCDLine(lcdPicoActions, 3, picoLine3);
+    lastPicoLCDLine3 = picoPadded3;
   }
 }
+
 
 // ====================================================
 // CIRCUIT TELEMETRY HELPERS
