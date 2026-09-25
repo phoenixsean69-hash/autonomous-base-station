@@ -852,6 +852,111 @@ String padLCDText(
   return text;
 }
 
+String shortLCDMode(
+    const String &value)
+{
+  if (value == "EMERGENCY")
+  {
+    return "EMERG";
+  }
+
+  if (value == "REDUCED")
+  {
+    return "REDUC";
+  }
+
+  return value;
+}
+
+
+String shortLCDRFHealth(
+    const String &value)
+{
+  if (value == "SEVERE FAULT")
+  {
+    return "SEV";
+  }
+
+  if (value == "EXCELLENT")
+  {
+    return "EXC";
+  }
+
+  if (value == "DEGRADED")
+  {
+    return "DEG";
+  }
+
+  if (value == "NORMAL")
+  {
+    return "OK";
+  }
+
+  return "FAULT";
+}
+
+
+String shortLCDBackhaul(
+    const String &value)
+{
+  if (value == "CRITICAL")
+  {
+    return "CRIT";
+  }
+
+  if (value == "DEGRADED")
+  {
+    return "DEG";
+  }
+
+  if (value == "OUTAGE")
+  {
+    return "OUT";
+  }
+
+  return "OK";
+}
+
+
+String shortLCDPowerSource(
+    const String &value)
+{
+  if (value == "GENERATOR")
+  {
+    return "GEN";
+  }
+
+  if (value == "BATTERY")
+  {
+    return "BAT";
+  }
+
+  if (value == "NO POWER")
+  {
+    return "NONE";
+  }
+
+  return value;
+}
+
+
+String shortLCDLocalStatus(
+    const String &value)
+{
+  if (value == "DEGRADED")
+  {
+    return "DEG";
+  }
+
+  if (value == "NORMAL")
+  {
+    return "OK";
+  }
+
+  return value;
+}
+
+
 void writeLCDLine(
     LiquidCrystal_I2C &lcd,
     uint8_t row,
@@ -4322,12 +4427,19 @@ void readFastInputs()
       dcBusVoltage *
       dcBusCurrent;
 
+  // Battery dial calibration:
+  // pot minimum = 10.5 V = 0% SoC
+  // pot maximum = 12.7 V = 100% SoC
   batteryVoltage =
+      10.5f +
       (
           batteryVoltageRaw /
-          4095.0
+          4095.0f
       ) *
-      15.0;
+      (
+          12.7f -
+          10.5f
+      );
 
   batterySOC =
       calculateBatterySOC(
@@ -4363,13 +4475,16 @@ void readFastInputs()
       ) *
       100.0;
 
+  // RSSI dial calibration is visually intuitive:
+  // left/minimum = -120 dBm (weak)
+  // right/maximum = -45 dBm (strong)
   rssi =
-      -45.0 -
+      -120.0f +
       (
           rssiRaw /
-          4095.0
+          4095.0f
       ) *
-      75.0;
+      75.0f;
 
   trafficLoad =
       (
@@ -5207,7 +5322,7 @@ String aiReasonSentence()
       aiRecommendationReason ==
       "BACKHAUL LOSS ENERGY CONSERVATION")
   {
-    return "Save energy on outage";
+    return "Save energy: outage";
   }
 
   if (
@@ -5346,7 +5461,7 @@ String picoReasonSentence()
       picoDecisionReason ==
       "BATTERY BACKUP SELECTED")
   {
-    return "Battery backup active";
+    return "Battery backup ON";
   }
 
   if (
@@ -5412,17 +5527,17 @@ String shortLocalCause(
 {
   if (cause == "COOLING_FAULT")
   {
-    return "Cooling fault";
+    return "Cooling";
   }
 
   if (cause == "RADIO_FAULT")
   {
-    return "Radio fault";
+    return "Radio";
   }
 
   if (cause == "RECTIFIER_FAULT")
   {
-    return "Rectifier fault";
+    return "Rectifier";
   }
 
   if (cause == "RF_MISMATCH")
@@ -5442,12 +5557,12 @@ String shortLocalCause(
 
   if (cause == "MECHANICAL_VIBRATION")
   {
-    return "Mechanical vibration";
+    return "Vibration";
   }
 
   if (cause == "TRAFFIC_OVERLOAD")
   {
-    return "Traffic overload";
+    return "Traffic high";
   }
 
   return "Not applicable";
@@ -5459,22 +5574,22 @@ String shortUpstreamCause(
 {
   if (cause == "BACKHAUL_CONGESTION")
   {
-    return "Backhaul congestion";
+    return "Congestion";
   }
 
   if (cause == "UPSTREAM_LINK_DEGRADATION")
   {
-    return "Link degradation";
+    return "Link degraded";
   }
 
   if (cause == "UPSTREAM_LINK_FAILURE")
   {
-    return "Upstream link fail";
+    return "Link failure";
   }
 
   if (cause == "UPSTREAM_OUTAGE")
   {
-    return "Upstream outage";
+    return "Outage";
   }
 
   return "Not applicable";
@@ -5676,7 +5791,7 @@ void refreshLCDs(
       line1 =
           "PA" +
           String(paTemperature, 1) +
-          "C BAT" +
+          " B" +
           String(batterySOC, 0) +
           "% H" +
           String(humidity, 0) +
@@ -5687,8 +5802,10 @@ void refreshLCDs(
           faultCandidate;
 
       line3 =
-          "MODE:" +
-          operatingMode +
+          "M:" +
+          shortLCDMode(
+              operatingMode
+          ) +
           " SAVE:" +
           String(
               estimatedEnergySavingPct,
@@ -5699,7 +5816,7 @@ void refreshLCDs(
 
     case 1:
       line0 =
-          "RF F" +
+          "F" +
           String(rfForwardPower, 1) +
           " R" +
           String(rfReflectedPower, 1) +
@@ -5709,19 +5826,23 @@ void refreshLCDs(
           "VSWR" +
           String(vswr, 2) +
           " RF:" +
-          rfHealth;
+          shortLCDRFHealth(
+              rfHealth
+          );
 
       line2 =
           "LAT" +
           String(latency, 0) +
-          " L" +
-          String(packetLoss, 1) +
+          " P" +
+          String(packetLoss, 0) +
           " R" +
           String(rssi, 0);
 
       line3 =
-          String("BH:") +
-          backhaulCondition +
+          "BH:" +
+          shortLCDBackhaul(
+              backhaulCondition
+          ) +
           " LINK:" +
           (
               linkUp
@@ -5744,11 +5865,19 @@ void refreshLCDs(
               generatorRunning
                   ? "ON"
                   : "OFF"
-          ) +
-          " SRC:" +
-          activePowerSource;
+          );
 
       line1 =
+          "SRC:" +
+          shortLCDPowerSource(
+              activePowerSource
+          ) +
+          " LOCAL:" +
+          shortLCDLocalStatus(
+              localSiteStatus
+          );
+
+      line2 =
           String("FAN:") +
           (
               fanOperational
@@ -5762,21 +5891,17 @@ void refreshLCDs(
                   : "FAIL"
           );
 
-      line2 =
-          String("RADIO:") +
+      line3 =
+          String("RAD:") +
           (
               radioOperational
                   ? "OK"
                   : "FAIL"
           ) +
-          " LOCAL:" +
-          localSiteStatus;
-
-      line3 =
-          "TRAFFIC:" +
+          " TRF:" +
           String(
               trafficLoad,
-              1
+              0
           ) +
           "%";
       break;
@@ -5918,9 +6043,16 @@ void refreshLCDs(
 
         aiLine3 =
             "Final " +
-            operatingMode +
-            " / " +
-            guardrailStatus;
+            shortLCDMode(
+                operatingMode
+            ) +
+            " Guard:" +
+            (
+                guardrailStatus ==
+                    "PASSED"
+                    ? "OK"
+                    : "ACT"
+            );
         break;
 
       // ----------------------------------------------
@@ -5940,13 +6072,13 @@ void refreshLCDs(
             "%";
 
         aiLine2 =
-            "Local " +
+            "Loc " +
             String(
                 aiProbLocal *
                 100.0f,
                 1
             ) +
-            "% Up " +
+            " Up " +
             String(
                 aiProbUpstream *
                 100.0f,
@@ -6139,13 +6271,13 @@ void refreshLCDs(
             "UPSTREAM ROOT PROBS";
 
         aiLine1 =
-            "Cong " +
+            "Con" +
             String(
                 aiUpstreamProbCongestion *
                 100.0f,
                 1
             ) +
-            " Degr " +
+            " Deg" +
             String(
                 aiUpstreamProbDegradation *
                 100.0f,
@@ -6153,13 +6285,13 @@ void refreshLCDs(
             );
 
         aiLine2 =
-            "Fail " +
+            "Fail" +
             String(
                 aiUpstreamProbFailure *
                 100.0f,
                 1
             ) +
-            " Out " +
+            " Out" +
             String(
                 aiUpstreamProbOutage *
                 100.0f,
@@ -6409,7 +6541,7 @@ void refreshLCDs(
         "Outputs held safely";
 
     picoLine3 =
-        "ESP32 still in control";
+        "ESP32 has control";
   }
   else
   {
