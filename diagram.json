@@ -341,8 +341,36 @@
     },
     {
       "type": "wokwi-text",
+      "id": "generatorFeedbackLabel",
+      "top": 2135,
+      "left": 1160,
+      "attrs": {
+        "text": "GEN FEEDBACK | GPIO5"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "generatorFeedbackSwitch",
+      "top": 2175,
+      "left": 1280,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "generatorFeedbackDirection",
+      "top": 2240,
+      "left": 1150,
+      "attrs": {
+        "text": "FAILURE | NORMAL"
+      }
+    },
+    {
+      "type": "wokwi-text",
       "id": "operatingHeading",
-      "top": 2230,
+      "top": 2300,
       "left": 940,
       "attrs": {
         "text": "LOCAL EQUIPMENT"
@@ -1252,6 +1280,24 @@
       "generatorLed:C",
       "esp32:GND.2",
       "black",
+      []
+    ],
+    [
+      "generatorFeedbackSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "generatorFeedbackSwitch:2",
+      "esp32:D5",
+      "blue",
+      []
+    ],
+    [
+      "generatorFeedbackSwitch:3",
+      "esp32:TX2",
+      "green",
       []
     ]
   ],

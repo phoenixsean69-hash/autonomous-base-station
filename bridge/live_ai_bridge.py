@@ -52,6 +52,7 @@ DEFAULT_PICO_URL = "rfc2217://localhost:4000"
 
 PICO_RECOMMEND_PREFIX = "PICO_RECOMMEND|"
 PICO_DECISION_PREFIX = "PICO_DECISION|"
+PICO_RESULT_PREFIX = "PICO_RESULT|"
 
 
 class Sampler:
@@ -1058,6 +1059,129 @@ def enforce_trust_hold(
     )
 
 
+def enforce_dual_ai_agreement(
+    command: dict,
+    laptop_result: dict,
+    pico_result: dict | None,
+) -> None:
+    """
+    Require the full laptop temporal classifier and the independent
+    embedded Pico classifier to agree before AI-driven automation is
+    trusted.
+
+    This is an agreement gate, not a claim that either probability is
+    calibrated. Deterministic ESP32 power-safety rules remain independent
+    and retain final authority.
+    """
+    laptop_domain = str(
+        laptop_result[
+            "fault_domain"
+        ][
+            "label"
+        ]
+    )
+
+    laptop_confidence = float(
+        laptop_result[
+            "fault_domain"
+        ][
+            "confidence"
+        ]
+    )
+
+    command[
+        "laptop_ai_fault_domain"
+    ] = laptop_domain
+
+    command[
+        "laptop_ai_raw_probability"
+    ] = laptop_confidence
+
+    if (
+        pico_result is None or
+        pico_result.get("telemetry_ok") is not True or
+        pico_result.get("window_ready") is not True
+    ):
+        command[
+            "dual_ai_agreement"
+        ] = "UNAVAILABLE"
+
+        command[
+            "pico_ai_fault_domain"
+        ] = "UNAVAILABLE"
+
+        command[
+            "pico_ai_raw_probability"
+        ] = 0.0
+
+        # If the laptop was otherwise willing to automate, remove that
+        # permission until the independent embedded model is available.
+        if command.get("trust_decision") == "ACCEPT":
+            command[
+                "trust_decision"
+            ] = "UNCERTAIN"
+
+            command[
+                "trust_reason"
+            ] = "PICO_AI_RESULT_UNAVAILABLE"
+
+        return
+
+    pico_domain = str(
+        pico_result.get(
+            "fault_domain",
+            "UNKNOWN",
+        )
+    )
+
+    pico_confidence = float(
+        pico_result.get(
+            "confidence",
+            0.0,
+        )
+    )
+
+    command[
+        "pico_ai_fault_domain"
+    ] = pico_domain
+
+    command[
+        "pico_ai_raw_probability"
+    ] = pico_confidence
+
+    command[
+        "dual_ai_confidence_gap"
+    ] = abs(
+        laptop_confidence -
+        pico_confidence
+    )
+
+    if pico_domain == laptop_domain:
+        command[
+            "dual_ai_agreement"
+        ] = "AGREE"
+
+        return
+
+    command[
+        "dual_ai_agreement"
+    ] = "DISAGREE"
+
+    # Preserve UNKNOWN if anomaly logic has already produced a stronger
+    # abstention state. Otherwise force UNCERTAIN.
+    if command.get("trust_decision") != "UNKNOWN":
+        command[
+            "trust_decision"
+        ] = "UNCERTAIN"
+
+    command[
+        "trust_reason"
+    ] = (
+        "LAPTOP_PICO_DISAGREEMENT:"
+        f"{laptop_domain}_VS_{pico_domain}"
+    )
+
+
 def build_pico_recommendation(
     result: dict,
     ai_command: dict,
@@ -1136,6 +1260,98 @@ def build_pico_recommendation(
         "reason": ai_command["reason"],
         "source_timestamp_ms": int(telemetry["timestamp_ms"]),
     }
+
+
+def send_pico_telemetry(
+    port,
+    telemetry: dict,
+) -> int:
+    """
+    Feed the same accepted 5-second telemetry frame to the embedded Pico
+    temporal model. Pico already understands the ABS_JSON protocol.
+    """
+    payload = (
+        TELEMETRY_PREFIX +
+        json.dumps(
+            telemetry,
+            separators=(",", ":"),
+        ) +
+        "\n"
+    ).encode("utf-8")
+
+    for start in range(0, len(payload), 64):
+        port.write(
+            payload[
+                start:
+                start + 64
+            ]
+        )
+        port.flush()
+        time.sleep(0.003)
+
+    return len(payload)
+
+
+def wait_pico_ai_result(
+    port,
+    timeout: float = 1.0,
+) -> dict | None:
+    deadline = time.monotonic() + timeout
+    pending = bytearray()
+
+    while time.monotonic() < deadline:
+        waiting = int(
+            getattr(
+                port,
+                "in_waiting",
+                0,
+            ) or 0
+        )
+
+        raw = port.read(
+            waiting
+            if waiting > 0
+            else 1
+        )
+
+        if not raw:
+            continue
+
+        pending.extend(raw)
+
+        while b"\n" in pending:
+            raw_line, _, remainder = pending.partition(
+                b"\n"
+            )
+
+            pending = bytearray(
+                remainder
+            )
+
+            line = raw_line.rstrip(
+                b"\r"
+            ).decode(
+                "utf-8",
+                errors="replace",
+            ).strip()
+
+            if not line.startswith(
+                PICO_RESULT_PREFIX
+            ):
+                continue
+
+            try:
+                return json.loads(
+                    line[
+                        len(
+                            PICO_RESULT_PREFIX
+                        ):
+                    ]
+                )
+            except json.JSONDecodeError:
+                return None
+
+    return None
 
 
 def send_pico_recommendation(
@@ -1513,6 +1729,8 @@ def live(
     commands_acked = 0
     commands_rejected = 0
 
+    latest_pico_ai_result = None
+
     try:
         while True:
             raw = port.readline()
@@ -1650,6 +1868,37 @@ def live(
                 telemetry
             )
 
+            # Keep the embedded Pico classifier on the exact same accepted
+            # 5-second cadence and 24-frame temporal window as the laptop.
+            pico_telemetry_bytes = send_pico_telemetry(
+                pico_port,
+                telemetry,
+            )
+
+            latest_pico_ai_result = wait_pico_ai_result(
+                pico_port
+            )
+
+            if latest_pico_ai_result is None:
+                print(
+                    "  [PICO AI] no embedded-model result received"
+                )
+            elif latest_pico_ai_result.get(
+                "window_ready"
+            ) is True:
+                print(
+                    "  [PICO AI] "
+                    f"domain={latest_pico_ai_result.get('fault_domain')} | "
+                    f"raw_p={float(latest_pico_ai_result.get('confidence', 0.0)):.3f} | "
+                    f"{pico_telemetry_bytes} bytes"
+                )
+            else:
+                print(
+                    "  [PICO AI] "
+                    f"warmup={latest_pico_ai_result.get('window_count')}/"
+                    f"{engine.timesteps}"
+                )
+
             ref_fault = telemetry.get(
                 "fault_label",
                 "UNKNOWN",
@@ -1692,9 +1941,23 @@ def live(
                 window_count=window.count,
             )
 
+            enforce_dual_ai_agreement(
+                command,
+                result,
+                latest_pico_ai_result,
+            )
+
             enforce_trust_hold(
                 command,
                 telemetry,
+            )
+
+            print(
+                "  [DUAL AI] "
+                f"laptop={command.get('laptop_ai_fault_domain')} | "
+                f"pico={command.get('pico_ai_fault_domain')} | "
+                f"agreement={command.get('dual_ai_agreement')} | "
+                f"trust={command.get('trust_decision')}"
             )
 
             print_live_ai_report(

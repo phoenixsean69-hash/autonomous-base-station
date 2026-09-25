@@ -35,6 +35,11 @@
 #define GRID_AVAILABLE_PIN 16
 #define GENERATOR_CONTROL_PIN 17
 
+// Independent generator-running feedback.
+// GPIO17 = command to generator.
+// GPIO5  = independent proof that generator is actually running.
+#define GENERATOR_FEEDBACK_PIN 5
+
 // Digital-twin operating-condition inputs
 #define TRAFFIC_LOAD_PIN 39
 #define FAN_OPERATIONAL_PIN 18
@@ -46,23 +51,37 @@
 // ====================================================
 
 const unsigned long FAST_INPUT_INTERVAL_MS = 50;
-const unsigned long LCD_REFRESH_INTERVAL_MS = 100;
+const unsigned long LCD_REFRESH_INTERVAL_MS = 50;
 const unsigned long LCD_PAGE_INTERVAL_MS = 3000;
 const unsigned long AI_LCD_PAGE_INTERVAL_MS = 3500;
-const unsigned long PICO_LCD_PAGE_INTERVAL_MS = 2500;
+const unsigned long PICO_LCD_PAGE_INTERVAL_MS = 1200;
 const unsigned long MPU_INTERVAL_MS = 20;
 const unsigned long DHT_INTERVAL_MS = 2000;
 
 const unsigned long DS18B20_REQUEST_INTERVAL_MS = 2000;
 const unsigned long DS18B20_CONVERSION_MS = 750;
 
-const unsigned long TELEMETRY_INTERVAL_MS = 2000;
+const unsigned long TELEMETRY_INTERVAL_MS = 500;
 
 // AI recommendations normally arrive every ~5 seconds.
 // If no fresh command arrives for 15 seconds, firmware
 // automatically falls back to its local deterministic policy.
 const unsigned long AI_COMMAND_TIMEOUT_MS = 15000;
 const unsigned long PICO_DECISION_TIMEOUT_MS = 15000;
+
+// Physical actuation must be verified independently from the command.
+const unsigned long GENERATOR_START_VERIFY_TIMEOUT_MS = 1500;
+const unsigned long GENERATOR_STOP_VERIFY_TIMEOUT_MS = 500;
+
+// ====================================================
+// FAST DETERMINISTIC POWER AUTOMATION
+// ====================================================
+//
+// Keep the trained AI cadence unchanged. Hard power decisions
+// are handled locally by ESP32 and react on the 50 ms fast loop.
+//
+const float FAST_GENERATOR_START_SOC_PCT = 40.0f;
+const float FAST_BATTERY_CRITICAL_SOC_PCT = 25.0f;
 
 const float GRAVITY = 9.80665;
 
@@ -610,8 +629,22 @@ String faultCandidate = "UNKNOWN";
 bool gridAvailable = false;
 bool generatorRunning = false;
 
+// Generator actuation verification.
+bool generatorCommandActive = false;
+bool generatorFeedbackRunning = false;
+bool previousGeneratorCommandActive = false;
+
+unsigned long generatorCommandChangedAtMs = 0;
+
+String generatorVerificationState = "STOPPED_CONFIRMED";
+String generatorVerificationReason = "Generator stopped";
+
 String activePowerSource = "UNKNOWN";
 String energyAction = "UNKNOWN";
+
+String fastPowerAutomationState = "BOOT";
+String fastPowerAutomationReason = "Starting";
+String fastGeneratorCommand = "HOLD";
 
 // Digital-twin operating conditions
 float trafficLoad = 0.0;
@@ -1214,6 +1247,255 @@ String determineFaultCandidate(
 // ENERGY MANAGEMENT
 // ====================================================
 
+// ----------------------------------------------------
+// FAST FINAL POWER GUARDRAIL
+// ----------------------------------------------------
+//
+// Reaction time:
+//   <= FAST_INPUT_INTERVAL_MS (currently 50 ms)
+//
+// Rules:
+//   Grid ON                    -> generator OFF
+//   Grid OFF + battery > 40%  -> battery, generator OFF
+//   Grid OFF + battery <= 40% -> generator ON immediately
+//   Grid OFF + battery <= 25% -> generator ON, critical state
+//
+// Once generator starts during a grid outage, it remains running
+// until grid returns. This prevents rapid start/stop oscillation.
+//
+void applyFastPowerAutomation()
+{
+  bool outputHigh =
+      digitalRead(
+          GENERATOR_CONTROL_PIN
+      ) ==
+      HIGH;
+
+  // Healthy grid always has priority.
+  if (gridAvailable)
+  {
+    if (outputHigh)
+    {
+      digitalWrite(
+          GENERATOR_CONTROL_PIN,
+          LOW
+      );
+    }
+
+    generatorRunning =
+        false;
+
+    fastGeneratorCommand =
+        outputHigh
+            ? "STOP"
+            : "HOLD";
+
+    fastPowerAutomationState =
+        "GRID_ACTIVE";
+
+    fastPowerAutomationReason =
+        (
+            batterySOC <=
+            FAST_GENERATOR_START_SOC_PCT
+        )
+            ? "Grid healthy - recharge low battery"
+            : "Grid supplies site";
+
+    return;
+  }
+
+  // Grid is down. If generator is already running, keep it on.
+  if (outputHigh)
+  {
+    generatorRunning =
+        true;
+
+    fastGeneratorCommand =
+        "HOLD";
+
+    fastPowerAutomationState =
+        (
+            batterySOC <=
+            FAST_BATTERY_CRITICAL_SOC_PCT
+        )
+            ? "EMERGENCY"
+            : "GENERATOR_ACTIVE";
+
+    fastPowerAutomationReason =
+        (
+            batterySOC <=
+            FAST_BATTERY_CRITICAL_SOC_PCT
+        )
+            ? "Critical battery - generator supplying"
+            : "Grid off - generator supplying";
+
+    return;
+  }
+
+  // Grid is down and generator is off.
+  if (
+      batterySOC <=
+      FAST_GENERATOR_START_SOC_PCT)
+  {
+    digitalWrite(
+        GENERATOR_CONTROL_PIN,
+        HIGH
+    );
+
+    generatorRunning =
+        true;
+
+    fastGeneratorCommand =
+        "START";
+
+    fastPowerAutomationState =
+        (
+            batterySOC <=
+            FAST_BATTERY_CRITICAL_SOC_PCT
+        )
+            ? "EMERGENCY"
+            : "GENERATOR_ACTIVE";
+
+    fastPowerAutomationReason =
+        (
+            batterySOC <=
+            FAST_BATTERY_CRITICAL_SOC_PCT
+        )
+            ? "Critical battery - generator started"
+            : "Low battery - generator started";
+
+    picoActuationStatus =
+        "ESP32 FAST SAFETY";
+
+    return;
+  }
+
+  // Grid is down but battery reserve is still healthy.
+  generatorRunning =
+      false;
+
+  fastGeneratorCommand =
+      "HOLD";
+
+  fastPowerAutomationState =
+      "BATTERY_ACTIVE";
+
+  fastPowerAutomationReason =
+      "Grid off - battery backup";
+}
+
+
+// ----------------------------------------------------
+// GENERATOR ACTUATION VERIFICATION
+// ----------------------------------------------------
+//
+// GPIO17 is only a COMMAND.
+// GPIO5 is the independent RUNNING feedback.
+//
+// This prevents the controller from claiming that a generator
+// started merely because it sent the START command.
+//
+void serviceGeneratorActuationVerification(
+    unsigned long now)
+{
+  generatorCommandActive =
+      digitalRead(
+          GENERATOR_CONTROL_PIN
+      ) ==
+      HIGH;
+
+  generatorFeedbackRunning =
+      digitalRead(
+          GENERATOR_FEEDBACK_PIN
+      ) ==
+      HIGH;
+
+  // All later power-state logic sees the VERIFIED state.
+  generatorRunning =
+      generatorFeedbackRunning;
+
+  if (
+      generatorCommandActive !=
+      previousGeneratorCommandActive)
+  {
+    previousGeneratorCommandActive =
+        generatorCommandActive;
+
+    generatorCommandChangedAtMs =
+        now;
+  }
+
+  unsigned long commandAge =
+      now -
+      generatorCommandChangedAtMs;
+
+  if (generatorCommandActive)
+  {
+    if (generatorFeedbackRunning)
+    {
+      generatorVerificationState =
+          "RUNNING_CONFIRMED";
+
+      generatorVerificationReason =
+          "Generator running feedback confirmed";
+
+      return;
+    }
+
+    if (
+        commandAge >=
+        GENERATOR_START_VERIFY_TIMEOUT_MS)
+    {
+      generatorVerificationState =
+          "GENERATOR_START_FAILED";
+
+      generatorVerificationReason =
+          "START commanded but RUNNING feedback missing";
+
+      return;
+    }
+
+    generatorVerificationState =
+        "GENERATOR_STARTING";
+
+    generatorVerificationReason =
+        "Waiting for generator RUNNING feedback";
+
+    return;
+  }
+
+  // Generator command is OFF.
+  if (!generatorFeedbackRunning)
+  {
+    generatorVerificationState =
+        "STOPPED_CONFIRMED";
+
+    generatorVerificationReason =
+        "Generator stopped feedback confirmed";
+
+    return;
+  }
+
+  if (
+      commandAge >=
+      GENERATOR_STOP_VERIFY_TIMEOUT_MS)
+  {
+    generatorVerificationState =
+        "GENERATOR_STOP_FAILED";
+
+    generatorVerificationReason =
+        "STOP commanded but generator still reports RUNNING";
+
+    return;
+  }
+
+  generatorVerificationState =
+      "GENERATOR_STOPPING";
+
+  generatorVerificationReason =
+      "Waiting for generator STOP feedback";
+}
+
 String determineActivePowerSource(
     bool currentGridAvailable,
     bool currentGeneratorRunning,
@@ -1564,6 +1846,13 @@ void applyPicoActuatorDecision()
     picoActuationStatus =
         "HELD";
   }
+
+  // ESP32 hard power rules are the final authority.
+  applyFastPowerAutomation();
+
+  serviceGeneratorActuationVerification(
+      millis()
+  );
 }
 
 
@@ -4150,6 +4439,14 @@ void readFastInputs()
       ) ==
       HIGH;
 
+  // Hard power automation does not wait for AI/Pico.
+  // It runs every fast-input cycle (50 ms).
+  applyFastPowerAutomation();
+
+  serviceGeneratorActuationVerification(
+      processingNow
+  );
+
   recalculateSystemState();
 
   // RF signal processing is performed after
@@ -5069,6 +5366,46 @@ String picoReasonSentence()
   return "Pico safety decision";
 }
 
+
+String generatorVerificationSentence()
+{
+  if (
+      generatorVerificationState ==
+      "RUNNING_CONFIRMED")
+  {
+    return "Running verified";
+  }
+
+  if (
+      generatorVerificationState ==
+      "GENERATOR_STARTING")
+  {
+    return "Checking start...";
+  }
+
+  if (
+      generatorVerificationState ==
+      "GENERATOR_START_FAILED")
+  {
+    return "START FAILED";
+  }
+
+  if (
+      generatorVerificationState ==
+      "GENERATOR_STOPPING")
+  {
+    return "Checking stop...";
+  }
+
+  if (
+      generatorVerificationState ==
+      "GENERATOR_STOP_FAILED")
+  {
+    return "STOP NOT VERIFIED";
+  }
+
+  return "Stopped verified";
+}
 
 String shortLocalCause(
     const String &cause)
@@ -6111,11 +6448,7 @@ void refreshLCDs(
             );
 
         picoLine3 =
-            (
-                picoGeneratorAction == "HOLD"
-                    ? "No change requested"
-                    : "Action confirmed"
-            );
+            generatorVerificationSentence();
         break;
 
       case 2:
@@ -6733,7 +7066,28 @@ void printMachineReadableTelemetry()
   Serial.print(isPicoDecisionFresh() ? "true" : "false");
 
   Serial.print(",\"generator_output_active\":");
-  Serial.print(generatorRunning ? "true" : "false");
+  Serial.print(
+      digitalRead(
+          GENERATOR_CONTROL_PIN
+      ) == HIGH
+          ? "true"
+          : "false"
+  );
+
+  Serial.print(",\"generator_feedback_running\":");
+  Serial.print(
+      generatorFeedbackRunning
+          ? "true"
+          : "false"
+  );
+
+  Serial.print(",\"generator_verification_state\":\"");
+  Serial.print(generatorVerificationState);
+  Serial.print("\"");
+
+  Serial.print(",\"generator_verification_reason\":\"");
+  Serial.print(generatorVerificationReason);
+  Serial.print("\"");
 
   Serial.print(",\"pico_actuation_status\":\"");
   Serial.print(picoActuationStatus);
@@ -6749,6 +7103,18 @@ void printMachineReadableTelemetry()
 
   Serial.print(",\"energy_action\":\"");
   Serial.print(energyAction);
+  Serial.print("\"");
+
+  Serial.print(",\"fast_power_state\":\"");
+  Serial.print(fastPowerAutomationState);
+  Serial.print("\"");
+
+  Serial.print(",\"fast_power_reason\":\"");
+  Serial.print(fastPowerAutomationReason);
+  Serial.print("\"");
+
+  Serial.print(",\"fast_generator_command\":\"");
+  Serial.print(fastGeneratorCommand);
   Serial.print("\"");
 
   Serial.print(",\"requested_mode\":\"");
@@ -9073,13 +9439,27 @@ void setup()
       OUTPUT
   );
 
+  pinMode(
+      GENERATOR_FEEDBACK_PIN,
+      INPUT
+  );
+
   digitalWrite(
       GENERATOR_CONTROL_PIN,
       LOW
   );
 
-  generatorRunning =
+  generatorCommandActive =
       false;
+
+  generatorFeedbackRunning =
+      digitalRead(
+          GENERATOR_FEEDBACK_PIN
+      ) ==
+      HIGH;
+
+  generatorRunning =
+      generatorFeedbackRunning;
 
   pinMode(
       TRAFFIC_LOAD_PIN,
