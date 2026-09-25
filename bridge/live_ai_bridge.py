@@ -1266,31 +1266,67 @@ def send_pico_telemetry(
     port,
     telemetry: dict,
 ) -> int:
-    """
-    Feed the same accepted 5-second telemetry frame to the embedded Pico
-    temporal model. Pico already understands the ABS_JSON protocol.
-    """
+    pico_fields = (
+        "shelter_temp_c",
+        "humidity_pct",
+        "pa_temp_c",
+        "pa_temp_trend_c_per_min",
+        "pa_shelter_delta_c",
+        "vibration_rms_mps2",
+        "vibration_std_mps2",
+        "vibration_peak_to_peak_mps2",
+        "vibration_dominant_hz",
+        "dc_voltage_v",
+        "dc_current_a",
+        "dc_power_w",
+        "battery_voltage_v",
+        "battery_soc_pct",
+        "battery_soc_trend_pct_per_min",
+        "rf_forward_w",
+        "rf_reflection_ratio_pct",
+        "rf_reflected_w",
+        "vswr",
+        "return_loss_db",
+        "latency_ms",
+        "latency_jitter_ms",
+        "packet_loss_pct",
+        "rssi_dbm",
+        "rssi_drop_db",
+        "traffic_load_pct",
+        "physical_link_up",
+        "upstream_reachable",
+        "grid_available",
+        "generator_running",
+        "fan_operational",
+        "rectifier_normal",
+        "radio_operational",
+    )
+
+    compact = {
+        "schema": telemetry["schema"],
+        "timestamp_ms": int(telemetry["timestamp_ms"]),
+        "fault_label": telemetry.get("fault_label", "UNKNOWN"),
+        "operating_mode": telemetry.get("operating_mode", "UNKNOWN"),
+    }
+
+    for field in pico_fields:
+        compact[field] = telemetry[field]
+
     payload = (
         TELEMETRY_PREFIX +
         json.dumps(
-            telemetry,
+            compact,
             separators=(",", ":"),
         ) +
         "\n"
     ).encode("utf-8")
 
     for start in range(0, len(payload), 64):
-        port.write(
-            payload[
-                start:
-                start + 64
-            ]
-        )
+        port.write(payload[start:start + 64])
         port.flush()
         time.sleep(0.003)
 
     return len(payload)
-
 
 def wait_pico_ai_result(
     port,
