@@ -1,0 +1,5 @@
+{
+  "name": "Radio Channel Signal Generator",
+  "author": "Autonomous Base Station Project",
+  "pins": ["CARRIER_IN", "PATHLOSS", "INTERFERENCE", "MISMATCH", "RADIO_FAULT", "RSSI_OUT", "RF_FWD", "RF_REFL", "RADIO_OK", "ACTIVITY"]
+}

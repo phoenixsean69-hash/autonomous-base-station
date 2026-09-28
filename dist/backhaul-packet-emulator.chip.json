@@ -1,0 +1,5 @@
+{
+  "name": "Backhaul Packet + Latency Emulator",
+  "author": "Autonomous Base Station Project",
+  "pins": ["TRAFFIC_IN", "PROBE_IN", "ACK_OUT", "LATENCY_OUT", "LOSS_OUT", "LINK_OUT", "UPSTREAM_OUT", "DROP_OUT", "CONGEST", "IMPAIR", "LINK_FAIL", "UPSTREAM_FAIL"]
+}

@@ -153,7 +153,7 @@
       "top": 790,
       "left": 1000,
       "attrs": {
-        "text": "RADIO + ANTENNA MODEL"
+        "text": "RF SIGNAL GENERATOR + ANTENNA CHANNEL"
       }
     },
     {
@@ -162,7 +162,7 @@
       "top": 1120,
       "left": 950,
       "attrs": {
-        "text": "BACKHAUL NETWORK MODEL"
+        "text": "BACKHAUL PACKET / LATENCY MINI-CIRCUIT"
       }
     },
     {
@@ -171,7 +171,7 @@
       "top": 1170,
       "left": 985,
       "attrs": {
-        "text": "MODEL OUTPUTS"
+        "text": "PACKET NETWORK SIGNALS"
       }
     },
     {
@@ -180,7 +180,7 @@
       "top": 1215,
       "left": 985,
       "attrs": {
-        "text": "LATENCY | LOSS | LINK STATE"
+        "text": "PROBE | ACK | LATENCY | LOSS"
       }
     },
     {
@@ -263,7 +263,7 @@
       "top": 2300,
       "left": 940,
       "attrs": {
-        "text": "LOCAL EQUIPMENT"
+        "text": "LOCAL EQUIPMENT + TRAFFIC GENERATOR"
       }
     },
     {
@@ -582,71 +582,235 @@
       }
     },
     {
-      "type": "chip-radio-link-model",
-      "id": "radioModel",
+      "type": "wokwi-clock-generator",
+      "id": "rfCarrierClock",
+      "top": 870,
+      "left": 700,
+      "attrs": {
+        "frequency": "10k"
+      }
+    },
+    {
+      "type": "chip-radio-signal-generator",
+      "id": "radioSignalGen",
       "top": 875,
-      "left": 1020,
-      "attrs": {
-        "txPowerW": "80",
-        "pathLossDb": "65",
-        "interferenceDb": "2",
-        "antennaMismatchPct": "1.5",
-        "fadingDepthDb": "1",
-        "radioFault": "0"
-      }
+      "left": 1030,
+      "attrs": {}
     },
     {
-      "type": "wokwi-text",
-      "id": "radioModelInfo",
+      "type": "wokwi-slide-switch",
+      "id": "rfPathLossSwitch",
       "top": 1030,
-      "left": 825,
+      "left": 730,
       "attrs": {
-        "text": "TX POWER | PATH LOSS | INTERFERENCE | ANTENNA MISMATCH"
+        "value": "0",
+        "bounce": "0"
       }
     },
     {
-      "type": "chip-backhaul-network-model",
-      "id": "backhaulModel",
-      "top": 1310,
-      "left": 1010,
+      "type": "wokwi-slide-switch",
+      "id": "rfInterferenceSwitch",
+      "top": 1030,
+      "left": 960,
       "attrs": {
-        "baseLatencyMs": "45",
-        "congestionPct": "20",
-        "trafficCouplingPct": "70",
-        "lineImpairmentPct": "2",
-        "jitterMs": "8",
-        "physicalLinkFailure": "0",
-        "upstreamFailure": "0"
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "rfMismatchSwitch",
+      "top": 1030,
+      "left": 1200,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "rfFaultSwitch",
+      "top": 1030,
+      "left": 1440,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
       }
     },
     {
       "type": "wokwi-text",
-      "id": "backhaulModelInfo",
-      "top": 1480,
-      "left": 780,
+      "id": "rfCircuitInfo",
+      "top": 820,
+      "left": 735,
       "attrs": {
-        "text": "TRAFFIC + CONGESTION + IMPAIRMENT + JITTER + OUTAGES"
+        "text": "10 kHz SCALED RF CARRIER -> CHANNEL/DETECTOR -> RSSI + FWD + REFL"
       }
     },
     {
-      "type": "chip-traffic-generator",
-      "id": "trafficModel",
-      "top": 2350,
+      "type": "wokwi-text",
+      "id": "rfSwitchInfo",
+      "top": 1110,
+      "left": 675,
+      "attrs": {
+        "text": "PATH LOSS      INTERFERENCE      ANTENNA MISMATCH      RADIO FAULT"
+      }
+    },
+    {
+      "type": "wokwi-clock-generator",
+      "id": "backhaulProbeClock",
+      "top": 1280,
       "left": 690,
       "attrs": {
-        "activeUsers": "120",
-        "averageDemandPct": "45",
-        "cellCapacityUsers": "300",
-        "burstinessPct": "10"
+        "frequency": "2"
+      }
+    },
+    {
+      "type": "chip-backhaul-packet-emulator",
+      "id": "backhaulPacketModel",
+      "top": 1285,
+      "left": 1030,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "backhaulCongestSwitch",
+      "top": 1480,
+      "left": 690,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "backhaulImpairSwitch",
+      "top": 1480,
+      "left": 930,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "backhaulLinkFailSwitch",
+      "top": 1480,
+      "left": 1170,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "backhaulUpstreamFailSwitch",
+      "top": 1480,
+      "left": 1410,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
       }
     },
     {
       "type": "wokwi-text",
-      "id": "trafficModelInfo",
-      "top": 2515,
-      "left": 610,
+      "id": "backhaulCircuitInfo",
+      "top": 1230,
+      "left": 690,
       "attrs": {
-        "text": "USERS + DEMAND + CAPACITY + BURSTINESS"
+        "text": "2 Hz PROBE -> BACKHAUL EMULATOR -> DELAYED / DROPPED ACK"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "backhaulSwitchInfo",
+      "top": 1560,
+      "left": 650,
+      "attrs": {
+        "text": "CONGESTION       IMPAIRMENT       LINK FAIL       UPSTREAM FAIL"
+      }
+    },
+    {
+      "type": "chip-traffic-pulse-generator",
+      "id": "trafficSignalGen",
+      "top": 2320,
+      "left": 720,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "trafficMediumSwitch",
+      "top": 2320,
+      "left": 1060,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "trafficHighSwitch",
+      "top": 2320,
+      "left": 1240,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "trafficOverloadSwitch",
+      "top": 2320,
+      "left": 1420,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "trafficBurstSwitch",
+      "top": 2490,
+      "left": 1240,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficCircuitInfo",
+      "top": 2260,
+      "left": 650,
+      "attrs": {
+        "text": "BASEBAND PACKET SIGNAL GENERATOR -> PACKET PULSES + MEASURED LOAD"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficSwitchInfo",
+      "top": 2570,
+      "left": 1000,
+      "attrs": {
+        "text": "DEFAULT LOW | MEDIUM | HIGH | OVERLOAD | BURST"
+      }
+    },
+    {
+      "type": "wokwi-logic-analyzer",
+      "id": "networkLogicAnalyzer",
+      "top": 1710,
+      "left": 1460,
+      "attrs": {
+        "channelNames": "TRAFFIC,PROBE,ACK,RF_CARRIER,DROP,LINK,UPSTREAM,RF_ACTIVITY",
+        "bufferSize": "200000"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "logicAnalyzerInfo",
+      "top": 1650,
+      "left": 1390,
+      "attrs": {
+        "text": "SIGNAL ANALYZER: PACKETS / LATENCY / DROPS / RF CARRIER"
       }
     }
   ],
@@ -952,63 +1116,345 @@
       []
     ],
     [
-      "radioModel:RF_FWD",
+      "rfCarrierClock:CLK",
+      "radioSignalGen:CARRIER_IN",
+      "yellow",
+      []
+    ],
+    [
+      "radioSignalGen:RF_FWD",
       "esp32:D33",
       "limegreen",
       []
     ],
     [
-      "radioModel:RF_REFL",
+      "radioSignalGen:RF_REFL",
       "esp32:VP",
       "magenta",
       []
     ],
     [
-      "radioModel:RSSI",
+      "radioSignalGen:RSSI_OUT",
       "esp32:D27",
       "cyan",
       []
     ],
     [
-      "radioModel:RADIO_OK",
+      "radioSignalGen:RADIO_OK",
       "esp32:D23",
       "green",
       []
     ],
     [
-      "trafficModel:TRAFFIC",
+      "rfCarrierClock:CLK",
+      "networkLogicAnalyzer:D3",
+      "yellow",
+      []
+    ],
+    [
+      "radioSignalGen:ACTIVITY",
+      "networkLogicAnalyzer:D7",
+      "limegreen",
+      []
+    ],
+    [
+      "rfPathLossSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rfPathLossSwitch:2",
+      "radioSignalGen:PATHLOSS",
+      "blue",
+      []
+    ],
+    [
+      "rfPathLossSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "rfInterferenceSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rfInterferenceSwitch:2",
+      "radioSignalGen:INTERFERENCE",
+      "orange",
+      []
+    ],
+    [
+      "rfInterferenceSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "rfMismatchSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rfMismatchSwitch:2",
+      "radioSignalGen:MISMATCH",
+      "magenta",
+      []
+    ],
+    [
+      "rfMismatchSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "rfFaultSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rfFaultSwitch:2",
+      "radioSignalGen:RADIO_FAULT",
+      "red",
+      []
+    ],
+    [
+      "rfFaultSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "trafficSignalGen:LOAD_OUT",
       "esp32:VN",
       "purple",
       []
     ],
     [
-      "trafficModel:TRAFFIC",
-      "backhaulModel:TRAFFIC_IN",
+      "trafficSignalGen:PACKETS",
+      "backhaulPacketModel:TRAFFIC_IN",
       "purple",
       []
     ],
     [
-      "backhaulModel:LATENCY",
+      "trafficSignalGen:PACKETS",
+      "networkLogicAnalyzer:D0",
+      "purple",
+      []
+    ],
+    [
+      "trafficMediumSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "trafficMediumSwitch:2",
+      "trafficSignalGen:MEDIUM",
+      "blue",
+      []
+    ],
+    [
+      "trafficMediumSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "trafficHighSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "trafficHighSwitch:2",
+      "trafficSignalGen:HIGH",
+      "orange",
+      []
+    ],
+    [
+      "trafficHighSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "trafficOverloadSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "trafficOverloadSwitch:2",
+      "trafficSignalGen:OVERLOAD",
+      "red",
+      []
+    ],
+    [
+      "trafficOverloadSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "trafficBurstSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "trafficBurstSwitch:2",
+      "trafficSignalGen:BURST",
+      "yellow",
+      []
+    ],
+    [
+      "trafficBurstSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "backhaulProbeClock:CLK",
+      "backhaulPacketModel:PROBE_IN",
+      "gold",
+      []
+    ],
+    [
+      "backhaulProbeClock:CLK",
+      "networkLogicAnalyzer:D1",
+      "gold",
+      []
+    ],
+    [
+      "backhaulPacketModel:ACK_OUT",
+      "networkLogicAnalyzer:D2",
+      "green",
+      []
+    ],
+    [
+      "backhaulPacketModel:DROP_OUT",
+      "networkLogicAnalyzer:D4",
+      "red",
+      []
+    ],
+    [
+      "backhaulPacketModel:LINK_OUT",
+      "networkLogicAnalyzer:D5",
+      "green",
+      []
+    ],
+    [
+      "backhaulPacketModel:UPSTREAM_OUT",
+      "networkLogicAnalyzer:D6",
+      "cyan",
+      []
+    ],
+    [
+      "backhaulPacketModel:LATENCY_OUT",
       "esp32:D25",
       "gold",
       []
     ],
     [
-      "backhaulModel:LOSS",
+      "backhaulPacketModel:LOSS_OUT",
       "esp32:D26",
       "orange",
       []
     ],
     [
-      "backhaulModel:LINK",
+      "backhaulPacketModel:LINK_OUT",
       "esp32:D14",
       "green",
       []
     ],
     [
-      "backhaulModel:UPSTREAM",
+      "backhaulPacketModel:UPSTREAM_OUT",
       "esp32:D13",
       "green",
+      []
+    ],
+    [
+      "backhaulCongestSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "backhaulCongestSwitch:2",
+      "backhaulPacketModel:CONGEST",
+      "yellow",
+      []
+    ],
+    [
+      "backhaulCongestSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "backhaulImpairSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "backhaulImpairSwitch:2",
+      "backhaulPacketModel:IMPAIR",
+      "orange",
+      []
+    ],
+    [
+      "backhaulImpairSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "backhaulLinkFailSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "backhaulLinkFailSwitch:2",
+      "backhaulPacketModel:LINK_FAIL",
+      "red",
+      []
+    ],
+    [
+      "backhaulLinkFailSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "backhaulUpstreamFailSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "backhaulUpstreamFailSwitch:2",
+      "backhaulPacketModel:UPSTREAM_FAIL",
+      "red",
+      []
+    ],
+    [
+      "backhaulUpstreamFailSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "networkLogicAnalyzer:GND",
+      "esp32:GND.2",
+      "black",
       []
     ]
   ],

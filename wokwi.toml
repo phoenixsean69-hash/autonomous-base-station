@@ -5,14 +5,16 @@ firmware = '.pio/build/esp32dev/firmware.bin'
 elf = '.pio/build/esp32dev/firmware.elf'
 
 # Causal system models: network, radio and traffic.
+
+# Signal-generating subsystem models (no direct-value sliders).
 [[chip]]
-name = 'backhaul-network-model'
-binary = 'dist/backhaul-network-model.chip.wasm'
+name = 'traffic-pulse-generator'
+binary = 'dist/traffic-pulse-generator.chip.wasm'
 
 [[chip]]
-name = 'radio-link-model'
-binary = 'dist/radio-link-model.chip.wasm'
+name = 'backhaul-packet-emulator'
+binary = 'dist/backhaul-packet-emulator.chip.wasm'
 
 [[chip]]
-name = 'traffic-generator'
-binary = 'dist/traffic-generator.chip.wasm'
+name = 'radio-signal-generator'
+binary = 'dist/radio-signal-generator.chip.wasm'

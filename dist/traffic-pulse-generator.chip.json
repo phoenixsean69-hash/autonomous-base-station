@@ -1,0 +1,5 @@
+{
+  "name": "Baseband Traffic Signal Generator",
+  "author": "Autonomous Base Station Project",
+  "pins": ["MEDIUM", "HIGH", "OVERLOAD", "BURST", "PACKETS", "LOAD_OUT", "ACTIVITY"]
+}
