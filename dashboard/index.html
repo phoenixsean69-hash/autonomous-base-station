@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="Autonomous Base Station live monitoring dashboard"
+  />
+  <title>ABS Live Control Center</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <div>
+          <strong>ABS</strong>
+          <small>Autonomous Base Station</small>
+        </div>
+      </div>
+
+      <nav class="tabs" aria-label="Dashboard sections">
+        <button class="tab active" data-tab="overview">Overview</button>
+        <button class="tab" data-tab="telemetry">Telemetry</button>
+        <button class="tab" data-tab="ai">AI Intelligence</button>
+        <button class="tab" data-tab="control">Control Chain</button>
+        <button class="tab" data-tab="models">Models</button>
+      </nav>
+
+      <div class="top-status">
+        <span id="dashboardStatus" class="pill neutral">
+          <i></i>Dashboard: CONNECTING
+        </span>
+        <span id="espStatus" class="pill neutral">
+          <i></i>ESP32: WAITING
+        </span>
+      </div>
+    </header>
+
+    <main id="content"></main>
+
+    <footer>
+      <span>Monitoring only — simulation controls come later.</span>
+      <span>ESP32 remains final actuation authority.</span>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

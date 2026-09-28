@@ -61,7 +61,7 @@ const unsigned long DHT_INTERVAL_MS = 2000;
 const unsigned long DS18B20_REQUEST_INTERVAL_MS = 2000;
 const unsigned long DS18B20_CONVERSION_MS = 750;
 
-const unsigned long TELEMETRY_INTERVAL_MS = 500;
+const unsigned long TELEMETRY_INTERVAL_MS = 2000;
 
 // AI recommendations normally arrive every ~5 seconds.
 // If no fresh command arrives for 15 seconds, firmware

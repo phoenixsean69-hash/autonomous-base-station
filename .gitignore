@@ -20,3 +20,4 @@ ml/models/*.pt
 ml/data/*.npz
 ml/data/dataset_v3_manifest.json
 bridge/runtime/
+dashboard/node_modules/

@@ -1551,6 +1551,46 @@ def send_ai_command(
     )
 
 
+def save_latest_telemetry(
+    telemetry: dict,
+) -> Path:
+    """Write the newest ESP32 packet for the read-only JS dashboard."""
+    directory = (
+        ROOT /
+        "bridge" /
+        "runtime"
+    )
+
+    directory.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    target = (
+        directory /
+        "latest_telemetry.json"
+    )
+
+    temporary = (
+        directory /
+        "latest_telemetry.json.tmp"
+    )
+
+    temporary.write_text(
+        json.dumps(
+            telemetry,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    temporary.replace(
+        target
+    )
+
+    return target
+
+
 def save_latest(
     result: dict,
 ) -> Path:
@@ -1875,6 +1915,15 @@ def live(
                 )
 
                 continue
+
+            try:
+                save_latest_telemetry(
+                    telemetry
+                )
+            except OSError as exc:
+                print(
+                    f"[DASHBOARD] telemetry snapshot write failed: {exc}"
+                )
 
             ai_status = telemetry.get(
                 "ai_command_status",
