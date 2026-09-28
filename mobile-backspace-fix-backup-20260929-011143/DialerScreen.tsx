@@ -2,6 +2,7 @@ import {
   router,
 } from "expo-router";
 import {
+  Backspace,
   Phone,
   PhoneIncoming,
   RadioTower,
@@ -325,9 +326,10 @@ export default function DialerScreen() {
             );
           }}
         >
-          <Text style={styles.deleteGlyph}>
-            ⌫
-          </Text>
+          <Backspace
+            size={22}
+            color={colors.charcoal}
+          />
 
           <Text style={styles.secondaryLabel}>
             Delete
@@ -514,12 +516,6 @@ const styles =
       width: 92,
       alignItems: "center",
       gap: 6,
-    },
-    deleteGlyph: {
-      fontFamily: fonts.bold,
-      color: colors.charcoal,
-      fontSize: 25,
-      lineHeight: 28,
     },
     secondaryLabel: {
       fontFamily: fonts.semiBold,
