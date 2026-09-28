@@ -150,8 +150,8 @@
     {
       "type": "wokwi-text",
       "id": "rfHeading",
-      "top": 790,
-      "left": 1000,
+      "top": 780,
+      "left": 840,
       "attrs": {
         "text": "RF SIGNAL GENERATOR + ANTENNA CHANNEL"
       }
@@ -159,28 +159,10 @@
     {
       "type": "wokwi-text",
       "id": "backhaulHeading",
-      "top": 1120,
-      "left": 950,
+      "top": 1200,
+      "left": 800,
       "attrs": {
-        "text": "BACKHAUL PACKET / LATENCY MINI-CIRCUIT"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "backhaulStatusHeading",
-      "top": 1170,
-      "left": 985,
-      "attrs": {
-        "text": "PACKET NETWORK SIGNALS"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "metricHeading",
-      "top": 1215,
-      "left": 985,
-      "attrs": {
-        "text": "PROBE | ACK | LATENCY | LOSS"
+        "text": "BACKHAUL PACKET + LATENCY MINI-CIRCUIT"
       }
     },
     {
@@ -260,8 +242,8 @@
     {
       "type": "wokwi-text",
       "id": "operatingHeading",
-      "top": 2300,
-      "left": 940,
+      "top": 2890,
+      "left": 965,
       "attrs": {
         "text": "LOCAL EQUIPMENT + TRAFFIC GENERATOR"
       }
@@ -269,8 +251,8 @@
     {
       "type": "wokwi-text",
       "id": "fanLabel",
-      "top": 2300,
-      "left": 980,
+      "top": 2940,
+      "left": 930,
       "attrs": {
         "text": "FAN | GPIO18"
       }
@@ -278,7 +260,7 @@
     {
       "type": "wokwi-slide-switch",
       "id": "fanSwitch",
-      "top": 2350,
+      "top": 3000,
       "left": 1035,
       "attrs": {
         "value": "1",
@@ -288,8 +270,8 @@
     {
       "type": "wokwi-text",
       "id": "fanDirection",
-      "top": 2420,
-      "left": 930,
+      "top": 3070,
+      "left": 920,
       "attrs": {
         "text": "FAILED | OPERATIONAL (OK)"
       }
@@ -297,8 +279,8 @@
     {
       "type": "wokwi-text",
       "id": "rectifierLabel",
-      "top": 2300,
-      "left": 1320,
+      "top": 2940,
+      "left": 1310,
       "attrs": {
         "text": "RECTIFIER | GPIO19"
       }
@@ -306,7 +288,7 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rectifierSwitch",
-      "top": 2350,
+      "top": 3000,
       "left": 1370,
       "attrs": {
         "value": "1",
@@ -316,8 +298,8 @@
     {
       "type": "wokwi-text",
       "id": "rectifierDirection",
-      "top": 2420,
-      "left": 1270,
+      "top": 3070,
+      "left": 1260,
       "attrs": {
         "text": "FAULT | NORMAL (OK)"
       }
@@ -548,7 +530,7 @@
     {
       "type": "wokwi-text",
       "id": "layout_legend_heading",
-      "top": 2790,
+      "top": 3220,
       "left": 900,
       "attrs": {
         "text": "CONTROL LEGEND"
@@ -557,7 +539,7 @@
     {
       "type": "wokwi-text",
       "id": "layout_legend_1",
-      "top": 2830,
+      "top": 3260,
       "left": 760,
       "attrs": {
         "text": "OK=healthy | DEG=degraded"
@@ -566,7 +548,7 @@
     {
       "type": "wokwi-text",
       "id": "layout_legend_2",
-      "top": 2860,
+      "top": 3290,
       "left": 760,
       "attrs": {
         "text": "FAULT=guardrail action"
@@ -575,7 +557,7 @@
     {
       "type": "wokwi-text",
       "id": "layout_legend_3",
-      "top": 2890,
+      "top": 3320,
       "left": 760,
       "attrs": {
         "text": "AI -> Pico -> ESP32 -> actuator"
@@ -584,8 +566,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "rfCarrierClock",
-      "top": 870,
-      "left": 700,
+      "top": 880,
+      "left": 620,
       "attrs": {
         "frequency": "10k"
       }
@@ -593,15 +575,16 @@
     {
       "type": "chip-radio-signal-generator",
       "id": "radioSignalGen",
-      "top": 875,
-      "left": 1030,
-      "attrs": {}
+      "top": 870,
+      "left": 1880,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-slide-switch",
       "id": "rfPathLossSwitch",
-      "top": 1030,
-      "left": 730,
+      "top": 1050,
+      "left": 700,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -610,8 +593,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfInterferenceSwitch",
-      "top": 1030,
-      "left": 960,
+      "top": 1050,
+      "left": 940,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -620,8 +603,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfMismatchSwitch",
-      "top": 1030,
-      "left": 1200,
+      "top": 1050,
+      "left": 1180,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -630,36 +613,18 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfFaultSwitch",
-      "top": 1030,
-      "left": 1440,
+      "top": 1050,
+      "left": 1420,
       "attrs": {
         "value": "0",
         "bounce": "0"
       }
     },
     {
-      "type": "wokwi-text",
-      "id": "rfCircuitInfo",
-      "top": 820,
-      "left": 735,
-      "attrs": {
-        "text": "10 kHz SCALED RF CARRIER -> CHANNEL/DETECTOR -> RSSI + FWD + REFL"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "rfSwitchInfo",
-      "top": 1110,
-      "left": 675,
-      "attrs": {
-        "text": "PATH LOSS      INTERFERENCE      ANTENNA MISMATCH      RADIO FAULT"
-      }
-    },
-    {
       "type": "wokwi-clock-generator",
       "id": "backhaulProbeClock",
-      "top": 1280,
-      "left": 690,
+      "top": 1320,
+      "left": 620,
       "attrs": {
         "frequency": "2"
       }
@@ -667,15 +632,16 @@
     {
       "type": "chip-backhaul-packet-emulator",
       "id": "backhaulPacketModel",
-      "top": 1285,
-      "left": 1030,
-      "attrs": {}
+      "top": 1320,
+      "left": 1880,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulCongestSwitch",
-      "top": 1480,
-      "left": 690,
+      "top": 1510,
+      "left": 700,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -684,8 +650,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulImpairSwitch",
-      "top": 1480,
-      "left": 930,
+      "top": 1510,
+      "left": 940,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -694,8 +660,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulLinkFailSwitch",
-      "top": 1480,
-      "left": 1170,
+      "top": 1510,
+      "left": 1180,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -704,43 +670,26 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulUpstreamFailSwitch",
-      "top": 1480,
-      "left": 1410,
+      "top": 1510,
+      "left": 1420,
       "attrs": {
         "value": "0",
         "bounce": "0"
       }
     },
     {
-      "type": "wokwi-text",
-      "id": "backhaulCircuitInfo",
-      "top": 1230,
-      "left": 690,
-      "attrs": {
-        "text": "2 Hz PROBE -> BACKHAUL EMULATOR -> DELAYED / DROPPED ACK"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "backhaulSwitchInfo",
-      "top": 1560,
-      "left": 650,
-      "attrs": {
-        "text": "CONGESTION       IMPAIRMENT       LINK FAIL       UPSTREAM FAIL"
-      }
-    },
-    {
       "type": "chip-traffic-pulse-generator",
       "id": "trafficSignalGen",
-      "top": 2320,
-      "left": 720,
-      "attrs": {}
+      "top": 2480,
+      "left": 1880,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-slide-switch",
       "id": "trafficMediumSwitch",
-      "top": 2320,
-      "left": 1060,
+      "top": 2500,
+      "left": 795,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -749,8 +698,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficHighSwitch",
-      "top": 2320,
-      "left": 1240,
+      "top": 2500,
+      "left": 1015,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -759,8 +708,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficOverloadSwitch",
-      "top": 2320,
-      "left": 1420,
+      "top": 2500,
+      "left": 1235,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -769,36 +718,18 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficBurstSwitch",
-      "top": 2490,
-      "left": 1240,
+      "top": 2500,
+      "left": 1455,
       "attrs": {
         "value": "0",
         "bounce": "0"
       }
     },
     {
-      "type": "wokwi-text",
-      "id": "trafficCircuitInfo",
-      "top": 2260,
-      "left": 650,
-      "attrs": {
-        "text": "BASEBAND PACKET SIGNAL GENERATOR -> PACKET PULSES + MEASURED LOAD"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "trafficSwitchInfo",
-      "top": 2570,
-      "left": 1000,
-      "attrs": {
-        "text": "DEFAULT LOW | MEDIUM | HIGH | OVERLOAD | BURST"
-      }
-    },
-    {
       "type": "wokwi-logic-analyzer",
       "id": "networkLogicAnalyzer",
-      "top": 1710,
-      "left": 1460,
+      "top": 1690,
+      "left": 1450,
       "attrs": {
         "channelNames": "TRAFFIC,PROBE,ACK,RF_CARRIER,DROP,LINK,UPSTREAM,RF_ACTIVITY",
         "bufferSize": "200000"
@@ -806,11 +737,506 @@
     },
     {
       "type": "wokwi-text",
-      "id": "logicAnalyzerInfo",
-      "top": 1650,
-      "left": 1390,
+      "id": "rfFlowText",
+      "top": 820,
+      "left": 760,
       "attrs": {
-        "text": "SIGNAL ANALYZER: PACKETS / LATENCY / DROPS / RF CARRIER"
+        "text": "10 kHz carrier -> interference mixer -> radio gate -> detector"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "rfCarrierLabel2",
+      "top": 845,
+      "left": 610,
+      "attrs": {
+        "text": "CARRIER"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "rfNoiseLabel",
+      "top": 845,
+      "left": 790,
+      "attrs": {
+        "text": "NOISE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "rfPathLossLabel2",
+      "top": 1010,
+      "left": 675,
+      "attrs": {
+        "text": "PATH LOSS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "rfInterferenceLabel2",
+      "top": 1010,
+      "left": 895,
+      "attrs": {
+        "text": "INTERFERENCE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "rfMismatchLabel2",
+      "top": 1010,
+      "left": 1135,
+      "attrs": {
+        "text": "ANTENNA MISMATCH"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "rfFaultLabel2",
+      "top": 1010,
+      "left": 1395,
+      "attrs": {
+        "text": "RADIO FAULT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "rfActivityLabel",
+      "top": 845,
+      "left": 1585,
+      "attrs": {
+        "text": "RF ACTIVITY"
+      }
+    },
+    {
+      "type": "wokwi-clock-generator",
+      "id": "rfNoiseClock",
+      "top": 880,
+      "left": 790,
+      "attrs": {
+        "frequency": "1k"
+      }
+    },
+    {
+      "type": "wokwi-gate-and-2",
+      "id": "rfNoiseGate",
+      "top": 875,
+      "left": 955,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-xor-2",
+      "id": "rfMixerGate",
+      "top": 875,
+      "left": 1120,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-not",
+      "id": "rfFaultInvert",
+      "top": 955,
+      "left": 1310,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-and-2",
+      "id": "rfOutputGate",
+      "top": 875,
+      "left": 1430,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rfActivityResistor",
+      "top": 895,
+      "left": 1560,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "rfActivityLed",
+      "top": 882,
+      "left": 1660,
+      "attrs": {
+        "color": "limegreen",
+        "label": "RF"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "backhaulFlowText",
+      "top": 1240,
+      "left": 755,
+      "attrs": {
+        "text": "2 Hz probe -> link checks -> delayed ACK / packet drop"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "backhaulProbeLabel2",
+      "top": 1285,
+      "left": 615,
+      "attrs": {
+        "text": "PROBE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "backhaulCongestLabel2",
+      "top": 1470,
+      "left": 675,
+      "attrs": {
+        "text": "CONGESTION"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "backhaulImpairLabel2",
+      "top": 1470,
+      "left": 925,
+      "attrs": {
+        "text": "IMPAIRMENT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "backhaulLinkLabel2",
+      "top": 1470,
+      "left": 1160,
+      "attrs": {
+        "text": "LINK FAIL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "backhaulUpstreamLabel2",
+      "top": 1470,
+      "left": 1380,
+      "attrs": {
+        "text": "UPSTREAM FAIL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "backhaulPathLabel",
+      "top": 1285,
+      "left": 1450,
+      "attrs": {
+        "text": "PATH OK"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "backhaulAckLabel",
+      "top": 1365,
+      "left": 1505,
+      "attrs": {
+        "text": "ACK"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "backhaulDropLabel",
+      "top": 1430,
+      "left": 1500,
+      "attrs": {
+        "text": "DROP"
+      }
+    },
+    {
+      "type": "wokwi-gate-not",
+      "id": "backhaulLinkNot",
+      "top": 1310,
+      "left": 910,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-not",
+      "id": "backhaulUpstreamNot",
+      "top": 1395,
+      "left": 910,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-and-2",
+      "id": "backhaulLinkGate",
+      "top": 1310,
+      "left": 1100,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-and-2",
+      "id": "backhaulUpstreamGate",
+      "top": 1310,
+      "left": 1280,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "backhaulPathResistor",
+      "top": 1330,
+      "left": 1470,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "backhaulPathLed",
+      "top": 1317,
+      "left": 1570,
+      "attrs": {
+        "color": "limegreen",
+        "label": "PATH"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "backhaulAckResistor",
+      "top": 1395,
+      "left": 1515,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "backhaulAckLed",
+      "top": 1382,
+      "left": 1615,
+      "attrs": {
+        "color": "green",
+        "label": "ACK"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "backhaulDropResistor",
+      "top": 1460,
+      "left": 1515,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "backhaulDropLed",
+      "top": 1447,
+      "left": 1615,
+      "attrs": {
+        "color": "red",
+        "label": "DROP"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "logicAnalyzerTitle2",
+      "top": 1650,
+      "left": 1460,
+      "attrs": {
+        "text": "SIGNAL ANALYZER"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficHeading2",
+      "top": 2290,
+      "left": 820,
+      "attrs": {
+        "text": "BASEBAND TRAFFIC SIGNAL GENERATOR"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficFlowText",
+      "top": 2330,
+      "left": 720,
+      "attrs": {
+        "text": "LOW clock + selected packet-rate source -> logic gates -> measured traffic load"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficBaseLabel",
+      "top": 2380,
+      "left": 600,
+      "attrs": {
+        "text": "LOW 8 Hz"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficMediumLabel2",
+      "top": 2460,
+      "left": 770,
+      "attrs": {
+        "text": "MEDIUM"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficHighLabel2",
+      "top": 2460,
+      "left": 1000,
+      "attrs": {
+        "text": "HIGH"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficOverloadLabel2",
+      "top": 2460,
+      "left": 1195,
+      "attrs": {
+        "text": "OVERLOAD"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficBurstLabel2",
+      "top": 2460,
+      "left": 1450,
+      "attrs": {
+        "text": "BURST"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficSelectOneLabel",
+      "top": 2740,
+      "left": 950,
+      "attrs": {
+        "text": "SELECT ONE MODE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficOutputLabel",
+      "top": 2645,
+      "left": 1580,
+      "attrs": {
+        "text": "PACKETS"
+      }
+    },
+    {
+      "type": "wokwi-clock-generator",
+      "id": "trafficBaseClock",
+      "top": 2410,
+      "left": 600,
+      "attrs": {
+        "frequency": "8"
+      }
+    },
+    {
+      "type": "wokwi-clock-generator",
+      "id": "trafficMediumClock",
+      "top": 2410,
+      "left": 790,
+      "attrs": {
+        "frequency": "27"
+      }
+    },
+    {
+      "type": "wokwi-clock-generator",
+      "id": "trafficHighClock",
+      "top": 2410,
+      "left": 1010,
+      "attrs": {
+        "frequency": "62"
+      }
+    },
+    {
+      "type": "wokwi-clock-generator",
+      "id": "trafficOverloadClock",
+      "top": 2410,
+      "left": 1230,
+      "attrs": {
+        "frequency": "92"
+      }
+    },
+    {
+      "type": "wokwi-clock-generator",
+      "id": "trafficBurstClock",
+      "top": 2410,
+      "left": 1450,
+      "attrs": {
+        "frequency": "122"
+      }
+    },
+    {
+      "type": "wokwi-gate-and-2",
+      "id": "trafficMediumGate",
+      "top": 2560,
+      "left": 790,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-and-2",
+      "id": "trafficHighGate",
+      "top": 2560,
+      "left": 1010,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-and-2",
+      "id": "trafficOverloadGate",
+      "top": 2560,
+      "left": 1230,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-and-2",
+      "id": "trafficBurstGate",
+      "top": 2560,
+      "left": 1450,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-or-2",
+      "id": "trafficOr1",
+      "top": 2660,
+      "left": 720,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-or-2",
+      "id": "trafficOr2",
+      "top": 2660,
+      "left": 940,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-or-2",
+      "id": "trafficOr3",
+      "top": 2660,
+      "left": 1160,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gate-or-2",
+      "id": "trafficOr4",
+      "top": 2660,
+      "left": 1380,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "trafficOutResistor",
+      "top": 2680,
+      "left": 1540,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "trafficOutLed",
+      "top": 2667,
+      "left": 1640,
+      "attrs": {
+        "color": "blue",
+        "label": "PKT"
       }
     }
   ],
@@ -1117,56 +1543,68 @@
     ],
     [
       "rfCarrierClock:CLK",
-      "radioSignalGen:CARRIER_IN",
+      "rfMixerGate:A",
       "yellow",
       []
     ],
     [
-      "radioSignalGen:RF_FWD",
-      "esp32:D33",
-      "limegreen",
+      "rfNoiseClock:CLK",
+      "rfNoiseGate:A",
+      "purple",
       []
     ],
     [
-      "radioSignalGen:RF_REFL",
-      "esp32:VP",
-      "magenta",
+      "rfInterferenceSwitch:2",
+      "rfNoiseGate:B",
+      "orange",
       []
     ],
     [
-      "radioSignalGen:RSSI_OUT",
-      "esp32:D27",
-      "cyan",
+      "rfNoiseGate:OUT",
+      "rfMixerGate:B",
+      "orange",
       []
     ],
     [
-      "radioSignalGen:RADIO_OK",
-      "esp32:D23",
+      "rfFaultSwitch:2",
+      "rfFaultInvert:IN",
+      "red",
+      []
+    ],
+    [
+      "rfMixerGate:OUT",
+      "rfOutputGate:A",
+      "yellow",
+      []
+    ],
+    [
+      "rfFaultInvert:OUT",
+      "rfOutputGate:B",
       "green",
       []
     ],
     [
-      "rfCarrierClock:CLK",
-      "networkLogicAnalyzer:D3",
-      "yellow",
+      "rfOutputGate:OUT",
+      "rfActivityResistor:1",
+      "limegreen",
       []
     ],
     [
-      "radioSignalGen:ACTIVITY",
-      "networkLogicAnalyzer:D7",
+      "rfActivityResistor:2",
+      "rfActivityLed:A",
       "limegreen",
+      []
+    ],
+    [
+      "rfActivityLed:C",
+      "esp32:GND.2",
+      "black",
       []
     ],
     [
       "rfPathLossSwitch:1",
       "esp32:GND.2",
       "black",
-      []
-    ],
-    [
-      "rfPathLossSwitch:2",
-      "radioSignalGen:PATHLOSS",
-      "blue",
       []
     ],
     [
@@ -1182,12 +1620,6 @@
       []
     ],
     [
-      "rfInterferenceSwitch:2",
-      "radioSignalGen:INTERFERENCE",
-      "orange",
-      []
-    ],
-    [
       "rfInterferenceSwitch:3",
       "esp32:3V3",
       "red",
@@ -1197,12 +1629,6 @@
       "rfMismatchSwitch:1",
       "esp32:GND.2",
       "black",
-      []
-    ],
-    [
-      "rfMismatchSwitch:2",
-      "radioSignalGen:MISMATCH",
-      "magenta",
       []
     ],
     [
@@ -1218,177 +1644,123 @@
       []
     ],
     [
-      "rfFaultSwitch:2",
-      "radioSignalGen:RADIO_FAULT",
-      "red",
-      []
-    ],
-    [
       "rfFaultSwitch:3",
       "esp32:3V3",
       "red",
       []
     ],
     [
-      "trafficSignalGen:LOAD_OUT",
-      "esp32:VN",
-      "purple",
+      "rfOutputGate:OUT",
+      "radioSignalGen:CARRIER_IN",
+      "",
       []
     ],
     [
-      "trafficSignalGen:PACKETS",
-      "backhaulPacketModel:TRAFFIC_IN",
-      "purple",
+      "rfPathLossSwitch:2",
+      "radioSignalGen:PATHLOSS",
+      "",
       []
     ],
     [
-      "trafficSignalGen:PACKETS",
-      "networkLogicAnalyzer:D0",
-      "purple",
+      "rfInterferenceSwitch:2",
+      "radioSignalGen:INTERFERENCE",
+      "",
       []
     ],
     [
-      "trafficMediumSwitch:1",
-      "esp32:GND.2",
-      "black",
+      "rfMismatchSwitch:2",
+      "radioSignalGen:MISMATCH",
+      "",
       []
     ],
     [
-      "trafficMediumSwitch:2",
-      "trafficSignalGen:MEDIUM",
-      "blue",
+      "rfFaultSwitch:2",
+      "radioSignalGen:RADIO_FAULT",
+      "",
       []
     ],
     [
-      "trafficMediumSwitch:3",
-      "esp32:3V3",
+      "radioSignalGen:RF_FWD",
+      "esp32:D33",
+      "",
+      []
+    ],
+    [
+      "radioSignalGen:RF_REFL",
+      "esp32:VP",
+      "",
+      []
+    ],
+    [
+      "radioSignalGen:RSSI_OUT",
+      "esp32:D27",
+      "",
+      []
+    ],
+    [
+      "radioSignalGen:RADIO_OK",
+      "esp32:D23",
+      "",
+      []
+    ],
+    [
+      "backhaulLinkFailSwitch:2",
+      "backhaulLinkNot:IN",
       "red",
       []
     ],
     [
-      "trafficHighSwitch:1",
-      "esp32:GND.2",
-      "black",
-      []
-    ],
-    [
-      "trafficHighSwitch:2",
-      "trafficSignalGen:HIGH",
-      "orange",
-      []
-    ],
-    [
-      "trafficHighSwitch:3",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
-      "trafficOverloadSwitch:1",
-      "esp32:GND.2",
-      "black",
-      []
-    ],
-    [
-      "trafficOverloadSwitch:2",
-      "trafficSignalGen:OVERLOAD",
-      "red",
-      []
-    ],
-    [
-      "trafficOverloadSwitch:3",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
-      "trafficBurstSwitch:1",
-      "esp32:GND.2",
-      "black",
-      []
-    ],
-    [
-      "trafficBurstSwitch:2",
-      "trafficSignalGen:BURST",
-      "yellow",
-      []
-    ],
-    [
-      "trafficBurstSwitch:3",
-      "esp32:3V3",
+      "backhaulUpstreamFailSwitch:2",
+      "backhaulUpstreamNot:IN",
       "red",
       []
     ],
     [
       "backhaulProbeClock:CLK",
-      "backhaulPacketModel:PROBE_IN",
+      "backhaulLinkGate:A",
       "gold",
       []
     ],
     [
-      "backhaulProbeClock:CLK",
-      "networkLogicAnalyzer:D1",
+      "backhaulLinkNot:OUT",
+      "backhaulLinkGate:B",
+      "green",
+      []
+    ],
+    [
+      "backhaulLinkGate:OUT",
+      "backhaulUpstreamGate:A",
       "gold",
       []
     ],
     [
-      "backhaulPacketModel:ACK_OUT",
-      "networkLogicAnalyzer:D2",
+      "backhaulUpstreamNot:OUT",
+      "backhaulUpstreamGate:B",
       "green",
       []
     ],
     [
-      "backhaulPacketModel:DROP_OUT",
-      "networkLogicAnalyzer:D4",
-      "red",
-      []
-    ],
-    [
-      "backhaulPacketModel:LINK_OUT",
-      "networkLogicAnalyzer:D5",
+      "backhaulUpstreamGate:OUT",
+      "backhaulPathResistor:1",
       "green",
       []
     ],
     [
-      "backhaulPacketModel:UPSTREAM_OUT",
-      "networkLogicAnalyzer:D6",
-      "cyan",
-      []
-    ],
-    [
-      "backhaulPacketModel:LATENCY_OUT",
-      "esp32:D25",
-      "gold",
-      []
-    ],
-    [
-      "backhaulPacketModel:LOSS_OUT",
-      "esp32:D26",
-      "orange",
-      []
-    ],
-    [
-      "backhaulPacketModel:LINK_OUT",
-      "esp32:D14",
+      "backhaulPathResistor:2",
+      "backhaulPathLed:A",
       "green",
       []
     ],
     [
-      "backhaulPacketModel:UPSTREAM_OUT",
-      "esp32:D13",
-      "green",
+      "backhaulPathLed:C",
+      "esp32:GND.2",
+      "black",
       []
     ],
     [
       "backhaulCongestSwitch:1",
       "esp32:GND.2",
       "black",
-      []
-    ],
-    [
-      "backhaulCongestSwitch:2",
-      "backhaulPacketModel:CONGEST",
-      "yellow",
       []
     ],
     [
@@ -1404,12 +1776,6 @@
       []
     ],
     [
-      "backhaulImpairSwitch:2",
-      "backhaulPacketModel:IMPAIR",
-      "orange",
-      []
-    ],
-    [
       "backhaulImpairSwitch:3",
       "esp32:3V3",
       "red",
@@ -1419,12 +1785,6 @@
       "backhaulLinkFailSwitch:1",
       "esp32:GND.2",
       "black",
-      []
-    ],
-    [
-      "backhaulLinkFailSwitch:2",
-      "backhaulPacketModel:LINK_FAIL",
-      "red",
       []
     ],
     [
@@ -1440,15 +1800,327 @@
       []
     ],
     [
-      "backhaulUpstreamFailSwitch:2",
-      "backhaulPacketModel:UPSTREAM_FAIL",
+      "backhaulUpstreamFailSwitch:3",
+      "esp32:3V3",
       "red",
       []
     ],
     [
-      "backhaulUpstreamFailSwitch:3",
+      "backhaulProbeClock:CLK",
+      "backhaulPacketModel:PROBE_IN",
+      "",
+      []
+    ],
+    [
+      "backhaulCongestSwitch:2",
+      "backhaulPacketModel:CONGEST",
+      "",
+      []
+    ],
+    [
+      "backhaulImpairSwitch:2",
+      "backhaulPacketModel:IMPAIR",
+      "",
+      []
+    ],
+    [
+      "backhaulLinkFailSwitch:2",
+      "backhaulPacketModel:LINK_FAIL",
+      "",
+      []
+    ],
+    [
+      "backhaulUpstreamFailSwitch:2",
+      "backhaulPacketModel:UPSTREAM_FAIL",
+      "",
+      []
+    ],
+    [
+      "backhaulPacketModel:LATENCY_OUT",
+      "esp32:D25",
+      "",
+      []
+    ],
+    [
+      "backhaulPacketModel:LOSS_OUT",
+      "esp32:D26",
+      "",
+      []
+    ],
+    [
+      "backhaulPacketModel:LINK_OUT",
+      "esp32:D14",
+      "",
+      []
+    ],
+    [
+      "backhaulPacketModel:UPSTREAM_OUT",
+      "esp32:D13",
+      "",
+      []
+    ],
+    [
+      "backhaulPacketModel:ACK_OUT",
+      "backhaulAckResistor:1",
+      "",
+      []
+    ],
+    [
+      "backhaulAckResistor:2",
+      "backhaulAckLed:A",
+      "green",
+      []
+    ],
+    [
+      "backhaulAckLed:C",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "backhaulPacketModel:DROP_OUT",
+      "backhaulDropResistor:1",
+      "",
+      []
+    ],
+    [
+      "backhaulDropResistor:2",
+      "backhaulDropLed:A",
+      "red",
+      []
+    ],
+    [
+      "backhaulDropLed:C",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "trafficMediumSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "trafficMediumSwitch:3",
       "esp32:3V3",
       "red",
+      []
+    ],
+    [
+      "trafficHighSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "trafficHighSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "trafficOverloadSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "trafficOverloadSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "trafficBurstSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "trafficBurstSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "trafficMediumClock:CLK",
+      "trafficMediumGate:A",
+      "blue",
+      []
+    ],
+    [
+      "trafficMediumSwitch:2",
+      "trafficMediumGate:B",
+      "blue",
+      []
+    ],
+    [
+      "trafficHighClock:CLK",
+      "trafficHighGate:A",
+      "orange",
+      []
+    ],
+    [
+      "trafficHighSwitch:2",
+      "trafficHighGate:B",
+      "orange",
+      []
+    ],
+    [
+      "trafficOverloadClock:CLK",
+      "trafficOverloadGate:A",
+      "red",
+      []
+    ],
+    [
+      "trafficOverloadSwitch:2",
+      "trafficOverloadGate:B",
+      "red",
+      []
+    ],
+    [
+      "trafficBurstClock:CLK",
+      "trafficBurstGate:A",
+      "yellow",
+      []
+    ],
+    [
+      "trafficBurstSwitch:2",
+      "trafficBurstGate:B",
+      "yellow",
+      []
+    ],
+    [
+      "trafficBaseClock:CLK",
+      "trafficOr1:A",
+      "purple",
+      []
+    ],
+    [
+      "trafficMediumGate:OUT",
+      "trafficOr1:B",
+      "blue",
+      []
+    ],
+    [
+      "trafficOr1:OUT",
+      "trafficOr2:A",
+      "purple",
+      []
+    ],
+    [
+      "trafficHighGate:OUT",
+      "trafficOr2:B",
+      "orange",
+      []
+    ],
+    [
+      "trafficOr2:OUT",
+      "trafficOr3:A",
+      "purple",
+      []
+    ],
+    [
+      "trafficOverloadGate:OUT",
+      "trafficOr3:B",
+      "red",
+      []
+    ],
+    [
+      "trafficOr3:OUT",
+      "trafficOr4:A",
+      "purple",
+      []
+    ],
+    [
+      "trafficBurstGate:OUT",
+      "trafficOr4:B",
+      "yellow",
+      []
+    ],
+    [
+      "trafficOr4:OUT",
+      "trafficOutResistor:1",
+      "purple",
+      []
+    ],
+    [
+      "trafficOutResistor:2",
+      "trafficOutLed:A",
+      "purple",
+      []
+    ],
+    [
+      "trafficOutLed:C",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "trafficOr4:OUT",
+      "trafficSignalGen:PACKET_IN",
+      "",
+      []
+    ],
+    [
+      "trafficSignalGen:LOAD_OUT",
+      "esp32:VN",
+      "",
+      []
+    ],
+    [
+      "trafficOr4:OUT",
+      "backhaulPacketModel:TRAFFIC_IN",
+      "",
+      []
+    ],
+    [
+      "trafficOr4:OUT",
+      "networkLogicAnalyzer:D0",
+      "",
+      []
+    ],
+    [
+      "backhaulProbeClock:CLK",
+      "networkLogicAnalyzer:D1",
+      "",
+      []
+    ],
+    [
+      "backhaulPacketModel:ACK_OUT",
+      "networkLogicAnalyzer:D2",
+      "",
+      []
+    ],
+    [
+      "rfCarrierClock:CLK",
+      "networkLogicAnalyzer:D3",
+      "",
+      []
+    ],
+    [
+      "backhaulPacketModel:DROP_OUT",
+      "networkLogicAnalyzer:D4",
+      "",
+      []
+    ],
+    [
+      "backhaulPacketModel:LINK_OUT",
+      "networkLogicAnalyzer:D5",
+      "",
+      []
+    ],
+    [
+      "backhaulPacketModel:UPSTREAM_OUT",
+      "networkLogicAnalyzer:D6",
+      "",
+      []
+    ],
+    [
+      "rfOutputGate:OUT",
+      "networkLogicAnalyzer:D7",
+      "",
       []
     ],
     [

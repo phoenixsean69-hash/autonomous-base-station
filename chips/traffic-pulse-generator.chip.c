@@ -3,69 +3,67 @@
 #include <stdbool.h>
 
 typedef struct {
-  pin_t medium;
-  pin_t high;
-  pin_t overload;
-  pin_t burst;
-  pin_t packets;
+  pin_t packet_in;
   pin_t load_out;
   pin_t activity;
-  timer_t timer;
-  uint32_t tick_ms;
-  uint32_t next_pulse_ms;
-  uint32_t pulse_end_ms;
-  bool pulse_high;
+  timer_t service_timer;
+  uint32_t service_ticks;
+  uint32_t pulse_count;
+  uint32_t last_rate_hz;
 } chip_state_t;
 
-static uint32_t selected_rate_hz(chip_state_t *s) {
-  uint32_t hz = 8u; /* LOW is the default profile */
-  if (pin_read(s->medium)) hz = 35u;
-  if (pin_read(s->high)) hz = 70u;
-  if (pin_read(s->overload)) hz = 100u;
-  if (pin_read(s->burst)) hz = 130u;
-  return hz;
+static void packet_edge(void *user_data, pin_t pin, uint32_t value) {
+  (void)pin;
+  chip_state_t *s = (chip_state_t *)user_data;
+  pin_write(s->activity, value ? HIGH : LOW);
+  if (value == HIGH) {
+    s->pulse_count++;
+  }
 }
 
-static void tick(void *user_data) {
+static void service(void *user_data) {
   chip_state_t *s = (chip_state_t *)user_data;
-  s->tick_ms += 1u;
-  uint32_t hz = selected_rate_hz(s);
+  s->service_ticks++;
 
-  float load_pct = ((float)hz / 100.0f) * 100.0f;
-  if (load_pct > 100.0f) load_pct = 100.0f;
-  pin_dac_write(s->load_out, (load_pct / 100.0f) * 5.0f);
-
-  if (s->pulse_high && s->tick_ms >= s->pulse_end_ms) {
-    s->pulse_high = false;
-    pin_write(s->packets, LOW);
-    pin_write(s->activity, LOW);
+  /* 20 x 50 ms = 1 second measurement window. */
+  if ((s->service_ticks % 20u) != 0u) {
+    return;
   }
 
-  if (s->tick_ms >= s->next_pulse_ms) {
-    uint32_t period_ms = 1000u / (hz ? hz : 1u);
-    if (period_ms < 4u) period_ms = 4u;
+  s->last_rate_hz = s->pulse_count;
+  s->pulse_count = 0u;
 
-    s->pulse_high = true;
-    pin_write(s->packets, HIGH);
-    pin_write(s->activity, HIGH);
-    s->pulse_end_ms = s->tick_ms + 2u;
-    s->next_pulse_ms = s->tick_ms + period_ms;
+  float load_pct = (float)s->last_rate_hz;
+  if (load_pct > 100.0f) {
+    load_pct = 100.0f;
   }
+
+  pin_dac_write(
+      s->load_out,
+      (load_pct / 100.0f) * 5.0f
+  );
 }
 
 void chip_init(void) {
   static chip_state_t state;
   chip_state_t *s = &state;
-  s->medium = pin_init("MEDIUM", INPUT_PULLDOWN);
-  s->high = pin_init("HIGH", INPUT_PULLDOWN);
-  s->overload = pin_init("OVERLOAD", INPUT_PULLDOWN);
-  s->burst = pin_init("BURST", INPUT_PULLDOWN);
-  s->packets = pin_init("PACKETS", OUTPUT_LOW);
+
+  s->packet_in = pin_init("PACKET_IN", INPUT_PULLDOWN);
   s->load_out = pin_init("LOAD_OUT", ANALOG);
   s->activity = pin_init("ACTIVITY", OUTPUT_LOW);
-  s->next_pulse_ms = 20u;
 
-  const timer_config_t config = {.user_data=s, .callback=tick, .reserved={0}};
-  s->timer = timer_init(&config);
-  timer_start(s->timer, 1000u, true);
+  const pin_watch_config_t packet_watch = {
+      .user_data = s,
+      .edge = BOTH,
+      .pin_change = packet_edge,
+  };
+  pin_watch(s->packet_in, &packet_watch);
+
+  const timer_config_t service_cfg = {
+      .user_data = s,
+      .callback = service,
+      .reserved = {0},
+  };
+  s->service_timer = timer_init(&service_cfg);
+  timer_start(s->service_timer, 50000u, true);
 }

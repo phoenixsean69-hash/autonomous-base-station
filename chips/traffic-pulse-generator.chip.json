@@ -1,5 +1,5 @@
 {
-  "name": "Baseband Traffic Signal Generator",
+  "name": "Baseband Traffic Load Meter",
   "author": "Autonomous Base Station Project",
-  "pins": ["MEDIUM", "HIGH", "OVERLOAD", "BURST", "PACKETS", "LOAD_OUT", "ACTIVITY"]
+  "pins": ["PACKET_IN", "LOAD_OUT", "ACTIVITY"]
 }
