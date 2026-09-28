@@ -1,6 +1,5 @@
 import {
   PhoneIncoming,
-  PhoneMissed,
   PhoneOutgoing,
 } from "lucide-react-native";
 import {
@@ -14,6 +13,7 @@ import {
 } from "react-native-safe-area-context";
 
 import {
+  type RecentCall,
   useDialer,
 } from "../context/DialerContext";
 import {
@@ -22,51 +22,19 @@ import {
   radius,
 } from "../theme";
 
-const CALLS = [
-  {
-    type: "outgoing",
-    number: "0712 000 002",
-    detail:
-      "Outgoing • 2 min 14 sec",
-    time: "Just now",
-  },
-  {
-    type: "incoming",
-    number: "0712 000 002",
-    detail:
-      "Incoming • 54 sec",
-    time: "Today",
-  },
-  {
-    type: "missed",
-    number: "0712 000 002",
-    detail: "Missed call",
-    time: "Yesterday",
-  },
-] as const;
-
 function CallIcon({
-  type,
+  call,
 }: {
-  type:
-    | "outgoing"
-    | "incoming"
-    | "missed";
+  call: RecentCall;
 }) {
-  if (type === "incoming") {
+  if (
+    call.direction ===
+    "incoming"
+  ) {
     return (
       <PhoneIncoming
         size={19}
         color={colors.charcoal}
-      />
-    );
-  }
-
-  if (type === "missed") {
-    return (
-      <PhoneMissed
-        size={19}
-        color={colors.error}
       />
     );
   }
@@ -85,6 +53,7 @@ export default function RecentsScreen() {
 
   const {
     activeSubscriber,
+    recentCalls,
   } = useDialer();
 
   return (
@@ -110,46 +79,51 @@ export default function RecentsScreen() {
       </Text>
 
       <Text style={styles.subtitle}>
-        Mock history for the UI phase.
+        Calls made or received on this phone.
       </Text>
 
-      <View style={styles.list}>
-        {CALLS.map(
-          (call, index) => (
-            <View
-              key={`${call.time}-${index}`}
-              style={styles.row}
-            >
-              <View style={styles.icon}>
-                <CallIcon
-                  type={call.type}
-                />
-              </View>
+      {recentCalls.length ? (
+        <View style={styles.list}>
+          {recentCalls.map(
+            (call) => (
+              <View
+                key={call.id}
+                style={styles.row}
+              >
+                <View style={styles.icon}>
+                  <CallIcon
+                    call={call}
+                  />
+                </View>
 
-              <View style={{ flex: 1 }}>
-                <Text style={styles.number}>
-                  {call.number}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.number}>
+                    {call.number}
+                  </Text>
+
+                  <Text style={styles.detail}>
+                    {call.detail}
+                  </Text>
+                </View>
+
+                <Text style={styles.time}>
+                  {call.time}
                 </Text>
-
-                <Text
-                  style={[
-                    styles.detail,
-                    call.type ===
-                      "missed" &&
-                      styles.missed,
-                  ]}
-                >
-                  {call.detail}
-                </Text>
               </View>
+            ),
+          )}
+        </View>
+      ) : (
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>
+            No recent calls
+          </Text>
 
-              <Text style={styles.time}>
-                {call.time}
-              </Text>
-            </View>
-          ),
-        )}
-      </View>
+          <Text style={styles.emptyText}>
+            Your calls will appear here.
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -222,15 +196,34 @@ const styles =
       color: colors.muted,
       fontSize: 8,
     },
-    missed: {
-      color: colors.error,
-      fontFamily: fonts.semiBold,
-    },
     time: {
       maxWidth: 70,
       fontFamily: fonts.regular,
       color: colors.softMuted,
       fontSize: 7,
       textAlign: "right",
+    },
+    empty: {
+      marginTop: 24,
+      minHeight: 150,
+      padding: 20,
+      borderRadius: radius.large,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor:
+        colors.surfaceSoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    emptyTitle: {
+      fontFamily: fonts.bold,
+      color: colors.text,
+      fontSize: 12,
+    },
+    emptyText: {
+      marginTop: 5,
+      fontFamily: fonts.regular,
+      color: colors.muted,
+      fontSize: 9,
     },
   });

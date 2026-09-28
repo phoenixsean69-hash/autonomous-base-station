@@ -1,5 +1,4 @@
 import {
-  router,
   useLocalSearchParams,
 } from "expo-router";
 import {
@@ -37,6 +36,7 @@ export default function OutgoingCallScreen() {
 
   const {
     activeSubscriber,
+    endCall,
   } = useDialer();
 
   const number =
@@ -65,7 +65,7 @@ export default function OutgoingCallScreen() {
     >
       <View style={styles.top}>
         <Text style={styles.eyebrow}>
-          OUTGOING CALL
+          CALLING
         </Text>
 
         <View style={styles.avatar}>
@@ -80,7 +80,7 @@ export default function OutgoingCallScreen() {
         </Text>
 
         <Text style={styles.status}>
-          Calling through simulated base station…
+          Waiting for an answer…
         </Text>
 
         <View style={styles.routePill}>
@@ -91,52 +91,24 @@ export default function OutgoingCallScreen() {
 
           <Text style={styles.routeText}>
             {activeSubscriber?.number}
-            {"  "}• LTE • ABS-01
+            {"  "}• Mobile network
           </Text>
         </View>
       </View>
 
-      <View>
-        <Pressable
-          style={styles.connect}
-          onPress={() =>
-            router.replace({
-              pathname:
-                "/active-call" as any,
-              params: {
-                number,
-              },
-            })
-          }
-        >
-          <PhoneCall
-            size={20}
-            color={colors.white}
-          />
+      <Pressable
+        style={styles.cancel}
+        onPress={endCall}
+      >
+        <PhoneOff
+          size={20}
+          color={colors.white}
+        />
 
-          <Text style={styles.connectText}>
-            Simulate answer
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.cancel}
-          onPress={() =>
-            router.replace(
-              "/(dialer-tabs)" as any,
-            )
-          }
-        >
-          <PhoneOff
-            size={20}
-            color={colors.error}
-          />
-
-          <Text style={styles.cancelText}>
-            Cancel call
-          </Text>
-        </Pressable>
-      </View>
+        <Text style={styles.cancelText}>
+          Cancel call
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -201,29 +173,11 @@ const styles =
       color: colors.charcoalSoft,
       fontSize: 8,
     },
-    connect: {
-      height: 54,
-      borderRadius: radius.card,
-      backgroundColor:
-        colors.charcoal,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 9,
-    },
-    connectText: {
-      fontFamily: fonts.bold,
-      color: colors.white,
-      fontSize: 11,
-    },
     cancel: {
-      height: 54,
-      marginTop: 10,
+      height: 56,
       borderRadius: radius.card,
       backgroundColor:
-        colors.surfaceSoft,
-      borderWidth: 1,
-      borderColor: colors.border,
+        colors.error,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
@@ -231,7 +185,7 @@ const styles =
     },
     cancelText: {
       fontFamily: fonts.bold,
-      color: colors.error,
+      color: colors.white,
       fontSize: 11,
     },
   });

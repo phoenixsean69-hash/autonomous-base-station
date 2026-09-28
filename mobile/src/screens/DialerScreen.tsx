@@ -1,11 +1,7 @@
 import {
-  router,
-} from "expo-router";
-import {
   Phone,
   PhoneIncoming,
   RadioTower,
-  Signal,
   UserRound,
 } from "lucide-react-native";
 import {
@@ -19,10 +15,14 @@ import {
   View,
 } from "react-native";
 import {
+  router,
+} from "expo-router";
+import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 import {
+  formatPhoneNumber,
   useDialer,
 } from "../context/DialerContext";
 import {
@@ -46,38 +46,6 @@ const KEYS = [
   ["#", ""],
 ] as const;
 
-function formatPhone(
-  raw: string,
-) {
-  const digits =
-    raw.replace(
-      /\D/g,
-      "",
-    );
-
-  if (digits.length <= 4) {
-    return digits;
-  }
-
-  if (digits.length <= 7) {
-    return `${digits.slice(
-      0,
-      4,
-    )} ${digits.slice(4)}`;
-  }
-
-  return `${digits.slice(
-    0,
-    4,
-  )} ${digits.slice(
-    4,
-    7,
-  )} ${digits.slice(
-    7,
-    10,
-  )}`;
-}
-
 export default function DialerScreen() {
   const insets =
     useSafeAreaInsets();
@@ -85,7 +53,10 @@ export default function DialerScreen() {
   const {
     activeSubscriber,
     peerSubscriber,
+    connectionStatus,
+    peerOnline,
     resetSubscriber,
+    startCall,
   } = useDialer();
 
   const [
@@ -110,7 +81,7 @@ export default function DialerScreen() {
       }
 
       setNumber(
-        formatPhone(
+        formatPhoneNumber(
           `${number}${value}`,
         ),
       );
@@ -120,6 +91,15 @@ export default function DialerScreen() {
     number ||
     peerSubscriber?.number ||
     "";
+
+  const networkText =
+    connectionStatus ===
+    "connected"
+      ? "Connected"
+      : connectionStatus ===
+        "connecting"
+        ? "Connecting…"
+        : "No connection";
 
   return (
     <ScrollView
@@ -141,7 +121,7 @@ export default function DialerScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.eyebrow}>
-            SIMULATED SUBSCRIBER
+            YOUR NUMBER
           </Text>
 
           <Text style={styles.headerNumber}>
@@ -176,23 +156,20 @@ export default function DialerScreen() {
 
         <View style={{ flex: 1 }}>
           <Text style={styles.networkTitle}>
-            Base station connected
+            Mobile network
           </Text>
 
           <Text style={styles.networkSubtitle}>
-            Simulated LTE • Cell ABS-01
+            {networkText}
           </Text>
         </View>
 
-        <View style={styles.signal}>
-          <Signal
-            size={19}
-            color={colors.charcoal}
-          />
-          <Text style={styles.signalText}>
-            -62 dBm
-          </Text>
-        </View>
+        <Text style={styles.networkReady}>
+          {connectionStatus ===
+          "connected"
+            ? "Ready"
+            : "—"}
+        </Text>
       </View>
 
       <View style={styles.numberArea}>
@@ -223,8 +200,11 @@ export default function DialerScreen() {
             }
           >
             <Text style={styles.quickDialText}>
-              Quick dial{" "}
-              {peerSubscriber.name}
+              {peerOnline
+                ? "Available"
+                : "Not available"}
+              {"  •  "}
+              {peerSubscriber.number}
             </Text>
           </Pressable>
         ) : null}
@@ -259,20 +239,8 @@ export default function DialerScreen() {
       </View>
 
       <View style={styles.actions}>
-        <Pressable
+        <View
           style={styles.secondaryAction}
-          onPress={() =>
-            router.push({
-              pathname:
-                "/incoming-call" as any,
-              params: {
-                from:
-                  peerSubscriber
-                    ?.number ??
-                  "0712 000 002",
-              },
-            })
-          }
         >
           <PhoneIncoming
             size={21}
@@ -280,24 +248,23 @@ export default function DialerScreen() {
           />
 
           <Text style={styles.secondaryLabel}>
-            Incoming demo
+            Ready for calls
           </Text>
-        </Pressable>
+        </View>
 
         <Pressable
-          style={styles.callButton}
+          style={[
+            styles.callButton,
+            connectionStatus !==
+              "connected" &&
+              styles.callButtonDisabled,
+          ]}
           onPress={() => {
             if (!target) {
               return;
             }
 
-            router.push({
-              pathname:
-                "/outgoing-call" as any,
-              params: {
-                number: target,
-              },
-            });
+            startCall(target);
           }}
         >
           <Phone
@@ -316,7 +283,7 @@ export default function DialerScreen() {
               );
 
             setNumber(
-              formatPhone(
+              formatPhoneNumber(
                 digits.slice(
                   0,
                   -1,
@@ -410,14 +377,10 @@ const styles =
       color: colors.muted,
       fontSize: 8,
     },
-    signal: {
-      alignItems: "flex-end",
-      gap: 3,
-    },
-    signalText: {
+    networkReady: {
       fontFamily: fonts.bold,
       color: colors.charcoalSoft,
-      fontSize: 8,
+      fontSize: 9,
     },
     numberArea: {
       minHeight: 124,
@@ -509,6 +472,9 @@ const styles =
         colors.charcoal,
       alignItems: "center",
       justifyContent: "center",
+    },
+    callButtonDisabled: {
+      opacity: 0.45,
     },
     secondaryAction: {
       width: 92,

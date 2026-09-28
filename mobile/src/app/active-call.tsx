@@ -1,8 +1,4 @@
 import {
-  router,
-  useLocalSearchParams,
-} from "expo-router";
-import {
   Grid3X3,
   Mic,
   MicOff,
@@ -11,7 +7,6 @@ import {
   Volume2,
 } from "lucide-react-native";
 import {
-  useEffect,
   useState,
 } from "react";
 import {
@@ -24,6 +19,15 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
+import {
+  useDialer,
+} from "../context/DialerContext";
+import {
+  delayLabel,
+  interruptionLabel,
+  qualityLabel,
+  signalLabel,
+} from "../utils/networkLabels";
 import {
   colors,
   fonts,
@@ -72,16 +76,12 @@ export default function ActiveCallScreen() {
   const insets =
     useSafeAreaInsets();
 
-  const params =
-    useLocalSearchParams<{
-      number?: string;
-    }>();
-
-  const [
-    elapsed,
-    setElapsed,
-  ] =
-    useState(0);
+  const {
+    activeSubscriber,
+    activeCall,
+    metrics,
+    endCall,
+  } = useDialer();
 
   const [
     muted,
@@ -95,25 +95,34 @@ export default function ActiveCallScreen() {
   ] =
     useState(false);
 
-  useEffect(() => {
-    const timer =
-      setInterval(
-        () =>
-          setElapsed(
-            (value) =>
-              value + 1,
-          ),
-        1000,
-      );
-
-    return () =>
-      clearInterval(timer);
-  }, []);
+  const own =
+    activeSubscriber?.number
+      .replace(/\D/g, "");
 
   const number =
-    String(
-      params.number ||
-      "0712 000 002",
+    activeCall
+      ? activeCall.caller === own
+        ? activeCall.callee
+        : activeCall.caller
+      : "";
+
+  const displayedNumber =
+    number
+      ? `${number.slice(
+          0,
+          4,
+        )} ${number.slice(
+          4,
+          7,
+        )} ${number.slice(
+          7,
+          10,
+        )}`
+      : "Call";
+
+  const callQuality =
+    qualityLabel(
+      metrics?.quality,
     );
 
   return (
@@ -149,54 +158,65 @@ export default function ActiveCallScreen() {
             </Text>
 
             <Text style={styles.number}>
-              {number}
+              {displayedNumber}
             </Text>
           </View>
 
           <View style={styles.quality}>
             <Text style={styles.qualityText}>
-              GOOD
+              {callQuality.toUpperCase()}
             </Text>
           </View>
         </View>
 
         <Text style={styles.duration}>
           {formatDuration(
-            elapsed,
+            activeCall?.duration_s ??
+              0,
           )}
         </Text>
 
         <View style={styles.metrics}>
           <Metric
             label="Signal"
-            value="-62 dBm"
+            value={signalLabel(
+              metrics?.rssi_dbm,
+            )}
           />
 
           <Metric
-            label="Latency"
-            value="48 ms"
+            label="Call quality"
+            value={callQuality}
           />
 
           <Metric
-            label="Jitter"
-            value="6 ms"
+            label="Call delay"
+            value={delayLabel(
+              metrics?.latency_ms,
+            )}
           />
 
           <Metric
-            label="Packet loss"
-            value="0.5%"
+            label="Interruptions"
+            value={interruptionLabel(
+              metrics,
+            )}
           />
         </View>
 
         <View style={styles.notice}>
           <Text style={styles.noticeTitle}>
-            Simulated media path
+            Connection
           </Text>
 
           <Text style={styles.noticeText}>
-            These values are UI placeholders.
-            The network simulator will provide
-            live packet measurements next.
+            {callQuality ===
+            "Good"
+              ? "Your call connection is stable."
+              : callQuality ===
+                "Fair"
+                ? "Your call may have a few brief interruptions."
+                : "Your call connection is currently weak."}
           </Text>
         </View>
       </View>
@@ -287,11 +307,7 @@ export default function ActiveCallScreen() {
 
         <Pressable
           style={styles.end}
-          onPress={() =>
-            router.replace(
-              "/(dialer-tabs)/recents" as any,
-            )
-          }
+          onPress={endCall}
         >
           <PhoneOff
             size={24}

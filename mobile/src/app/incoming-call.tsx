@@ -1,5 +1,4 @@
 import {
-  router,
   useLocalSearchParams,
 } from "expo-router";
 import {
@@ -19,6 +18,9 @@ import {
 } from "react-native-safe-area-context";
 
 import {
+  useDialer,
+} from "../context/DialerContext";
+import {
   colors,
   fonts,
   radius,
@@ -32,6 +34,11 @@ export default function IncomingCallScreen() {
     useLocalSearchParams<{
       from?: string;
     }>();
+
+  const {
+    answerCall,
+    rejectCall,
+  } = useDialer();
 
   const number =
     String(
@@ -74,7 +81,7 @@ export default function IncomingCallScreen() {
         </Text>
 
         <Text style={styles.status}>
-          Simulated subscriber calling
+          Incoming mobile call
         </Text>
 
         <View style={styles.networkPill}>
@@ -84,7 +91,7 @@ export default function IncomingCallScreen() {
           />
 
           <Text style={styles.networkText}>
-            LTE • Base Station ABS-01
+            Mobile network
           </Text>
         </View>
       </View>
@@ -96,11 +103,7 @@ export default function IncomingCallScreen() {
               styles.circle,
               styles.decline,
             ]}
-            onPress={() =>
-              router.replace(
-                "/(dialer-tabs)" as any,
-              )
-            }
+            onPress={rejectCall}
           >
             <PhoneOff
               size={27}
@@ -119,15 +122,7 @@ export default function IncomingCallScreen() {
               styles.circle,
               styles.answer,
             ]}
-            onPress={() =>
-              router.replace({
-                pathname:
-                  "/active-call" as any,
-                params: {
-                  number,
-                },
-              })
-            }
+            onPress={answerCall}
           >
             <Phone
               size={27}

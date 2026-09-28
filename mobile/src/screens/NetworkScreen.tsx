@@ -1,6 +1,5 @@
 import {
-  Activity,
-  Gauge,
+  Clock3,
   RadioTower,
   ShieldCheck,
   Signal,
@@ -18,6 +17,12 @@ import {
 import {
   useDialer,
 } from "../context/DialerContext";
+import {
+  delayLabel,
+  interruptionLabel,
+  qualityLabel,
+  signalLabel,
+} from "../utils/networkLabels";
 import {
   colors,
   fonts,
@@ -60,7 +65,22 @@ export default function NetworkScreen() {
   const {
     activeSubscriber,
     peerSubscriber,
+    connectionStatus,
+    peerOnline,
+    metrics,
   } = useDialer();
+
+  const connected =
+    connectionStatus ===
+    "connected";
+
+  const statusText =
+    connected
+      ? "Connected"
+      : connectionStatus ===
+        "connecting"
+        ? "Connecting…"
+        : "No connection";
 
   return (
     <ScrollView
@@ -77,11 +97,11 @@ export default function NetworkScreen() {
       ]}
     >
       <Text style={styles.eyebrow}>
-        NETWORK STATUS
+        CONNECTION
       </Text>
 
       <Text style={styles.title}>
-        Simulated cell
+        Mobile network
       </Text>
 
       <View style={styles.cellCard}>
@@ -94,65 +114,80 @@ export default function NetworkScreen() {
 
         <View style={{ flex: 1 }}>
           <Text style={styles.cellTitle}>
-            ABS-01 • LTE
+            {statusText}
           </Text>
 
           <Text style={styles.cellSubtitle}>
-            Connected{" "}
             {activeSubscriber?.number}
           </Text>
         </View>
 
-        <View style={styles.ready}>
+        <View
+          style={[
+            styles.ready,
+            !connected &&
+              styles.readyMuted,
+          ]}
+        >
           <ShieldCheck
             size={13}
             color={colors.white}
           />
 
           <Text style={styles.readyText}>
-            READY
+            {connected
+              ? "READY"
+              : "OFFLINE"}
           </Text>
         </View>
       </View>
 
       <Text style={styles.sectionTitle}>
-        Live indicators
+        Connection quality
       </Text>
 
       <View style={styles.metrics}>
         <Metric
           icon={Signal}
-          label="Signal strength"
-          value="-62 dBm"
+          label="Signal"
+          value={signalLabel(
+            metrics?.rssi_dbm,
+          )}
         />
 
         <Metric
-          icon={Gauge}
-          label="Latency"
-          value="48 ms"
+          icon={ShieldCheck}
+          label="Call quality"
+          value={qualityLabel(
+            metrics?.quality,
+          )}
         />
 
         <Metric
-          icon={Activity}
-          label="Jitter"
-          value="6 ms"
+          icon={Clock3}
+          label="Call delay"
+          value={delayLabel(
+            metrics?.latency_ms,
+          )}
         />
 
         <Metric
-          icon={Activity}
-          label="Packet loss"
-          value="0.5%"
+          icon={Signal}
+          label="Interruptions"
+          value={interruptionLabel(
+            metrics,
+          )}
         />
       </View>
 
       <Text style={styles.sectionTitle}>
-        Demo route
+        Phone details
       </Text>
 
       <View style={styles.routeCard}>
         <View style={styles.routeRow}>
           <Text style={styles.routeLabel}>
-            This phone
+            Your number
           </Text>
           <Text style={styles.routeValue}>
             {activeSubscriber?.number}
@@ -163,7 +198,7 @@ export default function NetworkScreen() {
 
         <View style={styles.routeRow}>
           <Text style={styles.routeLabel}>
-            Peer subscriber
+            Other demo phone
           </Text>
           <Text style={styles.routeValue}>
             {peerSubscriber?.number}
@@ -174,26 +209,14 @@ export default function NetworkScreen() {
 
         <View style={styles.routeRow}>
           <Text style={styles.routeLabel}>
-            Serving cell
+            Other phone
           </Text>
           <Text style={styles.routeValue}>
-            ABS-01
+            {peerOnline
+              ? "Available"
+              : "Unavailable"}
           </Text>
         </View>
-      </View>
-
-      <View style={styles.notice}>
-        <Text style={styles.noticeTitle}>
-          Subscriber view only
-        </Text>
-
-        <Text style={styles.noticeText}>
-          Engineering fault injection stays
-          outside this app. Congestion, packet
-          loss, Radio Frequency interference,
-          link failure and power faults will be
-          applied from the test environment.
-        </Text>
       </View>
     </ScrollView>
   );
@@ -263,6 +286,9 @@ const styles =
       flexDirection: "row",
       alignItems: "center",
       gap: 5,
+    },
+    readyMuted: {
+      opacity: 0.45,
     },
     readyText: {
       fontFamily: fonts.bold,
@@ -343,26 +369,5 @@ const styles =
       height: 1,
       backgroundColor:
         colors.border,
-    },
-    notice: {
-      marginTop: 18,
-      padding: 14,
-      borderRadius: radius.large,
-      backgroundColor:
-        colors.surfaceSoft,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    noticeTitle: {
-      fontFamily: fonts.bold,
-      color: colors.text,
-      fontSize: 10,
-    },
-    noticeText: {
-      marginTop: 4,
-      fontFamily: fonts.regular,
-      color: colors.muted,
-      fontSize: 8,
-      lineHeight: 13,
     },
   });

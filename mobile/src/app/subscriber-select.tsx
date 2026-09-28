@@ -66,19 +66,21 @@ export default function SubscriberSelectScreen() {
         </Text>
 
         <Text style={styles.title}>
-          Choose this phone&apos;s subscriber
+          Choose a number for this phone
         </Text>
 
         <Text style={styles.subtitle}>
-          Two simulated mobile subscribers will
-          communicate through the autonomous base
-          station test environment.
+          Use the other number on a second phone
+          or emulator to make and receive calls.
         </Text>
       </View>
 
       <View style={styles.cards}>
         {SUBSCRIBERS.map(
-          (subscriber) => (
+          (
+            subscriber,
+            index,
+          ) => (
             <Pressable
               key={subscriber.id}
               style={({ pressed }) => [
@@ -105,7 +107,7 @@ export default function SubscriberSelectScreen() {
 
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>
-                  {subscriber.name}
+                  Phone {index + 1}
                 </Text>
 
                 <Text style={styles.number}>
@@ -117,8 +119,9 @@ export default function SubscriberSelectScreen() {
                     size={13}
                     color={colors.charcoal}
                   />
+
                   <Text style={styles.badgeText}>
-                    Simulated LTE subscriber
+                    Demo mobile number
                   </Text>
                 </View>
               </View>
@@ -134,14 +137,13 @@ export default function SubscriberSelectScreen() {
 
       <View style={styles.note}>
         <Text style={styles.noteTitle}>
-          UI stage
+          Project demonstration
         </Text>
 
         <Text style={styles.noteText}>
-          Call signaling and network measurements
-          are mocked for now. The FastAPI/WebSocket
-          simulator will replace them in the next
-          stage.
+          Each device should use a different
+          number. After selection, the phone
+          connects automatically.
         </Text>
       </View>
     </View>

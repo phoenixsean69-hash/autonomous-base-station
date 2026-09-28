@@ -1,39 +1,56 @@
 # ABS Connect Mobile
 
-A fresh Expo / React Native mobile application for the Autonomous Base Station project.
+ABS Connect is the mobile calling application used by the Autonomous Base Station project.
 
-This app is intentionally created from scratch inside the main base-station repository. It uses the visual language of the MediReach mobile application as a design reference:
+The interface is deliberately written for an ordinary phone user. Technical measurements remain available internally to the simulator and engineering systems, while the app presents simple descriptions such as **Strong signal**, **Good call quality**, **Low call delay**, and **No interruptions**.
 
-- Mulish typography
-- white canvas
-- charcoal controls
-- soft grey cards
-- thin borders
-- compact labels
-- rounded cards and controls
-- Lucide icons
+## Demo numbers
 
-## Current UI-only flow
+- Phone 1: `0712 000 001`
+- Phone 2: `0712 000 002`
 
-1. Select Subscriber A or Subscriber B
-2. Open dialer
-3. Dial the peer subscriber
-4. Preview outgoing call
-5. Preview incoming call
-6. Answer and view active-call metrics
-7. View recents
-8. View network status
+Each device or emulator must choose a different number.
 
-Demo subscribers:
+## Start the call server
 
-- 0712 000 001
-- 0712 000 002
-
-## Run
+From the project root:
 
 ```powershell
-npm install
-npx expo start
+cd network_simulator
+.\run.ps1
 ```
 
-The FastAPI/WebSocket call and network simulator is deliberately not included yet.
+Keep that terminal running.
+
+## Start the mobile app
+
+In another terminal:
+
+```powershell
+cd mobile
+npm install
+npx expo start -c
+```
+
+On two devices/emulators:
+
+1. Device 1 chooses `0712 000 001`.
+2. Device 2 chooses `0712 000 002`.
+3. Wait until both show **Mobile network — Connected**.
+4. Dial the other number.
+5. The other phone receives a real in-app incoming-call event.
+6. Answer the call.
+7. Live network measurements update the user-friendly call-quality labels.
+8. Ending the call adds it to **Recents**.
+
+## Server discovery
+
+During Expo development the app tries to use the same computer hosting the Expo development server and port `8000`.
+
+If that does not work, create `mobile/.env` from `.env.example` and set:
+
+```text
+EXPO_PUBLIC_NETWORK_SIMULATOR_URL=ws://YOUR_LAPTOP_IP:8000
+```
+
+Then restart Expo with `npx expo start -c`.

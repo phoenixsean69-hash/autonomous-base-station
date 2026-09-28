@@ -109,7 +109,7 @@ export default function DialerTabsLayout() {
       <Tabs.Screen
         name="network"
         options={{
-          title: "Network",
+          title: "Connection",
           tabBarIcon: ({
             color,
             focused,
