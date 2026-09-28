@@ -153,25 +153,7 @@
       "top": 790,
       "left": 1000,
       "attrs": {
-        "text": "RF INPUTS"
-      }
-    },
-    {
-      "type": "wokwi-potentiometer",
-      "id": "rfForward",
-      "top": 900,
-      "left": 820,
-      "attrs": {
-        "value": "750"
-      }
-    },
-    {
-      "type": "wokwi-potentiometer",
-      "id": "rfReflected",
-      "top": 900,
-      "left": 1260,
-      "attrs": {
-        "value": "20"
+        "text": "RADIO + ANTENNA MODEL"
       }
     },
     {
@@ -180,7 +162,7 @@
       "top": 1120,
       "left": 950,
       "attrs": {
-        "text": "BACKHAUL / NETWORK"
+        "text": "BACKHAUL NETWORK MODEL"
       }
     },
     {
@@ -189,7 +171,7 @@
       "top": 1170,
       "left": 985,
       "attrs": {
-        "text": "NETWORK METRICS"
+        "text": "MODEL OUTPUTS"
       }
     },
     {
@@ -198,99 +180,7 @@
       "top": 1215,
       "left": 985,
       "attrs": {
-        "text": "LATENCY | LOSS | RSSI"
-      }
-    },
-    {
-      "type": "wokwi-potentiometer",
-      "id": "latencyInput",
-      "top": 1330,
-      "left": 690,
-      "attrs": {
-        "value": "35"
-      }
-    },
-    {
-      "type": "wokwi-potentiometer",
-      "id": "packetLossInput",
-      "top": 1330,
-      "left": 1050,
-      "attrs": {
-        "value": "8"
-      }
-    },
-    {
-      "type": "wokwi-potentiometer",
-      "id": "rssiInput",
-      "top": 1330,
-      "left": 1410,
-      "attrs": {
-        "value": "883"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "digitalHeading",
-      "top": 1550,
-      "left": 990,
-      "attrs": {
-        "text": "CONNECTIVITY STATES"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "linkLabel",
-      "top": 1610,
-      "left": 700,
-      "attrs": {
-        "text": "LINK | GPIO14"
-      }
-    },
-    {
-      "type": "wokwi-slide-switch",
-      "id": "linkSwitch",
-      "top": 1660,
-      "left": 790,
-      "attrs": {
-        "value": "1",
-        "bounce": "0"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "linkDirection",
-      "top": 1730,
-      "left": 665,
-      "attrs": {
-        "text": "DOWN | UP (OK)"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "reachableLabel",
-      "top": 1610,
-      "left": 1190,
-      "attrs": {
-        "text": "UPSTREAM | GPIO13"
-      }
-    },
-    {
-      "type": "wokwi-slide-switch",
-      "id": "reachableSwitch",
-      "top": 1660,
-      "left": 1300,
-      "attrs": {
-        "value": "1",
-        "bounce": "0"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "reachableDirection",
-      "top": 1730,
-      "left": 1165,
-      "attrs": {
-        "text": "NO | YES (OK)"
+        "text": "LATENCY | LOSS | LINK STATE"
       }
     },
     {
@@ -377,15 +267,6 @@
       }
     },
     {
-      "type": "wokwi-potentiometer",
-      "id": "trafficLoad",
-      "top": 2350,
-      "left": 700,
-      "attrs": {
-        "value": "350"
-      }
-    },
-    {
       "type": "wokwi-text",
       "id": "fanLabel",
       "top": 2300,
@@ -439,34 +320,6 @@
       "left": 1270,
       "attrs": {
         "text": "FAULT | NORMAL (OK)"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "radioLabel",
-      "top": 2570,
-      "left": 1040,
-      "attrs": {
-        "text": "RADIO | GPIO23"
-      }
-    },
-    {
-      "type": "wokwi-slide-switch",
-      "id": "radioSwitch",
-      "top": 2620,
-      "left": 1120,
-      "attrs": {
-        "value": "1",
-        "bounce": "0"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "radioDirection",
-      "top": 2690,
-      "left": 970,
-      "attrs": {
-        "text": "FAULT | OPERATIONAL (OK)"
       }
     },
     {
@@ -676,96 +529,6 @@
     },
     {
       "type": "wokwi-text",
-      "id": "label_rf_forward",
-      "top": 850,
-      "left": 800,
-      "attrs": {
-        "text": "RF FWD | GPIO33"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_rf_forward",
-      "top": 995,
-      "left": 775,
-      "attrs": {
-        "text": "0 -> 100W | FORWARD"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "label_rf_reflected",
-      "top": 850,
-      "left": 1250,
-      "attrs": {
-        "text": "RF REFL | GPIO36"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_rf_reflected",
-      "top": 995,
-      "left": 1215,
-      "attrs": {
-        "text": "0 -> 100W | VSWR OK<2"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "label_latency",
-      "top": 1275,
-      "left": 675,
-      "attrs": {
-        "text": "LATENCY | GPIO25"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_latency",
-      "top": 1425,
-      "left": 650,
-      "attrs": {
-        "text": "10 -> 1000ms | OK<200"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "label_packet_loss",
-      "top": 1275,
-      "left": 1045,
-      "attrs": {
-        "text": "LOSS | GPIO26"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_packet_loss",
-      "top": 1425,
-      "left": 1025,
-      "attrs": {
-        "text": "0 -> 100% | OK<10%"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "label_rssi",
-      "top": 1275,
-      "left": 1410,
-      "attrs": {
-        "text": "RSSI | GPIO27"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_rssi",
-      "top": 1425,
-      "left": 1375,
-      "attrs": {
-        "text": "-120 WEAK -> -45 STRONG"
-      }
-    },
-    {
-      "type": "wokwi-text",
       "id": "spec_generator",
       "top": 2070,
       "left": 1160,
@@ -780,24 +543,6 @@
       "left": 1180,
       "attrs": {
         "text": "LED resistor 220R"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "label_traffic",
-      "top": 2300,
-      "left": 650,
-      "attrs": {
-        "text": "TRAFFIC | GPIO39"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_traffic",
-      "top": 2445,
-      "left": 610,
-      "attrs": {
-        "text": "0 -> 100% | LOW<15 HIGH>=65"
       }
     },
     {
@@ -834,6 +579,74 @@
       "left": 760,
       "attrs": {
         "text": "AI -> Pico -> ESP32 -> actuator"
+      }
+    },
+    {
+      "type": "chip-radio-link-model",
+      "id": "radioModel",
+      "top": 875,
+      "left": 1020,
+      "attrs": {
+        "txPowerW": "80",
+        "pathLossDb": "65",
+        "interferenceDb": "2",
+        "antennaMismatchPct": "1.5",
+        "fadingDepthDb": "1",
+        "radioFault": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "radioModelInfo",
+      "top": 1030,
+      "left": 825,
+      "attrs": {
+        "text": "TX POWER | PATH LOSS | INTERFERENCE | ANTENNA MISMATCH"
+      }
+    },
+    {
+      "type": "chip-backhaul-network-model",
+      "id": "backhaulModel",
+      "top": 1310,
+      "left": 1010,
+      "attrs": {
+        "baseLatencyMs": "45",
+        "congestionPct": "20",
+        "trafficCouplingPct": "70",
+        "lineImpairmentPct": "2",
+        "jitterMs": "8",
+        "physicalLinkFailure": "0",
+        "upstreamFailure": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "backhaulModelInfo",
+      "top": 1480,
+      "left": 780,
+      "attrs": {
+        "text": "TRAFFIC + CONGESTION + IMPAIRMENT + JITTER + OUTAGES"
+      }
+    },
+    {
+      "type": "chip-traffic-generator",
+      "id": "trafficModel",
+      "top": 2350,
+      "left": 690,
+      "attrs": {
+        "activeUsers": "120",
+        "averageDemandPct": "45",
+        "cellCapacityUsers": "300",
+        "burstinessPct": "10"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "trafficModelInfo",
+      "top": 2515,
+      "left": 610,
+      "attrs": {
+        "text": "USERS + DEMAND + CAPACITY + BURSTINESS"
       }
     }
   ],
@@ -965,132 +778,6 @@
       []
     ],
     [
-      "rfForward:VCC",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
-      "rfForward:GND",
-      "esp32:GND.1",
-      "black",
-      []
-    ],
-    [
-      "rfForward:SIG",
-      "esp32:D33",
-      "limegreen",
-      []
-    ],
-    [
-      "rfReflected:VCC",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
-      "rfReflected:GND",
-      "esp32:GND.1",
-      "black",
-      []
-    ],
-    [
-      "rfReflected:SIG",
-      "esp32:VP",
-      "magenta",
-      []
-    ],
-    [
-      "latencyInput:VCC",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
-      "latencyInput:GND",
-      "esp32:GND.1",
-      "black",
-      []
-    ],
-    [
-      "latencyInput:SIG",
-      "esp32:D25",
-      "gold",
-      []
-    ],
-    [
-      "packetLossInput:VCC",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
-      "packetLossInput:GND",
-      "esp32:GND.1",
-      "black",
-      []
-    ],
-    [
-      "packetLossInput:SIG",
-      "esp32:D26",
-      "orange",
-      []
-    ],
-    [
-      "rssiInput:VCC",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
-      "rssiInput:GND",
-      "esp32:GND.1",
-      "black",
-      []
-    ],
-    [
-      "rssiInput:SIG",
-      "esp32:D27",
-      "cyan",
-      []
-    ],
-    [
-      "linkSwitch:1",
-      "esp32:GND.1",
-      "black",
-      []
-    ],
-    [
-      "linkSwitch:2",
-      "esp32:D14",
-      "green",
-      []
-    ],
-    [
-      "linkSwitch:3",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
-      "reachableSwitch:1",
-      "esp32:GND.1",
-      "black",
-      []
-    ],
-    [
-      "reachableSwitch:2",
-      "esp32:D13",
-      "green",
-      []
-    ],
-    [
-      "reachableSwitch:3",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
       "gridSwitch:1",
       "esp32:GND.1",
       "black",
@@ -1145,24 +832,6 @@
       []
     ],
     [
-      "trafficLoad:VCC",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
-      "trafficLoad:GND",
-      "esp32:GND.1",
-      "black",
-      []
-    ],
-    [
-      "trafficLoad:SIG",
-      "esp32:VN",
-      "purple",
-      []
-    ],
-    [
       "fanSwitch:1",
       "esp32:GND.1",
       "black",
@@ -1194,24 +863,6 @@
     ],
     [
       "rectifierSwitch:3",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
-      "radioSwitch:1",
-      "esp32:GND.1",
-      "black",
-      []
-    ],
-    [
-      "radioSwitch:2",
-      "esp32:D23",
-      "green",
-      []
-    ],
-    [
-      "radioSwitch:3",
       "esp32:3V3",
       "red",
       []
@@ -1297,6 +948,66 @@
     [
       "generatorFeedbackSwitch:3",
       "esp32:TX2",
+      "green",
+      []
+    ],
+    [
+      "radioModel:RF_FWD",
+      "esp32:D33",
+      "limegreen",
+      []
+    ],
+    [
+      "radioModel:RF_REFL",
+      "esp32:VP",
+      "magenta",
+      []
+    ],
+    [
+      "radioModel:RSSI",
+      "esp32:D27",
+      "cyan",
+      []
+    ],
+    [
+      "radioModel:RADIO_OK",
+      "esp32:D23",
+      "green",
+      []
+    ],
+    [
+      "trafficModel:TRAFFIC",
+      "esp32:VN",
+      "purple",
+      []
+    ],
+    [
+      "trafficModel:TRAFFIC",
+      "backhaulModel:TRAFFIC_IN",
+      "purple",
+      []
+    ],
+    [
+      "backhaulModel:LATENCY",
+      "esp32:D25",
+      "gold",
+      []
+    ],
+    [
+      "backhaulModel:LOSS",
+      "esp32:D26",
+      "orange",
+      []
+    ],
+    [
+      "backhaulModel:LINK",
+      "esp32:D14",
+      "green",
+      []
+    ],
+    [
+      "backhaulModel:UPSTREAM",
+      "esp32:D13",
       "green",
       []
     ]

@@ -1,0 +1,11 @@
+{
+  "name": "Baseband Traffic Generator",
+  "author": "Autonomous Base Station Project",
+  "pins": ["TRAFFIC"],
+  "controls": [
+    {"id":"activeUsers","label":"Active users","type":"range","min":0,"max":500,"step":5},
+    {"id":"averageDemandPct","label":"Average user demand (%)","type":"range","min":0,"max":100,"step":1},
+    {"id":"cellCapacityUsers","label":"Nominal cell capacity (users)","type":"range","min":25,"max":500,"step":25},
+    {"id":"burstinessPct","label":"Traffic burstiness (%)","type":"range","min":0,"max":100,"step":1}
+  ]
+}

@@ -40,7 +40,7 @@
 // GPIO5  = independent proof that generator is actually running.
 #define GENERATOR_FEEDBACK_PIN 5
 
-// Digital-twin operating-condition inputs
+// Digital-twin / modeled operating-condition inputs
 #define TRAFFIC_LOAD_PIN 39
 #define FAN_OPERATIONAL_PIN 18
 #define RECTIFIER_NORMAL_PIN 19
@@ -127,7 +127,7 @@ const unsigned long POWER_TREND_INTERVAL_MS = 1000;
 // RF SIGNAL PROCESSING
 // ====================================================
 //
-// RF forward/reflected controls are sampled every 50 ms,
+// Radio-link-model RF outputs are sampled every 50 ms,
 // therefore the RF processing path runs at 20 Hz.
 //
 // The existing 40-sample rolling-statistics structure gives:
@@ -160,7 +160,7 @@ const unsigned long RF_EVENT_HOLD_MS = 3000;
 // BACKHAUL SIGNAL PROCESSING
 // ====================================================
 
-// Backhaul analogue controls are sampled by the same
+// Backhaul network-model outputs are sampled by the same
 // 50 ms fast-input loop = 20 samples per second.
 //
 // The existing 40-sample RollingStatsState therefore
@@ -4475,7 +4475,7 @@ void readFastInputs()
       ) *
       100.0;
 
-  // RSSI dial calibration is visually intuitive:
+  // Radio-link-model RSSI calibration:
   // left/minimum = -120 dBm (weak)
   // right/maximum = -45 dBm (strong)
   rssi =

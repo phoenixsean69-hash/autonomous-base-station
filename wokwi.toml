@@ -3,3 +3,16 @@ version = 1
 rfc2217ServerPort = 4001
 firmware = '.pio/build/esp32dev/firmware.bin'
 elf = '.pio/build/esp32dev/firmware.elf'
+
+# Causal system models: network, radio and traffic.
+[[chip]]
+name = 'backhaul-network-model'
+binary = 'chips/backhaul-network-model.chip.wasm'
+
+[[chip]]
+name = 'radio-link-model'
+binary = 'chips/radio-link-model.chip.wasm'
+
+[[chip]]
+name = 'traffic-generator'
+binary = 'chips/traffic-generator.chip.wasm'

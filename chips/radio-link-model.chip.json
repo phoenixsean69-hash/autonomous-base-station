@@ -1,0 +1,13 @@
+{
+  "name": "Radio and Antenna Link Model",
+  "author": "Autonomous Base Station Project",
+  "pins": ["RSSI", "RF_FWD", "RF_REFL", "RADIO_OK"],
+  "controls": [
+    {"id":"txPowerW","label":"Transmit power (W)","type":"range","min":0,"max":100,"step":1},
+    {"id":"pathLossDb","label":"Path loss (dB)","type":"range","min":40,"max":120,"step":1},
+    {"id":"interferenceDb","label":"Interference (dB)","type":"range","min":0,"max":30,"step":1},
+    {"id":"antennaMismatchPct","label":"Reflected power ratio (%)","type":"range","min":0,"max":90,"step":0.5},
+    {"id":"fadingDepthDb","label":"Fast fading depth (dB)","type":"range","min":0,"max":20,"step":0.5},
+    {"id":"radioFault","label":"Radio hardware fault","type":"range","min":0,"max":1,"step":1}
+  ]
+}
