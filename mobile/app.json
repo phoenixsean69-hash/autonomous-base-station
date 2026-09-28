@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "ABS Connect",
+    "slug": "abs-connect-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "absconnect",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFFFFF"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "android": {
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static"
+    }
+  }
+}

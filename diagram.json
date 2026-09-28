@@ -114,8 +114,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "batteryVoltage",
-      "top": 1290,
-      "left": 1785,
+      "top": 1360,
+      "left": 2390,
       "attrs": {
         "value": "776"
       }
@@ -123,8 +123,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "gridSwitch",
-      "top": 1140,
-      "left": 1445,
+      "top": 1360,
+      "left": 1650,
       "attrs": {
         "value": "1",
         "bounce": "0"
@@ -133,7 +133,7 @@
     {
       "type": "wokwi-slide-switch",
       "id": "generatorFeedbackSwitch",
-      "top": 1290,
+      "top": 1360,
       "left": 2205,
       "attrs": {
         "value": "1",
@@ -143,8 +143,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "fanSwitch",
-      "top": 1290,
-      "left": 1615,
+      "top": 1360,
+      "left": 2020,
       "attrs": {
         "value": "1",
         "bounce": "0"
@@ -153,8 +153,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rectifierSwitch",
-      "top": 1140,
-      "left": 1615,
+      "top": 1360,
+      "left": 1835,
       "attrs": {
         "value": "1",
         "bounce": "0"
@@ -277,8 +277,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfPathLossSwitch",
-      "top": 720,
-      "left": 760,
+      "top": 745,
+      "left": 770,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -287,8 +287,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfInterferenceSwitch",
-      "top": 720,
-      "left": 1010,
+      "top": 745,
+      "left": 990,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -297,8 +297,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfMismatchSwitch",
-      "top": 720,
-      "left": 1260,
+      "top": 745,
+      "left": 1220,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -307,8 +307,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfFaultSwitch",
-      "top": 720,
-      "left": 1510,
+      "top": 745,
+      "left": 1450,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -334,8 +334,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulCongestSwitch",
-      "top": 720,
-      "left": 1740,
+      "top": 745,
+      "left": 1765,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -344,8 +344,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulImpairSwitch",
-      "top": 720,
-      "left": 1900,
+      "top": 745,
+      "left": 1960,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -354,8 +354,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulLinkFailSwitch",
-      "top": 720,
-      "left": 2060,
+      "top": 745,
+      "left": 2155,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -364,8 +364,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulUpstreamFailSwitch",
-      "top": 720,
-      "left": 2220,
+      "top": 745,
+      "left": 2350,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -382,7 +382,7 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficMediumSwitch",
-      "top": 1330,
+      "top": 1355,
       "left": 700,
       "attrs": {
         "value": "0",
@@ -392,8 +392,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficHighSwitch",
-      "top": 1330,
-      "left": 940,
+      "top": 1355,
+      "left": 930,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -402,8 +402,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficOverloadSwitch",
-      "top": 1330,
-      "left": 1180,
+      "top": 1355,
+      "left": 1160,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -412,8 +412,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficBurstSwitch",
-      "top": 1330,
-      "left": 1420,
+      "top": 1355,
+      "left": 1390,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -798,42 +798,6 @@
     },
     {
       "type": "wokwi-text",
-      "id": "v3RfF1",
-      "top": 800,
-      "left": 755,
-      "attrs": {
-        "text": "PATH LOSS"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3RfF2",
-      "top": 800,
-      "left": 985,
-      "attrs": {
-        "text": "INTERFERENCE"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3RfF3",
-      "top": 800,
-      "left": 1205,
-      "attrs": {
-        "text": "ANTENNA MISMATCH"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3RfF4",
-      "top": 800,
-      "left": 1505,
-      "attrs": {
-        "text": "RADIO FAIL"
-      }
-    },
-    {
-      "type": "wokwi-text",
       "id": "v3BhProbe",
       "top": 490,
       "left": 1715,
@@ -848,42 +812,6 @@
       "left": 2075,
       "attrs": {
         "text": "PATH        ACK        DROP"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3BhF1",
-      "top": 800,
-      "left": 1720,
-      "attrs": {
-        "text": "CONGESTION"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3BhF2",
-      "top": 800,
-      "left": 1880,
-      "attrs": {
-        "text": "IMPAIRMENT"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3BhF3",
-      "top": 800,
-      "left": 2050,
-      "attrs": {
-        "text": "LINK FAIL"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3BhF4",
-      "top": 800,
-      "left": 2185,
-      "attrs": {
-        "text": "UPSTREAM FAIL"
       }
     },
     {
@@ -1122,15 +1050,6 @@
     },
     {
       "type": "wokwi-text",
-      "id": "v6RfOutputs",
-      "top": 865,
-      "left": 820,
-      "attrs": {
-        "text": "RSSI -> GPIO27   |   FORWARD POWER -> GPIO33   |   REFLECTED POWER -> GPIO36   |   RADIO STATE -> GPIO23"
-      }
-    },
-    {
-      "type": "wokwi-text",
       "id": "v6BhFlow",
       "top": 560,
       "left": 1805,
@@ -1145,24 +1064,6 @@
       "left": 1815,
       "attrs": {
         "text": "NETWORK RESULT: DELAYED ACKNOWLEDGEMENT OR PACKET DROP"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v6BhOutputs",
-      "top": 865,
-      "left": 1770,
-      "attrs": {
-        "text": "LATENCY -> GPIO25   |   PACKET LOSS -> GPIO26   |   LINK -> GPIO14   |   UPSTREAM -> GPIO13"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v6TrafficModeNote",
-      "top": 1285,
-      "left": 910,
-      "attrs": {
-        "text": "SELECT TRAFFIC MODE / DEMAND LEVEL"
       }
     },
     {
@@ -1185,15 +1086,6 @@
     },
     {
       "type": "wokwi-text",
-      "id": "v6TrafficOutputs",
-      "top": 1580,
-      "left": 1085,
-      "attrs": {
-        "text": "PACKET ACTIVITY    |    TRAFFIC LOAD -> GPIO39"
-      }
-    },
-    {
-      "type": "wokwi-text",
       "id": "v6AnalyzerChannels",
       "top": 1330,
       "left": 1820,
@@ -1208,6 +1100,330 @@
       "left": 815,
       "attrs": {
         "text": "TRAFFIC PACKET STREAM ----------------------------------------------> BACKHAUL NETWORK"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7RfPanelTitle",
+      "top": 670,
+      "left": 760,
+      "attrs": {
+        "text": "FAULT INJECTION - RADIO FREQUENCY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7RfLabel1",
+      "top": 825,
+      "left": 740,
+      "attrs": {
+        "text": "PATH LOSS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7RfLabel2",
+      "top": 825,
+      "left": 945,
+      "attrs": {
+        "text": "INTERFERENCE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7RfLabel3",
+      "top": 825,
+      "left": 1140,
+      "attrs": {
+        "text": "ANTENNA MISMATCH"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7RfLabel4",
+      "top": 825,
+      "left": 1415,
+      "attrs": {
+        "text": "RADIO FAILURE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7RfEffects",
+      "top": 885,
+      "left": 820,
+      "attrs": {
+        "text": "EFFECTS: LOW RSSI | LOW FORWARD POWER | HIGH REFLECTED POWER | RADIO DOWN"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7BhPanelTitle",
+      "top": 670,
+      "left": 1775,
+      "attrs": {
+        "text": "FAULT INJECTION - BACKHAUL NETWORK"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7BhLabel1",
+      "top": 825,
+      "left": 1735,
+      "attrs": {
+        "text": "CONGESTION"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7BhLabel2",
+      "top": 825,
+      "left": 1875,
+      "attrs": {
+        "text": "PACKET LOSS / IMPAIRMENT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7BhLabel3",
+      "top": 825,
+      "left": 2125,
+      "attrs": {
+        "text": "LINK FAILURE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7BhLabel4",
+      "top": 825,
+      "left": 2310,
+      "attrs": {
+        "text": "UPSTREAM FAILURE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7BhEffects",
+      "top": 885,
+      "left": 1820,
+      "attrs": {
+        "text": "EFFECTS: LATENCY | JITTER | PACKET LOSS | DROPS | PATH / UPSTREAM DOWN"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7TrafficPanelTitle",
+      "top": 1285,
+      "left": 720,
+      "attrs": {
+        "text": "LOAD INJECTION - USER TRAFFIC"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7TrafficLabel0",
+      "top": 1435,
+      "left": 430,
+      "attrs": {
+        "text": "LOW = DEFAULT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7TrafficLabel1",
+      "top": 1435,
+      "left": 660,
+      "attrs": {
+        "text": "MEDIUM"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7TrafficLabel2",
+      "top": 1435,
+      "left": 915,
+      "attrs": {
+        "text": "HIGH"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7TrafficLabel3",
+      "top": 1435,
+      "left": 1120,
+      "attrs": {
+        "text": "OVERLOAD"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7TrafficLabel4",
+      "top": 1435,
+      "left": 1385,
+      "attrs": {
+        "text": "BURST"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7TrafficEffects",
+      "top": 1495,
+      "left": 610,
+      "attrs": {
+        "text": "USE THIS PANEL TO STRESS THE BACKHAUL AND INCREASE LATENCY / LOSS INDIRECTLY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7PowerPanelTitle",
+      "top": 1285,
+      "left": 1720,
+      "attrs": {
+        "text": "FAULT INJECTION - POWER"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7PowerLabel1",
+      "top": 1440,
+      "left": 1625,
+      "attrs": {
+        "text": "GRID FAIL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7PowerLabel2",
+      "top": 1440,
+      "left": 1775,
+      "attrs": {
+        "text": "RECTIFIER FAULT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7PowerLabel3",
+      "top": 1440,
+      "left": 1965,
+      "attrs": {
+        "text": "COOLING / FAN FAULT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7PowerLabel4",
+      "top": 1440,
+      "left": 2120,
+      "attrs": {
+        "text": "GENERATOR FEEDBACK FAIL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7PowerLabel5",
+      "top": 1440,
+      "left": 2365,
+      "attrs": {
+        "text": "BATTERY LOW"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7PowerEffects",
+      "top": 1500,
+      "left": 1730,
+      "attrs": {
+        "text": "USE BATTERY POTENTIOMETER TO FORCE LOW STATE OF CHARGE AND TEST GENERATOR START"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7MethodTitle",
+      "top": 1770,
+      "left": 820,
+      "attrs": {
+        "text": "CLEAN FAULT INJECTION METHOD"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7Method1",
+      "top": 1840,
+      "left": 650,
+      "attrs": {
+        "text": "1. TO TEST PACKET LOSS: ENABLE 'PACKET LOSS / IMPAIRMENT'."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7Method2",
+      "top": 1890,
+      "left": 650,
+      "attrs": {
+        "text": "2. TO TEST HIGH LATENCY: ENABLE 'CONGESTION' OR INCREASE TRAFFIC LOAD."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7Method3",
+      "top": 1940,
+      "left": 650,
+      "attrs": {
+        "text": "3. TO TEST LINK OUTAGE: ENABLE 'LINK FAILURE'."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7Method4",
+      "top": 1990,
+      "left": 650,
+      "attrs": {
+        "text": "4. TO TEST RADIO DEGRADATION: ENABLE PATH LOSS / INTERFERENCE / MISMATCH."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7Method5",
+      "top": 2040,
+      "left": 650,
+      "attrs": {
+        "text": "5. TO TEST GENERATOR AUTOMATION: FORCE BATTERY LOW + GRID FAIL."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7RfOutputs",
+      "top": 940,
+      "left": 930,
+      "attrs": {
+        "text": "OUTPUTS -> RSSI | FORWARD POWER | REFLECTED POWER | RADIO STATE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7BhOutputs",
+      "top": 940,
+      "left": 1870,
+      "attrs": {
+        "text": "OUTPUTS -> LATENCY | PACKET LOSS | LINK STATE | UPSTREAM STATE | ACK | DROP"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7TrafficOutputs",
+      "top": 1560,
+      "left": 980,
+      "attrs": {
+        "text": "OUTPUTS -> PACKET STREAM | TRAFFIC LOAD"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v7PowerOutputs",
+      "top": 1560,
+      "left": 1860,
+      "attrs": {
+        "text": "OUTPUTS -> GRID STATUS | DC BUS | CURRENT | BATTERY STATE OF CHARGE | GENERATOR FEEDBACK"
       }
     }
   ],
