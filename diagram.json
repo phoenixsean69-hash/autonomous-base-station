@@ -6,17 +6,17 @@
     {
       "type": "wokwi-text",
       "id": "localHeading",
-      "top": 25,
+      "top": 430,
       "left": 35,
       "attrs": {
-        "text": "ENVIRONMENT SENSORS"
+        "text": "ENVIRONMENT + EDGE SENSING"
       }
     },
     {
       "type": "wokwi-dht22",
       "id": "dht1",
-      "top": 135,
-      "left": 85,
+      "top": 500,
+      "left": 78,
       "attrs": {
         "temperature": "28",
         "humidity": "45"
@@ -25,33 +25,33 @@
     {
       "type": "wokwi-text",
       "id": "dhtLabel",
-      "top": 90,
-      "left": 50,
+      "top": 460,
+      "left": 45,
       "attrs": {
-        "text": "DHT22 | GPIO15"
+        "text": "TEMP + HUMIDITY"
       }
     },
     {
       "type": "wokwi-mpu6050",
       "id": "mpu1",
-      "top": 350,
-      "left": 80,
+      "top": 690,
+      "left": 82,
       "attrs": {}
     },
     {
       "type": "wokwi-text",
       "id": "mpuLabel",
-      "top": 305,
+      "top": 650,
       "left": 55,
       "attrs": {
-        "text": "MPU6050 | I2C 21/22"
+        "text": "VIBRATION"
       }
     },
     {
       "type": "wokwi-ds18b20",
       "id": "paTemp",
-      "top": 550,
-      "left": 85,
+      "top": 875,
+      "left": 82,
       "attrs": {
         "temperature": "42"
       }
@@ -59,8 +59,8 @@
     {
       "type": "wokwi-resistor",
       "id": "dsPullup",
-      "top": 565,
-      "left": 180,
+      "top": 890,
+      "left": 185,
       "attrs": {
         "value": "4700"
       }
@@ -68,51 +68,24 @@
     {
       "type": "wokwi-text",
       "id": "dsLabel",
-      "top": 505,
-      "left": 55,
+      "top": 835,
+      "left": 42,
       "attrs": {
-        "text": "DS18B20 | GPIO4"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "controllerHeading",
-      "top": 760,
-      "left": 90,
-      "attrs": {
-        "text": "EDGE CONTROLLER"
+        "text": "PA TEMPERATURE"
       }
     },
     {
       "type": "wokwi-esp32-devkit-v1",
       "id": "esp32",
-      "top": 820,
-      "left": 120,
+      "top": 1030,
+      "left": 100,
       "attrs": {}
-    },
-    {
-      "type": "wokwi-text",
-      "id": "controllerLabel",
-      "top": 1045,
-      "left": 65,
-      "attrs": {
-        "text": "ESP32 | SENSE + ACTUATE"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "powerHeading",
-      "top": 455,
-      "left": 980,
-      "attrs": {
-        "text": "DC POWER INPUTS"
-      }
     },
     {
       "type": "wokwi-lcd2004",
       "id": "lcdDcVoltage",
-      "top": 65,
-      "left": 620,
+      "top": 55,
+      "left": 520,
       "attrs": {
         "pins": "i2c",
         "i2cAddress": "0x20",
@@ -123,8 +96,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "dcVoltage",
-      "top": 570,
-      "left": 690,
+      "top": 1140,
+      "left": 1785,
       "attrs": {
         "value": "800"
       }
@@ -132,8 +105,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "dcCurrent",
-      "top": 570,
-      "left": 1050,
+      "top": 1140,
+      "left": 1955,
       "attrs": {
         "value": "350"
       }
@@ -141,174 +114,57 @@
     {
       "type": "wokwi-potentiometer",
       "id": "batteryVoltage",
-      "top": 570,
-      "left": 1410,
+      "top": 1290,
+      "left": 1785,
       "attrs": {
         "value": "776"
       }
     },
     {
-      "type": "wokwi-text",
-      "id": "rfHeading",
-      "top": 780,
-      "left": 840,
-      "attrs": {
-        "text": "RF SIGNAL GENERATOR + ANTENNA CHANNEL"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "backhaulHeading",
-      "top": 1200,
-      "left": 800,
-      "attrs": {
-        "text": "BACKHAUL PACKET + LATENCY MINI-CIRCUIT"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "energyHeading",
-      "top": 1870,
-      "left": 955,
-      "attrs": {
-        "text": "POWER SOURCE"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "gridLabel",
-      "top": 1940,
-      "left": 700,
-      "attrs": {
-        "text": "GRID | GPIO16"
-      }
-    },
-    {
       "type": "wokwi-slide-switch",
       "id": "gridSwitch",
-      "top": 2000,
-      "left": 810,
+      "top": 1140,
+      "left": 1445,
       "attrs": {
         "value": "1",
         "bounce": "0"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "gridDirection",
-      "top": 2070,
-      "left": 660,
-      "attrs": {
-        "text": "FAILED | AVAILABLE (OK)"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "generatorLabel",
-      "top": 1940,
-      "left": 1180,
-      "attrs": {
-        "text": "GENERATOR | GPIO17 | PICO"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "generatorFeedbackLabel",
-      "top": 2135,
-      "left": 1160,
-      "attrs": {
-        "text": "GEN FEEDBACK | GPIO5"
       }
     },
     {
       "type": "wokwi-slide-switch",
       "id": "generatorFeedbackSwitch",
-      "top": 2175,
-      "left": 1280,
+      "top": 1290,
+      "left": 2205,
       "attrs": {
         "value": "1",
         "bounce": "0"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "generatorFeedbackDirection",
-      "top": 2240,
-      "left": 1150,
-      "attrs": {
-        "text": "FAILURE | NORMAL"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "operatingHeading",
-      "top": 2890,
-      "left": 965,
-      "attrs": {
-        "text": "LOCAL EQUIPMENT + TRAFFIC GENERATOR"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "fanLabel",
-      "top": 2940,
-      "left": 930,
-      "attrs": {
-        "text": "FAN | GPIO18"
       }
     },
     {
       "type": "wokwi-slide-switch",
       "id": "fanSwitch",
-      "top": 3000,
-      "left": 1035,
+      "top": 1290,
+      "left": 1615,
       "attrs": {
         "value": "1",
         "bounce": "0"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "fanDirection",
-      "top": 3070,
-      "left": 920,
-      "attrs": {
-        "text": "FAILED | OPERATIONAL (OK)"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "rectifierLabel",
-      "top": 2940,
-      "left": 1310,
-      "attrs": {
-        "text": "RECTIFIER | GPIO19"
       }
     },
     {
       "type": "wokwi-slide-switch",
       "id": "rectifierSwitch",
-      "top": 3000,
-      "left": 1370,
+      "top": 1140,
+      "left": 1615,
       "attrs": {
         "value": "1",
         "bounce": "0"
       }
     },
     {
-      "type": "wokwi-text",
-      "id": "rectifierDirection",
-      "top": 3070,
-      "left": 1260,
-      "attrs": {
-        "text": "FAULT | NORMAL (OK)"
-      }
-    },
-    {
       "type": "wokwi-lcd2004",
       "id": "lcdAiRecommendations",
-      "top": 65,
-      "left": 1030,
+      "top": 55,
+      "left": 970,
       "attrs": {
         "pins": "i2c",
         "i2cAddress": "0x21",
@@ -319,8 +175,8 @@
     {
       "type": "wokwi-lcd2004",
       "id": "lcdPicoActions",
-      "top": 65,
-      "left": 1440,
+      "top": 55,
+      "left": 1420,
       "attrs": {
         "pins": "i2c",
         "i2cAddress": "0x22",
@@ -331,8 +187,8 @@
     {
       "type": "wokwi-led",
       "id": "generatorLed",
-      "top": 1995,
-      "left": 1320,
+      "top": 1133,
+      "left": 2205,
       "attrs": {
         "color": "green",
         "label": "GENERATOR RUNNING"
@@ -341,233 +197,71 @@
     {
       "type": "wokwi-resistor",
       "id": "generatorLedResistor",
-      "top": 2005,
-      "left": 1220,
+      "top": 1148,
+      "left": 2120,
       "attrs": {
         "value": "220"
       }
     },
     {
       "type": "wokwi-text",
-      "id": "spec_dht",
-      "top": 205,
-      "left": 45,
-      "attrs": {
-        "text": "T -40..80C | RH 0..100%"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_mpu",
-      "top": 415,
-      "left": 35,
-      "attrs": {
-        "text": "Vib OK<1 | Fault>=3 m/s2"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_ds18b20",
-      "top": 620,
-      "left": 35,
-      "attrs": {
-        "text": "PA OK<65C | Fault>=80C"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_ds_pullup",
-      "top": 650,
-      "left": 55,
-      "attrs": {
-        "text": "4.7k pull-up"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_esp32",
-      "top": 1080,
-      "left": 35,
-      "attrs": {
-        "text": "I2C 21/22 | Gen GPIO17"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "layout_display_heading",
-      "top": 10,
-      "left": 760,
-      "attrs": {
-        "text": "SYSTEM DISPLAYS"
-      }
-    },
-    {
-      "type": "wokwi-text",
       "id": "label_lcd_values",
-      "top": 305,
-      "left": 650,
+      "top": 300,
+      "left": 560,
       "attrs": {
-        "text": "LCD1 - LIVE VALUES"
+        "text": "LIVE SITE VALUES"
       }
     },
     {
       "type": "wokwi-text",
       "id": "spec_lcd_values",
-      "top": 335,
-      "left": 650,
+      "top": 330,
+      "left": 640,
       "attrs": {
-        "text": "20x4 | I2C 0x20"
+        "text": "I2C 0x20"
       }
     },
     {
       "type": "wokwi-text",
       "id": "label_lcd_ai",
-      "top": 305,
-      "left": 1060,
+      "top": 300,
+      "left": 1005,
       "attrs": {
-        "text": "LCD2 - AI METRICS"
+        "text": "AI RECOMMENDATIONS"
       }
     },
     {
       "type": "wokwi-text",
       "id": "spec_lcd_ai",
-      "top": 335,
-      "left": 1060,
+      "top": 330,
+      "left": 1085,
       "attrs": {
-        "text": "20x4 | I2C 0x21"
+        "text": "I2C 0x21"
       }
     },
     {
       "type": "wokwi-text",
       "id": "label_lcd_pico",
-      "top": 305,
-      "left": 1470,
+      "top": 300,
+      "left": 1480,
       "attrs": {
-        "text": "LCD3 - PICO ACTIONS"
+        "text": "PICO ACTIONS"
       }
     },
     {
       "type": "wokwi-text",
       "id": "spec_lcd_pico",
-      "top": 335,
-      "left": 1470,
+      "top": 330,
+      "left": 1540,
       "attrs": {
-        "text": "20x4 | I2C 0x22"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "label_dc_voltage",
-      "top": 515,
-      "left": 675,
-      "attrs": {
-        "text": "VOLTAGE | GPIO34"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_dc_voltage",
-      "top": 665,
-      "left": 660,
-      "attrs": {
-        "text": "0 -> 60V | OK 44-55V"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "label_dc_current",
-      "top": 515,
-      "left": 1040,
-      "attrs": {
-        "text": "CURRENT | GPIO35"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_dc_current",
-      "top": 665,
-      "left": 1025,
-      "attrs": {
-        "text": "0 -> 30A | OK <=20A"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "label_battery",
-      "top": 515,
-      "left": 1405,
-      "attrs": {
-        "text": "BATTERY | GPIO32"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_battery",
-      "top": 665,
-      "left": 1375,
-      "attrs": {
-        "text": "10.5V=0% -> 12.7V=100%"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_generator",
-      "top": 2070,
-      "left": 1160,
-      "attrs": {
-        "text": "LOW=STOP | HIGH=RUN"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "spec_generator_resistor",
-      "top": 2100,
-      "left": 1180,
-      "attrs": {
-        "text": "LED resistor 220R"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "layout_legend_heading",
-      "top": 3220,
-      "left": 900,
-      "attrs": {
-        "text": "CONTROL LEGEND"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "layout_legend_1",
-      "top": 3260,
-      "left": 760,
-      "attrs": {
-        "text": "OK=healthy | DEG=degraded"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "layout_legend_2",
-      "top": 3290,
-      "left": 760,
-      "attrs": {
-        "text": "FAULT=guardrail action"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "layout_legend_3",
-      "top": 3320,
-      "left": 760,
-      "attrs": {
-        "text": "AI -> Pico -> ESP32 -> actuator"
+        "text": "I2C 0x22"
       }
     },
     {
       "type": "wokwi-clock-generator",
       "id": "rfCarrierClock",
-      "top": 880,
-      "left": 620,
+      "top": 535,
+      "left": 760,
       "attrs": {
         "frequency": "10k"
       }
@@ -575,16 +269,16 @@
     {
       "type": "chip-radio-signal-generator",
       "id": "radioSignalGen",
-      "top": 870,
-      "left": 1880,
+      "top": 0,
+      "left": 0,
       "attrs": {},
       "hide": true
     },
     {
       "type": "wokwi-slide-switch",
       "id": "rfPathLossSwitch",
-      "top": 1050,
-      "left": 700,
+      "top": 720,
+      "left": 760,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -593,8 +287,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfInterferenceSwitch",
-      "top": 1050,
-      "left": 940,
+      "top": 720,
+      "left": 1010,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -603,8 +297,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfMismatchSwitch",
-      "top": 1050,
-      "left": 1180,
+      "top": 720,
+      "left": 1260,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -613,8 +307,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfFaultSwitch",
-      "top": 1050,
-      "left": 1420,
+      "top": 720,
+      "left": 1510,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -623,8 +317,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "backhaulProbeClock",
-      "top": 1320,
-      "left": 620,
+      "top": 535,
+      "left": 1740,
       "attrs": {
         "frequency": "2"
       }
@@ -632,16 +326,16 @@
     {
       "type": "chip-backhaul-packet-emulator",
       "id": "backhaulPacketModel",
-      "top": 1320,
-      "left": 1880,
+      "top": 0,
+      "left": 0,
       "attrs": {},
       "hide": true
     },
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulCongestSwitch",
-      "top": 1510,
-      "left": 700,
+      "top": 720,
+      "left": 1740,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -650,8 +344,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulImpairSwitch",
-      "top": 1510,
-      "left": 940,
+      "top": 720,
+      "left": 1900,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -660,8 +354,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulLinkFailSwitch",
-      "top": 1510,
-      "left": 1180,
+      "top": 720,
+      "left": 2060,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -670,8 +364,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulUpstreamFailSwitch",
-      "top": 1510,
-      "left": 1420,
+      "top": 720,
+      "left": 2220,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -680,16 +374,16 @@
     {
       "type": "chip-traffic-pulse-generator",
       "id": "trafficSignalGen",
-      "top": 2480,
-      "left": 1880,
+      "top": 0,
+      "left": 0,
       "attrs": {},
       "hide": true
     },
     {
       "type": "wokwi-slide-switch",
       "id": "trafficMediumSwitch",
-      "top": 2500,
-      "left": 795,
+      "top": 1330,
+      "left": 700,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -698,8 +392,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficHighSwitch",
-      "top": 2500,
-      "left": 1015,
+      "top": 1330,
+      "left": 940,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -708,8 +402,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficOverloadSwitch",
-      "top": 2500,
-      "left": 1235,
+      "top": 1330,
+      "left": 1180,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -718,8 +412,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficBurstSwitch",
-      "top": 2500,
-      "left": 1455,
+      "top": 1330,
+      "left": 1420,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -728,90 +422,18 @@
     {
       "type": "wokwi-logic-analyzer",
       "id": "networkLogicAnalyzer",
-      "top": 1690,
-      "left": 1450,
+      "top": 1080,
+      "left": 1900,
       "attrs": {
         "channelNames": "TRAFFIC,PROBE,ACK,RF_CARRIER,DROP,LINK,UPSTREAM,RF_ACTIVITY",
         "bufferSize": "200000"
       }
     },
     {
-      "type": "wokwi-text",
-      "id": "rfFlowText",
-      "top": 820,
-      "left": 760,
-      "attrs": {
-        "text": "10 kHz carrier -> interference mixer -> radio gate -> detector"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "rfCarrierLabel2",
-      "top": 845,
-      "left": 610,
-      "attrs": {
-        "text": "CARRIER"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "rfNoiseLabel",
-      "top": 845,
-      "left": 790,
-      "attrs": {
-        "text": "NOISE"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "rfPathLossLabel2",
-      "top": 1010,
-      "left": 675,
-      "attrs": {
-        "text": "PATH LOSS"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "rfInterferenceLabel2",
-      "top": 1010,
-      "left": 895,
-      "attrs": {
-        "text": "INTERFERENCE"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "rfMismatchLabel2",
-      "top": 1010,
-      "left": 1135,
-      "attrs": {
-        "text": "ANTENNA MISMATCH"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "rfFaultLabel2",
-      "top": 1010,
-      "left": 1395,
-      "attrs": {
-        "text": "RADIO FAULT"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "rfActivityLabel",
-      "top": 845,
-      "left": 1585,
-      "attrs": {
-        "text": "RF ACTIVITY"
-      }
-    },
-    {
       "type": "wokwi-clock-generator",
       "id": "rfNoiseClock",
-      "top": 880,
-      "left": 790,
+      "top": 535,
+      "left": 1020,
       "attrs": {
         "frequency": "1k"
       }
@@ -819,36 +441,40 @@
     {
       "type": "wokwi-gate-and-2",
       "id": "rfNoiseGate",
-      "top": 875,
-      "left": 955,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-xor-2",
       "id": "rfMixerGate",
-      "top": 875,
-      "left": 1120,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-not",
       "id": "rfFaultInvert",
-      "top": 955,
-      "left": 1310,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-and-2",
       "id": "rfOutputGate",
-      "top": 875,
-      "left": 1430,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-resistor",
       "id": "rfActivityResistor",
-      "top": 895,
-      "left": 1560,
+      "top": 545,
+      "left": 1605,
       "attrs": {
         "value": "220"
       }
@@ -856,127 +482,50 @@
     {
       "type": "wokwi-led",
       "id": "rfActivityLed",
-      "top": 882,
-      "left": 1660,
+      "top": 530,
+      "left": 1690,
       "attrs": {
         "color": "limegreen",
         "label": "RF"
       }
     },
     {
-      "type": "wokwi-text",
-      "id": "backhaulFlowText",
-      "top": 1240,
-      "left": 755,
-      "attrs": {
-        "text": "2 Hz probe -> link checks -> delayed ACK / packet drop"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "backhaulProbeLabel2",
-      "top": 1285,
-      "left": 615,
-      "attrs": {
-        "text": "PROBE"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "backhaulCongestLabel2",
-      "top": 1470,
-      "left": 675,
-      "attrs": {
-        "text": "CONGESTION"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "backhaulImpairLabel2",
-      "top": 1470,
-      "left": 925,
-      "attrs": {
-        "text": "IMPAIRMENT"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "backhaulLinkLabel2",
-      "top": 1470,
-      "left": 1160,
-      "attrs": {
-        "text": "LINK FAIL"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "backhaulUpstreamLabel2",
-      "top": 1470,
-      "left": 1380,
-      "attrs": {
-        "text": "UPSTREAM FAIL"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "backhaulPathLabel",
-      "top": 1285,
-      "left": 1450,
-      "attrs": {
-        "text": "PATH OK"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "backhaulAckLabel",
-      "top": 1365,
-      "left": 1505,
-      "attrs": {
-        "text": "ACK"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "backhaulDropLabel",
-      "top": 1430,
-      "left": 1500,
-      "attrs": {
-        "text": "DROP"
-      }
-    },
-    {
       "type": "wokwi-gate-not",
       "id": "backhaulLinkNot",
-      "top": 1310,
-      "left": 910,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-not",
       "id": "backhaulUpstreamNot",
-      "top": 1395,
-      "left": 910,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-and-2",
       "id": "backhaulLinkGate",
-      "top": 1310,
-      "left": 1100,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-and-2",
       "id": "backhaulUpstreamGate",
-      "top": 1310,
-      "left": 1280,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-resistor",
       "id": "backhaulPathResistor",
-      "top": 1330,
-      "left": 1470,
+      "top": 545,
+      "left": 2080,
       "attrs": {
         "value": "220"
       }
@@ -984,8 +533,8 @@
     {
       "type": "wokwi-led",
       "id": "backhaulPathLed",
-      "top": 1317,
-      "left": 1570,
+      "top": 530,
+      "left": 2160,
       "attrs": {
         "color": "limegreen",
         "label": "PATH"
@@ -994,8 +543,8 @@
     {
       "type": "wokwi-resistor",
       "id": "backhaulAckResistor",
-      "top": 1395,
-      "left": 1515,
+      "top": 635,
+      "left": 2080,
       "attrs": {
         "value": "220"
       }
@@ -1003,8 +552,8 @@
     {
       "type": "wokwi-led",
       "id": "backhaulAckLed",
-      "top": 1382,
-      "left": 1615,
+      "top": 620,
+      "left": 2160,
       "attrs": {
         "color": "green",
         "label": "ACK"
@@ -1013,8 +562,8 @@
     {
       "type": "wokwi-resistor",
       "id": "backhaulDropResistor",
-      "top": 1460,
-      "left": 1515,
+      "top": 725,
+      "left": 2080,
       "attrs": {
         "value": "220"
       }
@@ -1022,108 +571,18 @@
     {
       "type": "wokwi-led",
       "id": "backhaulDropLed",
-      "top": 1447,
-      "left": 1615,
+      "top": 710,
+      "left": 2160,
       "attrs": {
         "color": "red",
         "label": "DROP"
       }
     },
     {
-      "type": "wokwi-text",
-      "id": "logicAnalyzerTitle2",
-      "top": 1650,
-      "left": 1460,
-      "attrs": {
-        "text": "SIGNAL ANALYZER"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "trafficHeading2",
-      "top": 2290,
-      "left": 820,
-      "attrs": {
-        "text": "BASEBAND TRAFFIC SIGNAL GENERATOR"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "trafficFlowText",
-      "top": 2330,
-      "left": 720,
-      "attrs": {
-        "text": "LOW clock + selected packet-rate source -> logic gates -> measured traffic load"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "trafficBaseLabel",
-      "top": 2380,
-      "left": 600,
-      "attrs": {
-        "text": "LOW 8 Hz"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "trafficMediumLabel2",
-      "top": 2460,
-      "left": 770,
-      "attrs": {
-        "text": "MEDIUM"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "trafficHighLabel2",
-      "top": 2460,
-      "left": 1000,
-      "attrs": {
-        "text": "HIGH"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "trafficOverloadLabel2",
-      "top": 2460,
-      "left": 1195,
-      "attrs": {
-        "text": "OVERLOAD"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "trafficBurstLabel2",
-      "top": 2460,
-      "left": 1450,
-      "attrs": {
-        "text": "BURST"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "trafficSelectOneLabel",
-      "top": 2740,
-      "left": 950,
-      "attrs": {
-        "text": "SELECT ONE MODE"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "trafficOutputLabel",
-      "top": 2645,
-      "left": 1580,
-      "attrs": {
-        "text": "PACKETS"
-      }
-    },
-    {
       "type": "wokwi-clock-generator",
       "id": "trafficBaseClock",
-      "top": 2410,
-      "left": 600,
+      "top": 1180,
+      "left": 460,
       "attrs": {
         "frequency": "8"
       }
@@ -1131,8 +590,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "trafficMediumClock",
-      "top": 2410,
-      "left": 790,
+      "top": 1180,
+      "left": 700,
       "attrs": {
         "frequency": "27"
       }
@@ -1140,8 +599,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "trafficHighClock",
-      "top": 2410,
-      "left": 1010,
+      "top": 1180,
+      "left": 940,
       "attrs": {
         "frequency": "62"
       }
@@ -1149,8 +608,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "trafficOverloadClock",
-      "top": 2410,
-      "left": 1230,
+      "top": 1180,
+      "left": 1180,
       "attrs": {
         "frequency": "92"
       }
@@ -1158,8 +617,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "trafficBurstClock",
-      "top": 2410,
-      "left": 1450,
+      "top": 1180,
+      "left": 1420,
       "attrs": {
         "frequency": "122"
       }
@@ -1167,64 +626,72 @@
     {
       "type": "wokwi-gate-and-2",
       "id": "trafficMediumGate",
-      "top": 2560,
-      "left": 790,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-and-2",
       "id": "trafficHighGate",
-      "top": 2560,
-      "left": 1010,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-and-2",
       "id": "trafficOverloadGate",
-      "top": 2560,
-      "left": 1230,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-and-2",
       "id": "trafficBurstGate",
-      "top": 2560,
-      "left": 1450,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-or-2",
       "id": "trafficOr1",
-      "top": 2660,
-      "left": 720,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-or-2",
       "id": "trafficOr2",
-      "top": 2660,
-      "left": 940,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-or-2",
       "id": "trafficOr3",
-      "top": 2660,
-      "left": 1160,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-gate-or-2",
       "id": "trafficOr4",
-      "top": 2660,
-      "left": 1380,
-      "attrs": {}
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-resistor",
       "id": "trafficOutResistor",
-      "top": 2680,
-      "left": 1540,
+      "top": 1485,
+      "left": 1610,
       "attrs": {
         "value": "220"
       }
@@ -1232,11 +699,515 @@
     {
       "type": "wokwi-led",
       "id": "trafficOutLed",
-      "top": 2667,
-      "left": 1640,
+      "top": 1470,
+      "left": 1695,
       "attrs": {
         "color": "blue",
         "label": "PKT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3Title",
+      "top": 10,
+      "left": 720,
+      "attrs": {
+        "text": "AUTONOMOUS TELECOMMUNICATIONS BASE STATION - WIDE SYSTEM VIEW"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3EnvTitle",
+      "top": 445,
+      "left": 40,
+      "attrs": {
+        "text": "ENVIRONMENT + EDGE SENSING"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3RfTitle",
+      "top": 430,
+      "left": 760,
+      "attrs": {
+        "text": "RADIO FREQUENCY CHAIN"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3BackhaulTitle",
+      "top": 430,
+      "left": 1780,
+      "attrs": {
+        "text": "BACKHAUL NETWORK CHAIN"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3TrafficTitle",
+      "top": 1080,
+      "left": 520,
+      "attrs": {
+        "text": "TRAFFIC / USER LOAD CHAIN"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3PowerTitle",
+      "top": 1060,
+      "left": 1490,
+      "attrs": {
+        "text": "POWER CHAIN"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3ControlTitle",
+      "top": 1820,
+      "left": 900,
+      "attrs": {
+        "text": "CONTROL + DECISION CHAIN"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3RfCarrier",
+      "top": 490,
+      "left": 740,
+      "attrs": {
+        "text": "CARRIER SOURCE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3RfNoise",
+      "top": 490,
+      "left": 980,
+      "attrs": {
+        "text": "INTERFERENCE SOURCE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3RfActivity",
+      "top": 490,
+      "left": 1660,
+      "attrs": {
+        "text": "RF ACTIVITY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3RfF1",
+      "top": 800,
+      "left": 755,
+      "attrs": {
+        "text": "PATH LOSS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3RfF2",
+      "top": 800,
+      "left": 985,
+      "attrs": {
+        "text": "INTERFERENCE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3RfF3",
+      "top": 800,
+      "left": 1205,
+      "attrs": {
+        "text": "ANTENNA MISMATCH"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3RfF4",
+      "top": 800,
+      "left": 1505,
+      "attrs": {
+        "text": "RADIO FAIL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3BhProbe",
+      "top": 490,
+      "left": 1715,
+      "attrs": {
+        "text": "PROBE SOURCE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3BhIndicators",
+      "top": 490,
+      "left": 2075,
+      "attrs": {
+        "text": "PATH        ACK        DROP"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3BhF1",
+      "top": 800,
+      "left": 1720,
+      "attrs": {
+        "text": "CONGESTION"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3BhF2",
+      "top": 800,
+      "left": 1880,
+      "attrs": {
+        "text": "IMPAIRMENT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3BhF3",
+      "top": 800,
+      "left": 2050,
+      "attrs": {
+        "text": "LINK FAIL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3BhF4",
+      "top": 800,
+      "left": 2185,
+      "attrs": {
+        "text": "UPSTREAM FAIL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3TrafficBase",
+      "top": 1135,
+      "left": 470,
+      "attrs": {
+        "text": "LOW"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3TrafficMedium",
+      "top": 1135,
+      "left": 690,
+      "attrs": {
+        "text": "MEDIUM"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3TrafficHigh",
+      "top": 1135,
+      "left": 950,
+      "attrs": {
+        "text": "HIGH"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3TrafficOverload",
+      "top": 1135,
+      "left": 1160,
+      "attrs": {
+        "text": "OVERLOAD"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3TrafficBurst",
+      "top": 1135,
+      "left": 1420,
+      "attrs": {
+        "text": "BURST"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3PowerGrid",
+      "top": 1100,
+      "left": 1450,
+      "attrs": {
+        "text": "GRID"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3PowerRectifier",
+      "top": 1100,
+      "left": 1590,
+      "attrs": {
+        "text": "RECTIFIER"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3PowerBus",
+      "top": 1100,
+      "left": 1790,
+      "attrs": {
+        "text": "DC BUS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3PowerCurrent",
+      "top": 1100,
+      "left": 1945,
+      "attrs": {
+        "text": "SITE LOAD"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3PowerGenerator",
+      "top": 1100,
+      "left": 2175,
+      "attrs": {
+        "text": "GENERATOR"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3PowerBattery",
+      "top": 1250,
+      "left": 1790,
+      "attrs": {
+        "text": "BATTERY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3PowerCooling",
+      "top": 1250,
+      "left": 1625,
+      "attrs": {
+        "text": "FAN"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3PowerFeedback",
+      "top": 1250,
+      "left": 2150,
+      "attrs": {
+        "text": "GEN FEEDBACK"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3Control1",
+      "top": 1900,
+      "left": 320,
+      "attrs": {
+        "text": "ESP32 SENSING"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3ControlArrow1",
+      "top": 1900,
+      "left": 590,
+      "attrs": {
+        "text": "->"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3Control2",
+      "top": 1900,
+      "left": 660,
+      "attrs": {
+        "text": "LAPTOP AI"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3ControlArrow2",
+      "top": 1900,
+      "left": 860,
+      "attrs": {
+        "text": "->"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3Control3",
+      "top": 1900,
+      "left": 930,
+      "attrs": {
+        "text": "RASPBERRY PI PICO"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3ControlArrow3",
+      "top": 1900,
+      "left": 1260,
+      "attrs": {
+        "text": "->"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v3Control4",
+      "top": 1900,
+      "left": 1325,
+      "attrs": {
+        "text": "ESP32 SAFETY + ACTUATION"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v5EnvSummary",
+      "top": 1285,
+      "left": 65,
+      "attrs": {
+        "text": "SENSORS -> ESP32"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v5PowerMeasures",
+      "top": 1450,
+      "left": 1540,
+      "attrs": {
+        "text": "TP11 DC V | TP12 DC I | TP13 BATTERY SOC | TP14 GRID | TP15 GENERATOR"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v5AnalyzerTitle",
+      "top": 1040,
+      "left": 1900,
+      "attrs": {
+        "text": "SIGNAL ANALYZER"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v5ControlNote",
+      "top": 1980,
+      "left": 600,
+      "attrs": {
+        "text": "AI DIAGNOSES -> PICO VALIDATES -> ESP32 GUARDRAILS REMAIN FINAL AUTHORITY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6RfChannel",
+      "top": 565,
+      "left": 1125,
+      "attrs": {
+        "text": "RF CHANNEL + POWER AMPLIFIER + ANTENNA / DETECTORS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6RfArrow",
+      "top": 615,
+      "left": 1070,
+      "attrs": {
+        "text": "CARRIER  ->  CHANNEL  ->  ANTENNA  ->  MEASUREMENT OUTPUTS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6RfOutputs",
+      "top": 865,
+      "left": 820,
+      "attrs": {
+        "text": "RSSI -> GPIO27   |   FORWARD POWER -> GPIO33   |   REFLECTED POWER -> GPIO36   |   RADIO STATE -> GPIO23"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6BhFlow",
+      "top": 560,
+      "left": 1805,
+      "attrs": {
+        "text": "PROBE  ->  ROUTER  ->  CONGESTION QUEUE  ->  CORE / UPSTREAM"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6BhResult",
+      "top": 615,
+      "left": 1815,
+      "attrs": {
+        "text": "NETWORK RESULT: DELAYED ACKNOWLEDGEMENT OR PACKET DROP"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6BhOutputs",
+      "top": 865,
+      "left": 1770,
+      "attrs": {
+        "text": "LATENCY -> GPIO25   |   PACKET LOSS -> GPIO26   |   LINK -> GPIO14   |   UPSTREAM -> GPIO13"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6TrafficModeNote",
+      "top": 1285,
+      "left": 910,
+      "attrs": {
+        "text": "SELECT TRAFFIC MODE / DEMAND LEVEL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6TrafficAggregator",
+      "top": 1430,
+      "left": 930,
+      "attrs": {
+        "text": "PACKET GENERATOR + AGGREGATOR"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6TrafficFlow",
+      "top": 1515,
+      "left": 900,
+      "attrs": {
+        "text": "USER DEMAND  ->  PACKET STREAM  ->  BACKHAUL INPUT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6TrafficOutputs",
+      "top": 1580,
+      "left": 1085,
+      "attrs": {
+        "text": "PACKET ACTIVITY    |    TRAFFIC LOAD -> GPIO39"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6AnalyzerChannels",
+      "top": 1330,
+      "left": 1820,
+      "attrs": {
+        "text": "TRAFFIC | PROBE | ACK | RF CARRIER | DROP | LINK | UPSTREAM | RF ACTIVITY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "v6TrafficToBackhaul",
+      "top": 940,
+      "left": 815,
+      "attrs": {
+        "text": "TRAFFIC PACKET STREAM ----------------------------------------------> BACKHAUL NETWORK"
       }
     }
   ],
@@ -1544,49 +1515,49 @@
     [
       "rfCarrierClock:CLK",
       "rfMixerGate:A",
-      "yellow",
+      "",
       []
     ],
     [
       "rfNoiseClock:CLK",
       "rfNoiseGate:A",
-      "purple",
+      "",
       []
     ],
     [
       "rfInterferenceSwitch:2",
       "rfNoiseGate:B",
-      "orange",
+      "",
       []
     ],
     [
       "rfNoiseGate:OUT",
       "rfMixerGate:B",
-      "orange",
+      "",
       []
     ],
     [
       "rfFaultSwitch:2",
       "rfFaultInvert:IN",
-      "red",
+      "",
       []
     ],
     [
       "rfMixerGate:OUT",
       "rfOutputGate:A",
-      "yellow",
+      "",
       []
     ],
     [
       "rfFaultInvert:OUT",
       "rfOutputGate:B",
-      "green",
+      "",
       []
     ],
     [
       "rfOutputGate:OUT",
       "rfActivityResistor:1",
-      "limegreen",
+      "",
       []
     ],
     [
@@ -1706,43 +1677,43 @@
     [
       "backhaulLinkFailSwitch:2",
       "backhaulLinkNot:IN",
-      "red",
+      "",
       []
     ],
     [
       "backhaulUpstreamFailSwitch:2",
       "backhaulUpstreamNot:IN",
-      "red",
+      "",
       []
     ],
     [
       "backhaulProbeClock:CLK",
       "backhaulLinkGate:A",
-      "gold",
+      "",
       []
     ],
     [
       "backhaulLinkNot:OUT",
       "backhaulLinkGate:B",
-      "green",
+      "",
       []
     ],
     [
       "backhaulLinkGate:OUT",
       "backhaulUpstreamGate:A",
-      "gold",
+      "",
       []
     ],
     [
       "backhaulUpstreamNot:OUT",
       "backhaulUpstreamGate:B",
-      "green",
+      "",
       []
     ],
     [
       "backhaulUpstreamGate:OUT",
       "backhaulPathResistor:1",
-      "green",
+      "",
       []
     ],
     [
@@ -1946,103 +1917,103 @@
     [
       "trafficMediumClock:CLK",
       "trafficMediumGate:A",
-      "blue",
+      "",
       []
     ],
     [
       "trafficMediumSwitch:2",
       "trafficMediumGate:B",
-      "blue",
+      "",
       []
     ],
     [
       "trafficHighClock:CLK",
       "trafficHighGate:A",
-      "orange",
+      "",
       []
     ],
     [
       "trafficHighSwitch:2",
       "trafficHighGate:B",
-      "orange",
+      "",
       []
     ],
     [
       "trafficOverloadClock:CLK",
       "trafficOverloadGate:A",
-      "red",
+      "",
       []
     ],
     [
       "trafficOverloadSwitch:2",
       "trafficOverloadGate:B",
-      "red",
+      "",
       []
     ],
     [
       "trafficBurstClock:CLK",
       "trafficBurstGate:A",
-      "yellow",
+      "",
       []
     ],
     [
       "trafficBurstSwitch:2",
       "trafficBurstGate:B",
-      "yellow",
+      "",
       []
     ],
     [
       "trafficBaseClock:CLK",
       "trafficOr1:A",
-      "purple",
+      "",
       []
     ],
     [
       "trafficMediumGate:OUT",
       "trafficOr1:B",
-      "blue",
+      "",
       []
     ],
     [
       "trafficOr1:OUT",
       "trafficOr2:A",
-      "purple",
+      "",
       []
     ],
     [
       "trafficHighGate:OUT",
       "trafficOr2:B",
-      "orange",
+      "",
       []
     ],
     [
       "trafficOr2:OUT",
       "trafficOr3:A",
-      "purple",
+      "",
       []
     ],
     [
       "trafficOverloadGate:OUT",
       "trafficOr3:B",
-      "red",
+      "",
       []
     ],
     [
       "trafficOr3:OUT",
       "trafficOr4:A",
-      "purple",
+      "",
       []
     ],
     [
       "trafficBurstGate:OUT",
       "trafficOr4:B",
-      "yellow",
+      "",
       []
     ],
     [
       "trafficOr4:OUT",
       "trafficOutResistor:1",
-      "purple",
+      "",
       []
     ],
     [
