@@ -24,3 +24,6 @@ dashboard/node_modules/
 mobile/node_modules/
 mobile/.expo/
 mobile/dist/
+network_simulator/.venv/
+network_simulator/__pycache__/
+network_simulator/*.pyc
