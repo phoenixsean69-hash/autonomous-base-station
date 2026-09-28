@@ -1,0 +1,14 @@
+{
+  "name": "Backhaul Network Model",
+  "author": "Autonomous Base Station Project",
+  "pins": ["TRAFFIC_IN", "LATENCY", "LOSS", "LINK", "UPSTREAM"],
+  "controls": [
+    {"id":"baseLatencyMs","label":"Base latency (ms)","type":"range","min":10,"max":250,"step":5},
+    {"id":"congestionPct","label":"Injected congestion (%)","type":"range","min":0,"max":100,"step":1},
+    {"id":"trafficCouplingPct","label":"Traffic-to-congestion coupling (%)","type":"range","min":0,"max":100,"step":5},
+    {"id":"lineImpairmentPct","label":"Link impairment (%)","type":"range","min":0,"max":100,"step":1},
+    {"id":"jitterMs","label":"Jitter amplitude (ms)","type":"range","min":0,"max":200,"step":5},
+    {"id":"physicalLinkFailure","label":"Physical link failure","type":"range","min":0,"max":1,"step":1},
+    {"id":"upstreamFailure","label":"Upstream failure","type":"range","min":0,"max":1,"step":1}
+  ]
+}
