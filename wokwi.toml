@@ -18,3 +18,6 @@ binary = 'dist/backhaul-packet-emulator.chip.wasm'
 [[chip]]
 name = 'radio-signal-generator'
 binary = 'dist/radio-signal-generator.chip.wasm'
+[[chip]]
+name = 'cooling-fault-interposer'
+binary = 'dist/cooling-fault-interposer.chip.wasm'

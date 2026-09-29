@@ -1425,6 +1425,60 @@
       "attrs": {
         "text": "OUTPUTS -> GRID STATUS | DC BUS | CURRENT | BATTERY STATE OF CHARGE | GENERATOR FEEDBACK"
       }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "coolingSourceLabel",
+      "top": 1315,
+      "left": 1980,
+      "attrs": {
+        "text": "FAN NORMAL SOURCE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "coolingFaultLabel",
+      "top": 1470,
+      "left": 1880,
+      "attrs": {
+        "text": "COOLING FAULT INJECTION"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "coolingFaultSwitch",
+      "top": 1535,
+      "left": 1860,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "chip-cooling-fault-interposer",
+      "id": "coolingFaultInterposer",
+      "top": 1515,
+      "left": 2020,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "coolingFaultLedResistor",
+      "top": 1545,
+      "left": 2265,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "coolingFaultLed",
+      "top": 1530,
+      "left": 2350,
+      "attrs": {
+        "color": "red",
+        "label": "COOLING FAULT ACTIVE"
+      }
     }
   ],
   "connections": [
@@ -1612,12 +1666,6 @@
       "fanSwitch:1",
       "esp32:GND.1",
       "black",
-      []
-    ],
-    [
-      "fanSwitch:2",
-      "esp32:D18",
-      "green",
       []
     ],
     [
@@ -2312,6 +2360,54 @@
     ],
     [
       "networkLogicAnalyzer:GND",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "fanSwitch:2",
+      "coolingFaultInterposer:FAN_IN",
+      "green",
+      []
+    ],
+    [
+      "coolingFaultSwitch:1",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "coolingFaultSwitch:2",
+      "coolingFaultInterposer:FAULT_ENABLE",
+      "orange",
+      []
+    ],
+    [
+      "coolingFaultSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "coolingFaultInterposer:FAN_OUT",
+      "esp32:D18",
+      "green",
+      []
+    ],
+    [
+      "coolingFaultInterposer:FAULT_ACTIVE",
+      "coolingFaultLedResistor:1",
+      "orange",
+      []
+    ],
+    [
+      "coolingFaultLedResistor:2",
+      "coolingFaultLed:A",
+      "red",
+      []
+    ],
+    [
+      "coolingFaultLed:C",
       "esp32:GND.2",
       "black",
       []

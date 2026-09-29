@@ -1,0 +1,10 @@
+{
+  "name": "Cooling Fan Fault Interposer",
+  "author": "Autonomous Base Station Project",
+  "pins": [
+    "FAN_IN",
+    "FAULT_ENABLE",
+    "FAN_OUT",
+    "FAULT_ACTIVE"
+  ]
+}
