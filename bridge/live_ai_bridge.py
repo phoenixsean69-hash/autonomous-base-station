@@ -18,6 +18,8 @@ import argparse
 import json
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 try:
@@ -45,6 +47,10 @@ TELEMETRY_PREFIX = "ABS_JSON|"
 AI_RESULT_PREFIX = "ABS_AI_RESULT|"
 AI_COMMAND_PREFIX = "ABS_AI_CMD|"
 AI_ACK_PREFIX = "ABS_AI_ACK|"
+
+NETWORK_COMMAND_PREFIX = "ABS_NET_CMD|"
+NETWORK_ACK_PREFIX = "ABS_NET_ACK|"
+DEFAULT_NETWORK_SIMULATOR = "http://127.0.0.1:8000"
 
 SCHEMA = "abs.v1"
 DEFAULT_URL = "rfc2217://localhost:4001"
@@ -1503,6 +1509,146 @@ def attach_pico_decision(
 
 
 
+
+def fetch_network_snapshot(
+    base_url: str,
+) -> dict:
+    url = (
+        base_url.rstrip("/") +
+        "/base-station/telemetry"
+    )
+
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/json",
+        },
+    )
+
+    with urllib.request.urlopen(
+        request,
+        timeout=0.35,
+    ) as response:
+        return json.loads(
+            response.read().decode(
+                "utf-8"
+            )
+        )
+
+
+def build_network_command(
+    snapshot: dict,
+) -> dict:
+    if snapshot.get(
+        "schema"
+    ) != "abs.network.telemetry.v1":
+        raise ValueError(
+            "unexpected network simulator schema"
+        )
+
+    backhaul = (
+        snapshot.get(
+            "backhaul"
+        ) or {}
+    )
+
+    access = (
+        snapshot.get(
+            "access"
+        ) or {}
+    )
+
+    return {
+        "schema":
+            "abs.net.cmd.v1",
+        "active_calls":
+            int(
+                snapshot.get(
+                    "active_calls",
+                    0,
+                )
+            ),
+        "latency_ms":
+            float(
+                backhaul[
+                    "latency_ms"
+                ]
+            ),
+        "packet_loss_pct":
+            float(
+                backhaul[
+                    "packet_loss_pct"
+                ]
+            ),
+        "rssi_dbm":
+            float(
+                backhaul[
+                    "rssi_dbm"
+                ]
+            ),
+        "traffic_load_pct":
+            float(
+                snapshot[
+                    "traffic_load_pct"
+                ]
+            ),
+        "rf_forward_w":
+            float(
+                access[
+                    "rf_forward_w"
+                ]
+            ),
+        "rf_reflected_w":
+            float(
+                access[
+                    "rf_reflected_w"
+                ]
+            ),
+        "link_up":
+            bool(
+                backhaul[
+                    "link_up"
+                ]
+            ),
+        "upstream_reachable":
+            bool(
+                backhaul[
+                    "upstream_reachable"
+                ]
+            ),
+        "radio_operational":
+            bool(
+                access[
+                    "radio_operational"
+                ]
+            ),
+    }
+
+
+def send_network_command(
+    port,
+    command: dict,
+) -> int:
+    payload = (
+        NETWORK_COMMAND_PREFIX +
+        json.dumps(
+            command,
+            separators=(
+                ",",
+                ":",
+            ),
+        ) +
+        "\n"
+    ).encode(
+        "utf-8"
+    )
+
+    port.write(payload)
+    port.flush()
+
+    return len(payload)
+
+
 def send_ai_command(
     port,
     command: dict,
@@ -1736,6 +1882,7 @@ def live(
     url: str,
     pico_url: str,
     sample_ms: int,
+    network_simulator: str,
 ) -> int:
     window = engine.new_buffer()
     sampler = Sampler(
@@ -1755,6 +1902,14 @@ def live(
     )
     print(
         f"Pico endpoint        : {pico_url}"
+    )
+    print(
+        "Subscriber network   : " +
+        (
+            network_simulator
+            if network_simulator
+            else "DISABLED"
+        )
     )
     print(
         f"Temporal cadence     : "
@@ -1819,10 +1974,91 @@ def live(
     commands_acked = 0
     commands_rejected = 0
 
+    network_commands_sent = 0
+    network_commands_acked = 0
+    network_commands_rejected = 0
+
     latest_pico_ai_result = None
+
+    next_network_push = 0.0
+    network_feed_online = False
 
     try:
         while True:
+            now_monotonic = (
+                time.monotonic()
+            )
+
+            if (
+                network_simulator and
+                now_monotonic >=
+                next_network_push
+            ):
+                next_network_push = (
+                    now_monotonic +
+                    1.0
+                )
+
+                try:
+                    snapshot = (
+                        fetch_network_snapshot(
+                            network_simulator
+                        )
+                    )
+
+                    network_command = (
+                        build_network_command(
+                            snapshot
+                        )
+                    )
+
+                    network_bytes = (
+                        send_network_command(
+                            port,
+                            network_command,
+                        )
+                    )
+
+                    network_commands_sent += 1
+
+                    if not network_feed_online:
+                        print(
+                            "[NETWORK FEED] CONNECTED -> "
+                            "ESP32 telecom inputs now follow "
+                            "the mobile/network simulator"
+                        )
+
+                    network_feed_online = True
+
+                    if (
+                        network_commands_sent == 1 or
+                        network_commands_sent % 10 == 0
+                    ):
+                        print(
+                            "  [NETWORK PUSH] "
+                            f"calls={network_command['active_calls']} | "
+                            f"traffic={network_command['traffic_load_pct']:.1f}% | "
+                            f"latency={network_command['latency_ms']:.1f} ms | "
+                            f"loss={network_command['packet_loss_pct']:.1f}% | "
+                            f"{network_bytes} bytes"
+                        )
+
+                except (
+                    OSError,
+                    ValueError,
+                    KeyError,
+                    TypeError,
+                    json.JSONDecodeError,
+                ) as exc:
+                    if network_feed_online:
+                        print(
+                            "[NETWORK FEED] LOST -> "
+                            "ESP32 will return to circuit inputs "
+                            f"after 3 seconds ({exc})"
+                        )
+
+                    network_feed_online = False
+
             raw = port.readline()
 
             if not raw:
@@ -1832,6 +2068,46 @@ def live(
                 "utf-8",
                 errors="replace",
             ).strip()
+
+            if line.startswith(
+                NETWORK_ACK_PREFIX
+            ):
+                try:
+                    network_ack = json.loads(
+                        line[
+                            len(
+                                NETWORK_ACK_PREFIX
+                            ):
+                        ]
+                    )
+                except json.JSONDecodeError:
+                    print(
+                        "[NETWORK ACK] malformed JSON"
+                    )
+                    continue
+
+                if network_ack.get(
+                    "accepted"
+                ) is True:
+                    network_commands_acked += 1
+
+                    if (
+                        network_commands_acked == 1 or
+                        network_commands_acked % 10 == 0
+                    ):
+                        print(
+                            "  [NETWORK ACK] ACCEPTED | "
+                            f"source={network_ack.get('source')}"
+                        )
+                else:
+                    network_commands_rejected += 1
+
+                    print(
+                        "  [NETWORK ACK] REJECTED | "
+                        f"reason={network_ack.get('reason')}"
+                    )
+
+                continue
 
             if line.startswith(
                 AI_ACK_PREFIX
@@ -2228,6 +2504,15 @@ def live(
     print(
         f"Rejected telemetry : {rejected}"
     )
+    print(
+        f"Network pushes     : {network_commands_sent}"
+    )
+    print(
+        f"Network accepted   : {network_commands_acked}"
+    )
+    print(
+        f"Network rejected   : {network_commands_rejected}"
+    )
 
     return 0
 
@@ -2252,6 +2537,15 @@ def main() -> int:
     )
 
     parser.add_argument(
+        "--network-simulator",
+        default=DEFAULT_NETWORK_SIMULATOR,
+        help=(
+            "HTTP base URL for the ABS mobile/network simulator. "
+            "Use an empty string to disable live network injection."
+        ),
+    )
+
+    parser.add_argument(
         "--smoke-test",
         action="store_true",
     )
@@ -2272,6 +2566,7 @@ def main() -> int:
         args.url,
         args.pico_url,
         args.sample_ms,
+        args.network_simulator,
     )
 
 

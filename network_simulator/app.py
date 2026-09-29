@@ -461,6 +461,34 @@ async def handle_ws_message(
     )
 
 
+
+
+@app.get("/base-station/telemetry")
+async def base_station_telemetry() -> dict:
+    active_calls = (
+        state.connected_call_count()
+    )
+
+    snapshot = (
+        state.engine
+        .base_station_snapshot(
+            state.faults,
+            active_calls,
+        )
+    )
+
+    return {
+        "schema":
+            "abs.network.telemetry.v1",
+        "active_calls":
+            active_calls,
+        "connected_subscribers":
+            len(state.connections),
+        "faults":
+            state.faults.as_dict(),
+        **snapshot,
+    }
+
 @app.get("/")
 async def root() -> dict:
     return {

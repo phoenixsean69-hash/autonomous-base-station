@@ -158,6 +158,151 @@ class NetworkEngine:
 
         return "GOOD"
 
+
+    def base_station_snapshot(
+        self,
+        faults: FaultState,
+        active_calls: int,
+    ) -> dict:
+        active_calls = max(0, int(active_calls))
+
+        access_rssi_dbm = self._rssi_dbm(faults)
+
+        rf_forward_w = 80.0
+        rf_reflected_w = 1.2
+        radio_operational = True
+
+        if faults.interference:
+            rf_forward_w -= 4.0
+
+        if faults.antenna_mismatch:
+            rf_reflected_w = 18.0
+
+        if faults.radio_failure:
+            rf_forward_w = 3.0
+            rf_reflected_w = 2.5
+            radio_operational = False
+
+        if faults.link_failure:
+            backhaul_latency_ms = 1000.0
+            backhaul_packet_loss_pct = 100.0
+            backhaul_rssi_dbm = -120.0
+        elif faults.upstream_failure:
+            backhaul_latency_ms = 1000.0
+            backhaul_packet_loss_pct = 100.0
+            backhaul_rssi_dbm = -58.0 + self._rng.uniform(-1.0, 1.0)
+        else:
+            backhaul_latency_ms = 42.0
+
+            if faults.congestion:
+                backhaul_latency_ms += 190.0
+
+            if faults.impairment:
+                backhaul_latency_ms += 80.0
+
+            backhaul_latency_ms += max(
+                0,
+                active_calls - 1,
+            ) * 25.0
+
+            backhaul_latency_ms += self._rng.uniform(
+                -5.0,
+                5.0,
+            )
+
+            backhaul_packet_loss_pct = 0.5
+
+            if faults.congestion:
+                backhaul_packet_loss_pct += 6.0
+
+            if faults.impairment:
+                backhaul_packet_loss_pct += 20.0
+
+            backhaul_packet_loss_pct += max(
+                0,
+                active_calls - 1,
+            ) * 1.5
+
+            backhaul_packet_loss_pct = min(
+                100.0,
+                backhaul_packet_loss_pct,
+            )
+
+            backhaul_rssi_dbm = (
+                -58.0 +
+                self._rng.uniform(
+                    -1.0,
+                    1.0,
+                )
+            )
+
+            if faults.impairment:
+                backhaul_rssi_dbm -= 4.0
+
+        traffic_load_pct = min(
+            100.0,
+            30.0 * active_calls,
+        )
+
+        return {
+            "traffic_load_pct": round(
+                traffic_load_pct,
+                2,
+            ),
+            "access": {
+                "signal_dbm": round(
+                    access_rssi_dbm,
+                    2,
+                ),
+                "rf_forward_w": round(
+                    max(0.0, rf_forward_w),
+                    2,
+                ),
+                "rf_reflected_w": round(
+                    max(0.0, rf_reflected_w),
+                    2,
+                ),
+                "radio_operational":
+                    radio_operational,
+            },
+            "backhaul": {
+                "latency_ms": round(
+                    max(
+                        10.0,
+                        min(
+                            1000.0,
+                            backhaul_latency_ms,
+                        ),
+                    ),
+                    2,
+                ),
+                "packet_loss_pct": round(
+                    max(
+                        0.0,
+                        min(
+                            100.0,
+                            backhaul_packet_loss_pct,
+                        ),
+                    ),
+                    2,
+                ),
+                "rssi_dbm": round(
+                    max(
+                        -120.0,
+                        min(
+                            -45.0,
+                            backhaul_rssi_dbm,
+                        ),
+                    ),
+                    2,
+                ),
+                "link_up":
+                    not faults.link_failure,
+                "upstream_reachable":
+                    not faults.upstream_failure,
+            },
+        }
+
     def step(
         self,
         metrics: CallMetrics,

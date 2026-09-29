@@ -69,6 +69,11 @@ const unsigned long TELEMETRY_INTERVAL_MS = 2000;
 const unsigned long AI_COMMAND_TIMEOUT_MS = 15000;
 const unsigned long PICO_DECISION_TIMEOUT_MS = 15000;
 
+// Network-simulator commands arrive once per second.
+// If they disappear, the ESP32 automatically returns to
+// the physical Wokwi circuit inputs.
+const unsigned long NETWORK_COMMAND_TIMEOUT_MS = 3000;
+
 // Physical actuation must be verified independently from the command.
 const unsigned long GENERATOR_START_VERIFY_TIMEOUT_MS = 1500;
 const unsigned long GENERATOR_STOP_VERIFY_TIMEOUT_MS = 500;
@@ -747,6 +752,34 @@ unsigned long aiLastCommandChars = 0;
 String aiCommandStatus = "NOT_RECEIVED";
 String aiMetricsStatus = "NOT_RECEIVED";
 String aiSerialBuffer = "";
+
+
+// ----------------------------------------------------
+// LIVE MOBILE / NETWORK SIMULATOR INPUT
+// ----------------------------------------------------
+//
+// Only telecom-domain measurements are overridden.
+// Power, environment, temperature and vibration remain
+// driven by the physical Wokwi circuit.
+//
+bool networkCommandEverReceived = false;
+unsigned long lastNetworkCommandTime = 0;
+
+float networkLatencyMs = 45.0f;
+float networkPacketLossPct = 0.5f;
+float networkBackhaulRssiDbm = -58.0f;
+float networkTrafficLoadPct = 0.0f;
+
+float networkRfForwardW = 80.0f;
+float networkRfReflectedW = 1.2f;
+
+bool networkLinkUp = true;
+bool networkUpstreamReachable = true;
+bool networkRadioOperational = true;
+
+int networkActiveCalls = 0;
+
+String networkInputSource = "CIRCUIT";
 
 // ----------------------------------------------------
 // PICO DECISION / ACTUATOR CONTROL
@@ -1834,6 +1867,368 @@ bool extractAiBoolField(
 }
 
 
+
+bool isNetworkCommandFresh()
+{
+  bool fresh =
+      networkCommandEverReceived &&
+      (
+          millis() -
+          lastNetworkCommandTime <=
+          NETWORK_COMMAND_TIMEOUT_MS
+      );
+
+  networkInputSource =
+      fresh
+          ? "MOBILE_NETWORK_SIMULATOR"
+          : "CIRCUIT";
+
+  return fresh;
+}
+
+
+void printNetworkAck(
+    bool accepted,
+    const String &reason)
+{
+  Serial.print(
+      "ABS_NET_ACK|{\"accepted\":"
+  );
+
+  Serial.print(
+      accepted
+          ? "true"
+          : "false"
+  );
+
+  Serial.print(
+      ",\"reason\":\""
+  );
+
+  Serial.print(reason);
+
+  Serial.print(
+      "\",\"source\":\""
+  );
+
+  Serial.print(
+      networkInputSource
+  );
+
+  Serial.println(
+      "\"}"
+  );
+}
+
+
+void handleNetworkCommandLine(
+    String line)
+{
+  line.trim();
+
+  if (
+      !line.startsWith(
+          "ABS_NET_CMD|"
+      ))
+  {
+    return;
+  }
+
+  String json =
+      line.substring(
+          12
+      );
+
+  String schema;
+
+  float latencyMs = 0.0f;
+  float packetLossPct = 0.0f;
+  float backhaulRssiDbm = 0.0f;
+  float trafficLoadPct = 0.0f;
+  float rfForwardW = 0.0f;
+  float rfReflectedW = 0.0f;
+  float activeCallsFloat = 0.0f;
+
+  bool linkUpValue = false;
+  bool upstreamReachableValue = false;
+  bool radioOperationalValue = false;
+
+  bool valid =
+      extractAiStringField(
+          json,
+          "schema",
+          schema
+      ) &&
+      extractAiFloatField(
+          json,
+          "latency_ms",
+          latencyMs
+      ) &&
+      extractAiFloatField(
+          json,
+          "packet_loss_pct",
+          packetLossPct
+      ) &&
+      extractAiFloatField(
+          json,
+          "rssi_dbm",
+          backhaulRssiDbm
+      ) &&
+      extractAiFloatField(
+          json,
+          "traffic_load_pct",
+          trafficLoadPct
+      ) &&
+      extractAiFloatField(
+          json,
+          "rf_forward_w",
+          rfForwardW
+      ) &&
+      extractAiFloatField(
+          json,
+          "rf_reflected_w",
+          rfReflectedW
+      ) &&
+      extractAiFloatField(
+          json,
+          "active_calls",
+          activeCallsFloat
+      ) &&
+      extractAiBoolField(
+          json,
+          "link_up",
+          linkUpValue
+      ) &&
+      extractAiBoolField(
+          json,
+          "upstream_reachable",
+          upstreamReachableValue
+      ) &&
+      extractAiBoolField(
+          json,
+          "radio_operational",
+          radioOperationalValue
+      );
+
+  if (!valid)
+  {
+    printNetworkAck(
+        false,
+        "MISSING_OR_INVALID_FIELD"
+    );
+
+    return;
+  }
+
+  if (
+      schema !=
+      "abs.net.cmd.v1")
+  {
+    printNetworkAck(
+        false,
+        "UNSUPPORTED_SCHEMA"
+    );
+
+    return;
+  }
+
+  if (
+      latencyMs < 10.0f ||
+      latencyMs > 1000.0f ||
+      packetLossPct < 0.0f ||
+      packetLossPct > 100.0f ||
+      backhaulRssiDbm < -120.0f ||
+      backhaulRssiDbm > -45.0f ||
+      trafficLoadPct < 0.0f ||
+      trafficLoadPct > 100.0f ||
+      rfForwardW < 0.0f ||
+      rfForwardW > 100.0f ||
+      rfReflectedW < 0.0f ||
+      rfReflectedW > 100.0f ||
+      activeCallsFloat < 0.0f ||
+      activeCallsFloat > 1000.0f)
+  {
+    printNetworkAck(
+        false,
+        "INVALID_NETWORK_RANGE"
+    );
+
+    return;
+  }
+
+  networkLatencyMs =
+      latencyMs;
+
+  networkPacketLossPct =
+      packetLossPct;
+
+  networkBackhaulRssiDbm =
+      backhaulRssiDbm;
+
+  networkTrafficLoadPct =
+      trafficLoadPct;
+
+  networkRfForwardW =
+      rfForwardW;
+
+  networkRfReflectedW =
+      rfReflectedW;
+
+  networkLinkUp =
+      linkUpValue;
+
+  networkUpstreamReachable =
+      upstreamReachableValue;
+
+  networkRadioOperational =
+      radioOperationalValue;
+
+  networkActiveCalls =
+      (int)round(
+          activeCallsFloat
+      );
+
+  networkCommandEverReceived =
+      true;
+
+  lastNetworkCommandTime =
+      millis();
+
+  networkInputSource =
+      "MOBILE_NETWORK_SIMULATOR";
+
+  printNetworkAck(
+      true,
+      "ACCEPTED"
+  );
+}
+
+
+int clampAdcRaw(
+    float value)
+{
+  int raw =
+      (int)round(value);
+
+  if (raw < 0)
+  {
+    return 0;
+  }
+
+  if (raw > 4095)
+  {
+    return 4095;
+  }
+
+  return raw;
+}
+
+
+void applyNetworkSimulatorAnalogOverride()
+{
+  if (!isNetworkCommandFresh())
+  {
+    return;
+  }
+
+  latency =
+      networkLatencyMs;
+
+  packetLoss =
+      networkPacketLossPct;
+
+  rssi =
+      networkBackhaulRssiDbm;
+
+  trafficLoad =
+      networkTrafficLoadPct;
+
+  rfForwardPower =
+      networkRfForwardW;
+
+  rfReflectedPower =
+      networkRfReflectedW;
+
+  latencyRaw =
+      clampAdcRaw(
+          (
+              (
+                  latency -
+                  10.0f
+              ) /
+              990.0f
+          ) *
+          4095.0f
+      );
+
+  packetLossRaw =
+      clampAdcRaw(
+          (
+              packetLoss /
+              100.0f
+          ) *
+          4095.0f
+      );
+
+  rssiRaw =
+      clampAdcRaw(
+          (
+              (
+                  rssi +
+                  120.0f
+              ) /
+              75.0f
+          ) *
+          4095.0f
+      );
+
+  trafficLoadRaw =
+      clampAdcRaw(
+          (
+              trafficLoad /
+              100.0f
+          ) *
+          4095.0f
+      );
+
+  rfForwardRaw =
+      clampAdcRaw(
+          (
+              rfForwardPower /
+              100.0f
+          ) *
+          4095.0f
+      );
+
+  rfReflectedRaw =
+      clampAdcRaw(
+          (
+              rfReflectedPower /
+              100.0f
+          ) *
+          4095.0f
+      );
+}
+
+
+void applyNetworkSimulatorDigitalOverride()
+{
+  if (!isNetworkCommandFresh())
+  {
+    return;
+  }
+
+  linkUp =
+      networkLinkUp;
+
+  upstreamReachable =
+      networkUpstreamReachable;
+
+  radioOperational =
+      networkRadioOperational;
+}
+
+
 bool isValidAiMode(
     const String &mode)
 {
@@ -2507,9 +2902,21 @@ void serviceAiCommandSerial()
           aiSerialBuffer.length() >
           0)
       {
-        handleAiCommandLine(
-            aiSerialBuffer
-        );
+        if (
+            aiSerialBuffer.startsWith(
+                "ABS_NET_CMD|"
+            ))
+        {
+          handleNetworkCommandLine(
+              aiSerialBuffer
+          );
+        }
+        else
+        {
+          handleAiCommandLine(
+              aiSerialBuffer
+          );
+        }
 
         aiSerialBuffer =
             "";
@@ -4500,6 +4907,8 @@ void readFastInputs()
   unsigned long processingNow =
       millis();
 
+  applyNetworkSimulatorAnalogOverride();
+
   updatePowerSignalProcessing(
       processingNow
   );
@@ -4553,6 +4962,8 @@ void readFastInputs()
           RADIO_OPERATIONAL_PIN
       ) ==
       HIGH;
+
+  applyNetworkSimulatorDigitalOverride();
 
   // Hard power automation does not wait for AI/Pico.
   // It runs every fast-input cycle (50 ms).
@@ -6430,6 +6841,15 @@ void printMachineReadableTelemetry()
 
   Serial.print(",\"timestamp_ms\":");
   Serial.print(millis());
+
+  isNetworkCommandFresh();
+
+  Serial.print(",\"network_input_source\":\"");
+  Serial.print(networkInputSource);
+  Serial.print("\"");
+
+  Serial.print(",\"network_active_calls\":");
+  Serial.print(networkActiveCalls);
 
   // --------------------------------------------------
   // ENVIRONMENT / THERMAL
