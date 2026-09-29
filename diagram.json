@@ -718,8 +718,8 @@
     {
       "type": "wokwi-text",
       "id": "v3PowerTitle",
-      "top": 1060,
-      "left": 1850,
+      "top": 1020,
+      "left": 1810,
       "attrs": {
         "text": "SITE POWER"
       }
@@ -844,26 +844,26 @@
     {
       "type": "wokwi-text",
       "id": "v3PowerBus",
-      "top": 1100,
-      "left": 1790,
+      "top": 1095,
+      "left": 1795,
       "attrs": {
-        "text": "DC BUS"
+        "text": "DC V"
       }
     },
     {
       "type": "wokwi-text",
       "id": "v3PowerCurrent",
-      "top": 1100,
-      "left": 1945,
+      "top": 1095,
+      "left": 1960,
       "attrs": {
-        "text": "SITE LOAD"
+        "text": "DC I"
       }
     },
     {
       "type": "wokwi-text",
       "id": "v3PowerGenerator",
-      "top": 1100,
-      "left": 2175,
+      "top": 1095,
+      "left": 2170,
       "attrs": {
         "text": "GENERATOR"
       }
@@ -871,8 +871,8 @@
     {
       "type": "wokwi-text",
       "id": "v3PowerBattery",
-      "top": 1250,
-      "left": 1790,
+      "top": 1310,
+      "left": 2390,
       "attrs": {
         "text": "BATTERY"
       }
@@ -880,8 +880,8 @@
     {
       "type": "wokwi-text",
       "id": "v3PowerCooling",
-      "top": 1250,
-      "left": 1625,
+      "top": 1310,
+      "left": 2020,
       "attrs": {
         "text": "FAN"
       }
@@ -889,10 +889,10 @@
     {
       "type": "wokwi-text",
       "id": "v3PowerFeedback",
-      "top": 1250,
-      "left": 2150,
+      "top": 1310,
+      "left": 2205,
       "attrs": {
-        "text": "GEN FEEDBACK"
+        "text": "GEN FB"
       }
     },
     {
@@ -965,15 +965,6 @@
       "left": 65,
       "attrs": {
         "text": "SENSORS -> ESP32"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v5AnalyzerTitle",
-      "top": 1035,
-      "left": 1910,
-      "attrs": {
-        "text": "SIGNAL ANALYZER"
       }
     },
     {
@@ -1150,8 +1141,8 @@
     {
       "type": "wokwi-text",
       "id": "v7PowerPanelTitle",
-      "top": 1280,
-      "left": 1900,
+      "top": 1395,
+      "left": 1880,
       "attrs": {
         "text": "POWER FAULT INJECTION"
       }
@@ -1159,55 +1150,46 @@
     {
       "type": "wokwi-text",
       "id": "v7PowerLabel1",
-      "top": 1440,
-      "left": 1625,
+      "top": 1460,
+      "left": 1640,
       "attrs": {
-        "text": "GRID FAIL"
+        "text": "GRID"
       }
     },
     {
       "type": "wokwi-text",
       "id": "v7PowerLabel2",
-      "top": 1440,
-      "left": 1775,
+      "top": 1460,
+      "left": 1795,
       "attrs": {
-        "text": "RECTIFIER FAIL"
+        "text": "RECTIFIER"
       }
     },
     {
       "type": "wokwi-text",
       "id": "v7PowerLabel3",
-      "top": 1470,
-      "left": 1880,
+      "top": 1460,
+      "left": 2025,
       "attrs": {
-        "text": "COOLING FAIL"
+        "text": "COOLING"
       }
     },
     {
       "type": "wokwi-text",
       "id": "v7PowerLabel4",
-      "top": 1440,
-      "left": 2150,
+      "top": 1460,
+      "left": 2195,
       "attrs": {
-        "text": "GEN FB FAIL"
+        "text": "GEN FB"
       }
     },
     {
       "type": "wokwi-text",
       "id": "v7PowerLabel5",
-      "top": 1440,
-      "left": 2370,
+      "top": 1460,
+      "left": 2390,
       "attrs": {
-        "text": "BATTERY LOW"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "coolingSourceLabel",
-      "top": 1315,
-      "left": 2000,
-      "attrs": {
-        "text": "FAN SOURCE"
+        "text": "BATTERY"
       }
     },
     {
