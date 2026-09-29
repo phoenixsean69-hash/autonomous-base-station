@@ -1132,15 +1132,6 @@
     },
     {
       "type": "wokwi-text",
-      "id": "v7PowerLabel3",
-      "top": 1460,
-      "left": 2025,
-      "attrs": {
-        "text": "COOLING"
-      }
-    },
-    {
-      "type": "wokwi-text",
       "id": "v7PowerLabel4",
       "top": 1460,
       "left": 2195,
@@ -1160,17 +1151,16 @@
     {
       "type": "chip-cooling-fault-interposer",
       "id": "coolingFaultInterposer",
-      "top": 1515,
-      "left": 2020,
-      "attrs": {
-        "faultEnable": "0"
-      }
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-resistor",
       "id": "coolingFaultLedResistor",
-      "top": 1545,
-      "left": 2265,
+      "top": 1525,
+      "left": 2130,
       "attrs": {
         "value": "220"
       }
@@ -1178,28 +1168,26 @@
     {
       "type": "wokwi-led",
       "id": "coolingFaultLed",
-      "top": 1530,
-      "left": 2350,
+      "top": 1510,
+      "left": 2210,
       "attrs": {
         "color": "red",
-        "label": "COOLING FAULT ACTIVE"
+        "label": ""
       }
     },
     {
       "type": "chip-radio-hardware-fault-interposer",
       "id": "radioHardwareFaultInterposer",
-      "top": 735,
-      "left": 1400,
-      "attrs": {
-        "faultEnable": "0",
-        "severityPct": "100"
-      }
+      "top": 0,
+      "left": 0,
+      "attrs": {},
+      "hide": true
     },
     {
       "type": "wokwi-resistor",
       "id": "radioHardwareFaultLedResistor",
       "top": 755,
-      "left": 1625,
+      "left": 1560,
       "attrs": {
         "value": "220"
       }
@@ -1208,9 +1196,66 @@
       "type": "wokwi-led",
       "id": "radioHardwareFaultLed",
       "top": 740,
-      "left": 1710,
+      "left": 1640,
       "attrs": {
-        "color": "red"
+        "color": "red",
+        "label": ""
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "coolingFaultSwitch",
+      "top": 1500,
+      "left": 1950,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "radioHardwareFaultSwitch",
+      "top": 735,
+      "left": 1385,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "radioHardwareSeverityPot",
+      "top": 720,
+      "left": 1480,
+      "attrs": {
+        "value": "1023"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "radioHardwareFaultLabel",
+      "top": 690,
+      "left": 1370,
+      "attrs": {
+        "text": "RADIO HW FAIL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "radioHardwareSeverityLabel",
+      "top": 690,
+      "left": 1480,
+      "attrs": {
+        "text": "SEVERITY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "coolingPhysicalFaultLabel",
+      "top": 1460,
+      "left": 1940,
+      "attrs": {
+        "text": "COOLING FAIL"
       }
     }
   ],
@@ -2119,6 +2164,60 @@
       "radioHardwareFaultLed:C",
       "esp32:GND.2",
       "black",
+      []
+    ],
+    [
+      "coolingFaultSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "coolingFaultSwitch:2",
+      "coolingFaultInterposer:FAULT_ENABLE",
+      "red",
+      []
+    ],
+    [
+      "coolingFaultSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "radioHardwareFaultSwitch:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "radioHardwareFaultSwitch:2",
+      "radioHardwareFaultInterposer:FAULT_ENABLE",
+      "red",
+      []
+    ],
+    [
+      "radioHardwareFaultSwitch:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "radioHardwareSeverityPot:VCC",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "radioHardwareSeverityPot:GND",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "radioHardwareSeverityPot:SIG",
+      "radioHardwareFaultInterposer:SEVERITY_IN",
+      "orange",
       []
     ]
   ],
