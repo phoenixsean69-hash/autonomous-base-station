@@ -1211,21 +1211,13 @@
       }
     },
     {
-      "type": "wokwi-slide-switch",
-      "id": "coolingFaultSwitch",
-      "top": 1535,
-      "left": 1860,
-      "attrs": {
-        "value": "0",
-        "bounce": "0"
-      }
-    },
-    {
       "type": "chip-cooling-fault-interposer",
       "id": "coolingFaultInterposer",
       "top": 1515,
       "left": 2020,
-      "attrs": {}
+      "attrs": {
+        "faultEnable": "0"
+      }
     },
     {
       "type": "wokwi-resistor",
@@ -2134,24 +2126,6 @@
       "fanSwitch:2",
       "coolingFaultInterposer:FAN_IN",
       "green",
-      []
-    ],
-    [
-      "coolingFaultSwitch:1",
-      "esp32:GND.1",
-      "black",
-      []
-    ],
-    [
-      "coolingFaultSwitch:2",
-      "coolingFaultInterposer:FAULT_ENABLE",
-      "orange",
-      []
-    ],
-    [
-      "coolingFaultSwitch:3",
-      "esp32:3V3",
-      "red",
       []
     ],
     [

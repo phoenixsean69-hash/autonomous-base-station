@@ -3,8 +3,17 @@
   "author": "Autonomous Base Station Project",
   "pins": [
     "FAN_IN",
-    "FAULT_ENABLE",
     "FAN_OUT",
     "FAULT_ACTIVE"
+  ],
+  "controls": [
+    {
+      "id": "faultEnable",
+      "label": "Inject Cooling Failure (0=OFF, 1=ON)",
+      "type": "range",
+      "min": 0,
+      "max": 1,
+      "step": 1
+    }
   ]
 }

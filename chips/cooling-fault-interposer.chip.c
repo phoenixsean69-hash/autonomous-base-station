@@ -3,43 +3,49 @@
 #include <stdint.h>
 
 /*
- * Cooling Fan Fault Interposer
+ * Cooling Fan Fault Interposer V2
  *
- * Purpose:
- *   Sit between the normal fan-health source and ESP32 GPIO18.
+ * The normal fan-health signal enters FAN_IN.
+ * The chip's own Wokwi control injects the failure.
  *
- * Healthy / bypass:
- *   FAN_OUT follows FAN_IN.
+ * faultEnable = 0 -> transparent pass-through
+ * faultEnable = 1 -> force FAN_OUT LOW
  *
- * Injected complete fan failure:
- *   FAULT_ENABLE = HIGH forces FAN_OUT LOW.
- *
- * IMPORTANT:
- *   The ESP32 is not told "COOLING_FAULT".
- *   It only observes fan_operational=false through GPIO18.
+ * The ESP32 is never given a COOLING_FAULT label.
+ * It only observes the resulting fan health on GPIO18.
  */
 
 typedef struct {
   pin_t fan_in;
-  pin_t fault_enable;
   pin_t fan_out;
   pin_t fault_active;
+
+  uint32_t fault_enable_attr;
+  timer_t refresh_timer;
 } chip_state_t;
 
-static void update_outputs(chip_state_t *s) {
+static void update_outputs(
+    chip_state_t *state)
+{
   bool source_healthy =
-      pin_read(s->fan_in) == HIGH;
+      pin_read(
+          state->fan_in
+      ) == HIGH;
 
   bool inject_failure =
-      pin_read(s->fault_enable) == HIGH;
+      attr_read(
+          state->fault_enable_attr
+      ) >= 1u;
 
   pin_write(
-      s->fault_active,
-      inject_failure ? HIGH : LOW
+      state->fault_active,
+      inject_failure
+          ? HIGH
+          : LOW
   );
 
   pin_write(
-      s->fan_out,
+      state->fan_out,
       (
           source_healthy &&
           !inject_failure
@@ -49,61 +55,63 @@ static void update_outputs(chip_state_t *s) {
   );
 }
 
-static void input_changed(
-    void *user_data,
-    pin_t pin,
-    uint32_t value) {
-  (void)pin;
-  (void)value;
 
+static void refresh(
+    void *user_data)
+{
   update_outputs(
       (chip_state_t *)user_data
   );
 }
 
-void chip_init(void) {
-  static chip_state_t state;
-  chip_state_t *s = &state;
 
-  s->fan_in =
+void chip_init(void)
+{
+  static chip_state_t state;
+
+  state.fan_in =
       pin_init(
           "FAN_IN",
           INPUT_PULLDOWN
       );
 
-  s->fault_enable =
-      pin_init(
-          "FAULT_ENABLE",
-          INPUT_PULLDOWN
-      );
-
-  s->fan_out =
+  state.fan_out =
       pin_init(
           "FAN_OUT",
           OUTPUT_LOW
       );
 
-  s->fault_active =
+  state.fault_active =
       pin_init(
           "FAULT_ACTIVE",
           OUTPUT_LOW
       );
 
-  const pin_watch_config_t watch = {
-      .user_data = s,
-      .edge = BOTH,
-      .pin_change = input_changed,
+  state.fault_enable_attr =
+      attr_init(
+          "faultEnable",
+          0u
+      );
+
+  const timer_config_t timer_config = {
+      .user_data = &state,
+      .callback = refresh,
+      .reserved = {0},
   };
 
-  pin_watch(
-      s->fan_in,
-      &watch
+  state.refresh_timer =
+      timer_init(
+          &timer_config
+      );
+
+  update_outputs(
+      &state
   );
 
-  pin_watch(
-      s->fault_enable,
-      &watch
+  // Poll the Wokwi control every 50 ms.
+  timer_start(
+      state.refresh_timer,
+      50000u,
+      true
   );
-
-  update_outputs(s);
 }
