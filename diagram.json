@@ -269,16 +269,6 @@
       }
     },
     {
-      "type": "wokwi-slide-switch",
-      "id": "rfFaultSwitch",
-      "top": 745,
-      "left": 1450,
-      "attrs": {
-        "value": "0",
-        "bounce": "0"
-      }
-    },
-    {
       "type": "wokwi-clock-generator",
       "id": "backhaulProbeClock",
       "top": 535,
@@ -413,22 +403,6 @@
     {
       "type": "wokwi-gate-xor-2",
       "id": "rfMixerGate",
-      "top": 0,
-      "left": 0,
-      "attrs": {},
-      "hide": true
-    },
-    {
-      "type": "wokwi-gate-not",
-      "id": "rfFaultInvert",
-      "top": 0,
-      "left": 0,
-      "attrs": {},
-      "hide": true
-    },
-    {
-      "type": "wokwi-gate-and-2",
-      "id": "rfOutputGate",
       "top": 0,
       "left": 0,
       "attrs": {},
@@ -1032,15 +1006,6 @@
     },
     {
       "type": "wokwi-text",
-      "id": "v7RfLabel4",
-      "top": 820,
-      "left": 1435,
-      "attrs": {
-        "text": "RADIO FAIL"
-      }
-    },
-    {
-      "type": "wokwi-text",
       "id": "v7BhPanelTitle",
       "top": 670,
       "left": 1930,
@@ -1218,6 +1183,34 @@
       "attrs": {
         "color": "red",
         "label": "COOLING FAULT ACTIVE"
+      }
+    },
+    {
+      "type": "chip-radio-hardware-fault-interposer",
+      "id": "radioHardwareFaultInterposer",
+      "top": 735,
+      "left": 1400,
+      "attrs": {
+        "faultEnable": "0",
+        "severityPct": "100"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "radioHardwareFaultLedResistor",
+      "top": 755,
+      "left": 1625,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "radioHardwareFaultLed",
+      "top": 740,
+      "left": 1710,
+      "attrs": {
+        "color": "red"
       }
     }
   ],
@@ -1541,30 +1534,6 @@
       []
     ],
     [
-      "rfFaultSwitch:2",
-      "rfFaultInvert:IN",
-      "",
-      []
-    ],
-    [
-      "rfMixerGate:OUT",
-      "rfOutputGate:A",
-      "",
-      []
-    ],
-    [
-      "rfFaultInvert:OUT",
-      "rfOutputGate:B",
-      "",
-      []
-    ],
-    [
-      "rfOutputGate:OUT",
-      "rfActivityResistor:1",
-      "",
-      []
-    ],
-    [
       "rfActivityResistor:2",
       "rfActivityLed:A",
       "limegreen",
@@ -1613,24 +1582,6 @@
       []
     ],
     [
-      "rfFaultSwitch:1",
-      "esp32:GND.2",
-      "black",
-      []
-    ],
-    [
-      "rfFaultSwitch:3",
-      "esp32:3V3",
-      "red",
-      []
-    ],
-    [
-      "rfOutputGate:OUT",
-      "radioSignalGen:CARRIER_IN",
-      "",
-      []
-    ],
-    [
       "rfPathLossSwitch:2",
       "radioSignalGen:PATHLOSS",
       "",
@@ -1649,32 +1600,8 @@
       []
     ],
     [
-      "rfFaultSwitch:2",
-      "radioSignalGen:RADIO_FAULT",
-      "",
-      []
-    ],
-    [
-      "radioSignalGen:RF_FWD",
-      "esp32:D33",
-      "",
-      []
-    ],
-    [
-      "radioSignalGen:RF_REFL",
-      "esp32:VP",
-      "",
-      []
-    ],
-    [
       "radioSignalGen:RSSI_OUT",
       "esp32:D27",
-      "",
-      []
-    ],
-    [
-      "radioSignalGen:RADIO_OK",
-      "esp32:D23",
       "",
       []
     ],
@@ -2093,12 +2020,6 @@
       []
     ],
     [
-      "rfOutputGate:OUT",
-      "networkLogicAnalyzer:D7",
-      "",
-      []
-    ],
-    [
       "networkLogicAnalyzer:GND",
       "esp32:GND.2",
       "black",
@@ -2130,6 +2051,72 @@
     ],
     [
       "coolingFaultLed:C",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rfMixerGate:OUT",
+      "radioSignalGen:CARRIER_IN",
+      "",
+      []
+    ],
+    [
+      "rfMixerGate:OUT",
+      "networkLogicAnalyzer:D7",
+      "",
+      []
+    ],
+    [
+      "radioSignalGen:RF_FWD",
+      "radioHardwareFaultInterposer:RF_FWD_IN",
+      "",
+      []
+    ],
+    [
+      "radioSignalGen:RF_REFL",
+      "radioHardwareFaultInterposer:RF_REFL_IN",
+      "",
+      []
+    ],
+    [
+      "radioSignalGen:RADIO_OK",
+      "radioHardwareFaultInterposer:RADIO_OK_IN",
+      "",
+      []
+    ],
+    [
+      "radioHardwareFaultInterposer:RF_FWD_OUT",
+      "esp32:D33",
+      "",
+      []
+    ],
+    [
+      "radioHardwareFaultInterposer:RF_REFL_OUT",
+      "esp32:VP",
+      "",
+      []
+    ],
+    [
+      "radioHardwareFaultInterposer:RADIO_OK_OUT",
+      "esp32:D23",
+      "",
+      []
+    ],
+    [
+      "radioHardwareFaultInterposer:FAULT_ACTIVE",
+      "radioHardwareFaultLedResistor:1",
+      "red",
+      []
+    ],
+    [
+      "radioHardwareFaultLedResistor:2",
+      "radioHardwareFaultLed:A",
+      "red",
+      []
+    ],
+    [
+      "radioHardwareFaultLed:C",
       "esp32:GND.2",
       "black",
       []

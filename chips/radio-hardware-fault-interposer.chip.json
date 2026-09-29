@@ -1,0 +1,31 @@
+{
+  "name": "Radio Hardware Fault Interposer",
+  "author": "Autonomous Base Station Project",
+  "pins": [
+    "RF_FWD_IN",
+    "RF_REFL_IN",
+    "RADIO_OK_IN",
+    "RF_FWD_OUT",
+    "RF_REFL_OUT",
+    "RADIO_OK_OUT",
+    "FAULT_ACTIVE"
+  ],
+  "controls": [
+    {
+      "id": "faultEnable",
+      "label": "Inject Radio Hardware Failure (0=OFF, 1=ON)",
+      "type": "range",
+      "min": 0,
+      "max": 1,
+      "step": 1
+    },
+    {
+      "id": "severityPct",
+      "label": "Failure Severity (%)",
+      "type": "range",
+      "min": 0,
+      "max": 100,
+      "step": 5
+    }
+  ]
+}
