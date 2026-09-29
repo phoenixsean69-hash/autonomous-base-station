@@ -24,3 +24,6 @@ binary = 'dist/cooling-fault-interposer.chip.wasm'
 [[chip]]
 name = 'radio-hardware-fault-interposer'
 binary = 'dist/radio-hardware-fault-interposer.chip.wasm'
+[[chip]]
+name = 'rectifier-fault-interposer'
+binary = 'dist/rectifier-fault-interposer.chip.wasm'

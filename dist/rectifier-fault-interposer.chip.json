@@ -1,0 +1,14 @@
+{
+  "name": "Rectifier Fault Interposer",
+  "author": "Autonomous Base Station Project",
+  "pins": [
+    "DC_IN",
+    "BATTERY_IN",
+    "RECTIFIER_IN",
+    "FAULT_ENABLE",
+    "DC_OUT",
+    "BATTERY_OUT",
+    "RECTIFIER_OUT",
+    "FAULT_ACTIVE"
+  ]
+}

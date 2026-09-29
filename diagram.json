@@ -120,7 +120,7 @@
       "top": 1030,
       "left": 1380,
       "attrs": {
-        "value": "1",
+        "value": "0",
         "bounce": "0"
       }
     },
@@ -1048,7 +1048,7 @@
       "top": 1000,
       "left": 1370,
       "attrs": {
-        "text": "RECTIFIER"
+        "text": "RECTIFIER FAIL"
       }
     },
     {
@@ -1176,6 +1176,33 @@
       "attrs": {
         "text": "ESP32 SAFETY + ACTUATION"
       }
+    },
+    {
+      "type": "chip-rectifier-fault-interposer",
+      "id": "rectifierFaultInterposer",
+      "top": 0,
+      "left": 0,
+      "hide": true,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rectifierFaultLedResistor",
+      "top": 1075,
+      "left": 1455,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "rectifierFaultLed",
+      "top": 1060,
+      "left": 1535,
+      "attrs": {
+        "color": "red",
+        "label": ""
+      }
     }
   ],
   "connections": [
@@ -1264,12 +1291,6 @@
       []
     ],
     [
-      "dcVoltage:SIG",
-      "esp32:D34",
-      "purple",
-      []
-    ],
-    [
       "dcCurrent:VCC",
       "esp32:3V3",
       "red",
@@ -1297,12 +1318,6 @@
       "batteryVoltage:GND",
       "esp32:GND.1",
       "black",
-      []
-    ],
-    [
-      "batteryVoltage:SIG",
-      "esp32:D32",
-      "cyan",
       []
     ],
     [
@@ -1375,12 +1390,6 @@
       "rectifierSwitch:1",
       "esp32:GND.1",
       "black",
-      []
-    ],
-    [
-      "rectifierSwitch:2",
-      "esp32:D19",
-      "green",
       []
     ],
     [
@@ -2137,6 +2146,66 @@
       "radioHardwareSeverityPot:SIG",
       "radioHardwareFaultInterposer:SEVERITY_IN",
       "orange",
+      []
+    ],
+    [
+      "rectifierSwitch:2",
+      "rectifierFaultInterposer:FAULT_ENABLE",
+      "red",
+      []
+    ],
+    [
+      "esp32:3V3",
+      "rectifierFaultInterposer:RECTIFIER_IN",
+      "green",
+      []
+    ],
+    [
+      "dcVoltage:SIG",
+      "rectifierFaultInterposer:DC_IN",
+      "purple",
+      []
+    ],
+    [
+      "rectifierFaultInterposer:DC_OUT",
+      "esp32:D34",
+      "purple",
+      []
+    ],
+    [
+      "batteryVoltage:SIG",
+      "rectifierFaultInterposer:BATTERY_IN",
+      "cyan",
+      []
+    ],
+    [
+      "rectifierFaultInterposer:BATTERY_OUT",
+      "esp32:D32",
+      "cyan",
+      []
+    ],
+    [
+      "rectifierFaultInterposer:RECTIFIER_OUT",
+      "esp32:D19",
+      "green",
+      []
+    ],
+    [
+      "rectifierFaultInterposer:FAULT_ACTIVE",
+      "rectifierFaultLedResistor:1",
+      "red",
+      []
+    ],
+    [
+      "rectifierFaultLedResistor:2",
+      "rectifierFaultLed:A",
+      "red",
+      []
+    ],
+    [
+      "rectifierFaultLed:C",
+      "esp32:GND.2",
+      "black",
       []
     ]
   ],
