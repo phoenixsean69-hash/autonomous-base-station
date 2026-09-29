@@ -6,43 +6,25 @@
     {
       "type": "wokwi-dht22",
       "id": "dht1",
-      "top": 500,
-      "left": 78,
+      "top": 340,
+      "left": 45,
       "attrs": {
         "temperature": "28",
         "humidity": "45"
       }
     },
     {
-      "type": "wokwi-text",
-      "id": "dhtLabel",
-      "top": 460,
-      "left": 45,
-      "attrs": {
-        "text": "TEMP + HUMIDITY"
-      }
-    },
-    {
       "type": "wokwi-mpu6050",
       "id": "mpu1",
-      "top": 690,
-      "left": 82,
+      "top": 515,
+      "left": 48,
       "attrs": {}
-    },
-    {
-      "type": "wokwi-text",
-      "id": "mpuLabel",
-      "top": 650,
-      "left": 55,
-      "attrs": {
-        "text": "VIBRATION"
-      }
     },
     {
       "type": "wokwi-ds18b20",
       "id": "paTemp",
-      "top": 875,
-      "left": 82,
+      "top": 690,
+      "left": 48,
       "attrs": {
         "temperature": "42"
       }
@@ -50,33 +32,24 @@
     {
       "type": "wokwi-resistor",
       "id": "dsPullup",
-      "top": 890,
-      "left": 185,
+      "top": 705,
+      "left": 150,
       "attrs": {
         "value": "4700"
       }
     },
     {
-      "type": "wokwi-text",
-      "id": "dsLabel",
-      "top": 835,
-      "left": 42,
-      "attrs": {
-        "text": "PA TEMPERATURE"
-      }
-    },
-    {
       "type": "wokwi-esp32-devkit-v1",
       "id": "esp32",
-      "top": 1030,
-      "left": 100,
+      "top": 885,
+      "left": 65,
       "attrs": {}
     },
     {
       "type": "wokwi-lcd2004",
       "id": "lcdDcVoltage",
-      "top": 55,
-      "left": 520,
+      "top": 45,
+      "left": 430,
       "attrs": {
         "pins": "i2c",
         "i2cAddress": "0x20",
@@ -87,8 +60,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "dcVoltage",
-      "top": 1140,
-      "left": 1785,
+      "top": 820,
+      "left": 1330,
       "attrs": {
         "value": "800"
       }
@@ -96,8 +69,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "dcCurrent",
-      "top": 1140,
-      "left": 1955,
+      "top": 820,
+      "left": 1460,
       "attrs": {
         "value": "350"
       }
@@ -105,8 +78,8 @@
     {
       "type": "wokwi-potentiometer",
       "id": "batteryVoltage",
-      "top": 1360,
-      "left": 2390,
+      "top": 1010,
+      "left": 1710,
       "attrs": {
         "value": "776"
       }
@@ -114,8 +87,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "gridSwitch",
-      "top": 1360,
-      "left": 1650,
+      "top": 1030,
+      "left": 1270,
       "attrs": {
         "value": "1",
         "bounce": "0"
@@ -124,8 +97,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "generatorFeedbackSwitch",
-      "top": 1360,
-      "left": 2205,
+      "top": 1030,
+      "left": 1600,
       "attrs": {
         "value": "1",
         "bounce": "0"
@@ -134,8 +107,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "fanSwitch",
-      "top": 1360,
-      "left": 2020,
+      "top": 1030,
+      "left": 1490,
       "attrs": {
         "value": "1",
         "bounce": "0"
@@ -144,8 +117,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rectifierSwitch",
-      "top": 1360,
-      "left": 1835,
+      "top": 1030,
+      "left": 1380,
       "attrs": {
         "value": "1",
         "bounce": "0"
@@ -154,8 +127,8 @@
     {
       "type": "wokwi-lcd2004",
       "id": "lcdAiRecommendations",
-      "top": 55,
-      "left": 970,
+      "top": 45,
+      "left": 830,
       "attrs": {
         "pins": "i2c",
         "i2cAddress": "0x21",
@@ -166,8 +139,8 @@
     {
       "type": "wokwi-lcd2004",
       "id": "lcdPicoActions",
-      "top": 55,
-      "left": 1420,
+      "top": 45,
+      "left": 1230,
       "attrs": {
         "pins": "i2c",
         "i2cAddress": "0x22",
@@ -178,54 +151,27 @@
     {
       "type": "wokwi-led",
       "id": "generatorLed",
-      "top": 1133,
-      "left": 2205,
+      "top": 820,
+      "left": 1680,
       "attrs": {
         "color": "green",
-        "label": "GENERATOR RUNNING"
+        "label": "GEN"
       }
     },
     {
       "type": "wokwi-resistor",
       "id": "generatorLedResistor",
-      "top": 1148,
-      "left": 2120,
+      "top": 835,
+      "left": 1600,
       "attrs": {
         "value": "220"
       }
     },
     {
-      "type": "wokwi-text",
-      "id": "label_lcd_values",
-      "top": 300,
-      "left": 560,
-      "attrs": {
-        "text": "LIVE SITE VALUES"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "label_lcd_ai",
-      "top": 300,
-      "left": 1005,
-      "attrs": {
-        "text": "AI RECOMMENDATIONS"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "label_lcd_pico",
-      "top": 300,
-      "left": 1480,
-      "attrs": {
-        "text": "PICO ACTIONS"
-      }
-    },
-    {
       "type": "wokwi-clock-generator",
       "id": "rfCarrierClock",
-      "top": 535,
-      "left": 760,
+      "top": 350,
+      "left": 430,
       "attrs": {
         "frequency": "10k"
       }
@@ -241,8 +187,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfPathLossSwitch",
-      "top": 745,
-      "left": 770,
+      "top": 530,
+      "left": 430,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -251,8 +197,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfInterferenceSwitch",
-      "top": 745,
-      "left": 990,
+      "top": 530,
+      "left": 570,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -261,8 +207,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "rfMismatchSwitch",
-      "top": 745,
-      "left": 1220,
+      "top": 530,
+      "left": 710,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -271,8 +217,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "backhaulProbeClock",
-      "top": 535,
-      "left": 1740,
+      "top": 350,
+      "left": 1310,
       "attrs": {
         "frequency": "2"
       }
@@ -288,8 +234,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulCongestSwitch",
-      "top": 745,
-      "left": 1765,
+      "top": 620,
+      "left": 1310,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -298,8 +244,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulImpairSwitch",
-      "top": 745,
-      "left": 1960,
+      "top": 620,
+      "left": 1440,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -308,8 +254,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulLinkFailSwitch",
-      "top": 745,
-      "left": 2155,
+      "top": 620,
+      "left": 1570,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -318,8 +264,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "backhaulUpstreamFailSwitch",
-      "top": 745,
-      "left": 2350,
+      "top": 620,
+      "left": 1700,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -336,8 +282,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficMediumSwitch",
-      "top": 1355,
-      "left": 700,
+      "top": 960,
+      "left": 570,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -346,8 +292,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficHighSwitch",
-      "top": 1355,
-      "left": 930,
+      "top": 960,
+      "left": 710,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -356,8 +302,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficOverloadSwitch",
-      "top": 1355,
-      "left": 1160,
+      "top": 960,
+      "left": 850,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -366,8 +312,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "trafficBurstSwitch",
-      "top": 1355,
-      "left": 1390,
+      "top": 960,
+      "left": 990,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -376,8 +322,8 @@
     {
       "type": "wokwi-logic-analyzer",
       "id": "networkLogicAnalyzer",
-      "top": 1080,
-      "left": 1900,
+      "top": 1190,
+      "left": 1180,
       "attrs": {
         "channelNames": "TRAFFIC,PROBE,ACK,RF_CARRIER,DROP,LINK,UPSTREAM,RF_ACTIVITY",
         "bufferSize": "200000"
@@ -386,8 +332,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "rfNoiseClock",
-      "top": 535,
-      "left": 1020,
+      "top": 350,
+      "left": 600,
       "attrs": {
         "frequency": "1k"
       }
@@ -411,8 +357,8 @@
     {
       "type": "wokwi-resistor",
       "id": "rfActivityResistor",
-      "top": 545,
-      "left": 1605,
+      "top": 365,
+      "left": 840,
       "attrs": {
         "value": "220"
       }
@@ -420,8 +366,8 @@
     {
       "type": "wokwi-led",
       "id": "rfActivityLed",
-      "top": 530,
-      "left": 1690,
+      "top": 350,
+      "left": 920,
       "attrs": {
         "color": "limegreen",
         "label": "RF"
@@ -462,8 +408,8 @@
     {
       "type": "wokwi-resistor",
       "id": "backhaulPathResistor",
-      "top": 545,
-      "left": 2080,
+      "top": 365,
+      "left": 1480,
       "attrs": {
         "value": "220"
       }
@@ -471,8 +417,8 @@
     {
       "type": "wokwi-led",
       "id": "backhaulPathLed",
-      "top": 530,
-      "left": 2160,
+      "top": 350,
+      "left": 1560,
       "attrs": {
         "color": "limegreen",
         "label": "PATH"
@@ -481,8 +427,8 @@
     {
       "type": "wokwi-resistor",
       "id": "backhaulAckResistor",
-      "top": 635,
-      "left": 2080,
+      "top": 440,
+      "left": 1480,
       "attrs": {
         "value": "220"
       }
@@ -490,8 +436,8 @@
     {
       "type": "wokwi-led",
       "id": "backhaulAckLed",
-      "top": 620,
-      "left": 2160,
+      "top": 425,
+      "left": 1560,
       "attrs": {
         "color": "green",
         "label": "ACK"
@@ -500,8 +446,8 @@
     {
       "type": "wokwi-resistor",
       "id": "backhaulDropResistor",
-      "top": 725,
-      "left": 2080,
+      "top": 515,
+      "left": 1480,
       "attrs": {
         "value": "220"
       }
@@ -509,8 +455,8 @@
     {
       "type": "wokwi-led",
       "id": "backhaulDropLed",
-      "top": 710,
-      "left": 2160,
+      "top": 500,
+      "left": 1560,
       "attrs": {
         "color": "red",
         "label": "DROP"
@@ -519,8 +465,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "trafficBaseClock",
-      "top": 1180,
-      "left": 460,
+      "top": 810,
+      "left": 430,
       "attrs": {
         "frequency": "8"
       }
@@ -528,8 +474,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "trafficMediumClock",
-      "top": 1180,
-      "left": 700,
+      "top": 810,
+      "left": 570,
       "attrs": {
         "frequency": "27"
       }
@@ -537,8 +483,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "trafficHighClock",
-      "top": 1180,
-      "left": 940,
+      "top": 810,
+      "left": 710,
       "attrs": {
         "frequency": "62"
       }
@@ -546,8 +492,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "trafficOverloadClock",
-      "top": 1180,
-      "left": 1180,
+      "top": 810,
+      "left": 850,
       "attrs": {
         "frequency": "92"
       }
@@ -555,8 +501,8 @@
     {
       "type": "wokwi-clock-generator",
       "id": "trafficBurstClock",
-      "top": 1180,
-      "left": 1420,
+      "top": 810,
+      "left": 990,
       "attrs": {
         "frequency": "122"
       }
@@ -628,8 +574,8 @@
     {
       "type": "wokwi-resistor",
       "id": "trafficOutResistor",
-      "top": 1485,
-      "left": 1610,
+      "top": 960,
+      "left": 1110,
       "attrs": {
         "value": "220"
       }
@@ -637,515 +583,11 @@
     {
       "type": "wokwi-led",
       "id": "trafficOutLed",
-      "top": 1470,
-      "left": 1695,
+      "top": 945,
+      "left": 1190,
       "attrs": {
         "color": "blue",
         "label": "PKT"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3Title",
-      "top": 10,
-      "left": 930,
-      "attrs": {
-        "text": "AUTONOMOUS BASE STATION"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3EnvTitle",
-      "top": 420,
-      "left": 35,
-      "attrs": {
-        "text": "ENVIRONMENT + SENSING"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3RfTitle",
-      "top": 420,
-      "left": 990,
-      "attrs": {
-        "text": "RADIO FREQUENCY"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3BackhaulTitle",
-      "top": 420,
-      "left": 2010,
-      "attrs": {
-        "text": "BACKHAUL"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3TrafficTitle",
-      "top": 1060,
-      "left": 820,
-      "attrs": {
-        "text": "USER TRAFFIC"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3PowerTitle",
-      "top": 1020,
-      "left": 1810,
-      "attrs": {
-        "text": "SITE POWER"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3ControlTitle",
-      "top": 1810,
-      "left": 980,
-      "attrs": {
-        "text": "CONTROL + DECISION"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3RfCarrier",
-      "top": 485,
-      "left": 780,
-      "attrs": {
-        "text": "CARRIER"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3RfNoise",
-      "top": 485,
-      "left": 980,
-      "attrs": {
-        "text": "INTERFERENCE"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3RfActivity",
-      "top": 485,
-      "left": 1610,
-      "attrs": {
-        "text": "RF ACTIVITY"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3BhProbe",
-      "top": 485,
-      "left": 1775,
-      "attrs": {
-        "text": "PROBE"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3BhIndicators",
-      "top": 485,
-      "left": 2090,
-      "attrs": {
-        "text": "PATH   ACK   DROP"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3TrafficBase",
-      "top": 1135,
-      "left": 470,
-      "attrs": {
-        "text": "LOW"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3TrafficMedium",
-      "top": 1135,
-      "left": 690,
-      "attrs": {
-        "text": "MEDIUM"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3TrafficHigh",
-      "top": 1135,
-      "left": 950,
-      "attrs": {
-        "text": "HIGH"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3TrafficOverload",
-      "top": 1135,
-      "left": 1160,
-      "attrs": {
-        "text": "OVERLOAD"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3TrafficBurst",
-      "top": 1135,
-      "left": 1420,
-      "attrs": {
-        "text": "BURST"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3PowerGrid",
-      "top": 1100,
-      "left": 1450,
-      "attrs": {
-        "text": "GRID"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3PowerRectifier",
-      "top": 1100,
-      "left": 1590,
-      "attrs": {
-        "text": "RECTIFIER"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3PowerBus",
-      "top": 1095,
-      "left": 1795,
-      "attrs": {
-        "text": "DC V"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3PowerCurrent",
-      "top": 1095,
-      "left": 1960,
-      "attrs": {
-        "text": "DC I"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3PowerGenerator",
-      "top": 1095,
-      "left": 2170,
-      "attrs": {
-        "text": "GENERATOR"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3PowerBattery",
-      "top": 1310,
-      "left": 2390,
-      "attrs": {
-        "text": "BATTERY"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3PowerCooling",
-      "top": 1310,
-      "left": 2020,
-      "attrs": {
-        "text": "FAN"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3PowerFeedback",
-      "top": 1310,
-      "left": 2205,
-      "attrs": {
-        "text": "GEN FB"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3Control1",
-      "top": 1900,
-      "left": 380,
-      "attrs": {
-        "text": "ESP32 SENSING"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3ControlArrow1",
-      "top": 1900,
-      "left": 590,
-      "attrs": {
-        "text": "->"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3Control2",
-      "top": 1900,
-      "left": 700,
-      "attrs": {
-        "text": "LAPTOP AI"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3ControlArrow2",
-      "top": 1900,
-      "left": 860,
-      "attrs": {
-        "text": "->"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3Control3",
-      "top": 1900,
-      "left": 1010,
-      "attrs": {
-        "text": "PICO"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3ControlArrow3",
-      "top": 1900,
-      "left": 1260,
-      "attrs": {
-        "text": "->"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v3Control4",
-      "top": 1900,
-      "left": 1325,
-      "attrs": {
-        "text": "ESP32 SAFETY + ACTUATION"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v5EnvSummary",
-      "top": 1285,
-      "left": 65,
-      "attrs": {
-        "text": "SENSORS -> ESP32"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v6RfChannel",
-      "top": 565,
-      "left": 1160,
-      "attrs": {
-        "text": "RF PATH"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v6BhFlow",
-      "top": 565,
-      "left": 1880,
-      "attrs": {
-        "text": "PROBE -> BACKHAUL -> CORE"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v6TrafficAggregator",
-      "top": 1410,
-      "left": 930,
-      "attrs": {
-        "text": "PACKET GENERATOR"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7RfPanelTitle",
-      "top": 670,
-      "left": 980,
-      "attrs": {
-        "text": "RADIO FAULT INJECTION"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7RfLabel1",
-      "top": 820,
-      "left": 750,
-      "attrs": {
-        "text": "PATH LOSS"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7RfLabel2",
-      "top": 820,
-      "left": 940,
-      "attrs": {
-        "text": "INTERFERENCE"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7RfLabel3",
-      "top": 820,
-      "left": 1190,
-      "attrs": {
-        "text": "MISMATCH"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7BhPanelTitle",
-      "top": 670,
-      "left": 1930,
-      "attrs": {
-        "text": "BACKHAUL FAULT INJECTION"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7BhLabel1",
-      "top": 820,
-      "left": 1740,
-      "attrs": {
-        "text": "CONGESTION"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7BhLabel2",
-      "top": 820,
-      "left": 1950,
-      "attrs": {
-        "text": "IMPAIRMENT"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7BhLabel3",
-      "top": 820,
-      "left": 2160,
-      "attrs": {
-        "text": "LINK FAIL"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7BhLabel4",
-      "top": 820,
-      "left": 2330,
-      "attrs": {
-        "text": "UPSTREAM FAIL"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7TrafficPanelTitle",
-      "top": 1280,
-      "left": 875,
-      "attrs": {
-        "text": "TRAFFIC LOAD"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7TrafficLabel0",
-      "top": 1435,
-      "left": 470,
-      "attrs": {
-        "text": "LOW"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7TrafficLabel1",
-      "top": 1435,
-      "left": 690,
-      "attrs": {
-        "text": "MEDIUM"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7TrafficLabel2",
-      "top": 1435,
-      "left": 950,
-      "attrs": {
-        "text": "HIGH"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7TrafficLabel3",
-      "top": 1435,
-      "left": 1160,
-      "attrs": {
-        "text": "OVERLOAD"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7TrafficLabel4",
-      "top": 1435,
-      "left": 1420,
-      "attrs": {
-        "text": "BURST"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7PowerPanelTitle",
-      "top": 1395,
-      "left": 1880,
-      "attrs": {
-        "text": "POWER FAULT INJECTION"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7PowerLabel1",
-      "top": 1460,
-      "left": 1640,
-      "attrs": {
-        "text": "GRID"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7PowerLabel2",
-      "top": 1460,
-      "left": 1795,
-      "attrs": {
-        "text": "RECTIFIER"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7PowerLabel4",
-      "top": 1460,
-      "left": 2195,
-      "attrs": {
-        "text": "GEN FB"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "v7PowerLabel5",
-      "top": 1460,
-      "left": 2390,
-      "attrs": {
-        "text": "BATTERY"
       }
     },
     {
@@ -1159,8 +601,8 @@
     {
       "type": "wokwi-resistor",
       "id": "coolingFaultLedResistor",
-      "top": 1525,
-      "left": 2130,
+      "top": 1175,
+      "left": 1600,
       "attrs": {
         "value": "220"
       }
@@ -1168,8 +610,8 @@
     {
       "type": "wokwi-led",
       "id": "coolingFaultLed",
-      "top": 1510,
-      "left": 2210,
+      "top": 1160,
+      "left": 1680,
       "attrs": {
         "color": "red",
         "label": ""
@@ -1186,8 +628,8 @@
     {
       "type": "wokwi-resistor",
       "id": "radioHardwareFaultLedResistor",
-      "top": 755,
-      "left": 1560,
+      "top": 545,
+      "left": 1110,
       "attrs": {
         "value": "220"
       }
@@ -1195,8 +637,8 @@
     {
       "type": "wokwi-led",
       "id": "radioHardwareFaultLed",
-      "top": 740,
-      "left": 1640,
+      "top": 530,
+      "left": 1190,
       "attrs": {
         "color": "red",
         "label": ""
@@ -1205,8 +647,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "coolingFaultSwitch",
-      "top": 1500,
-      "left": 1950,
+      "top": 1160,
+      "left": 1490,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -1215,8 +657,8 @@
     {
       "type": "wokwi-slide-switch",
       "id": "radioHardwareFaultSwitch",
-      "top": 735,
-      "left": 1385,
+      "top": 530,
+      "left": 850,
       "attrs": {
         "value": "0",
         "bounce": "0"
@@ -1225,37 +667,514 @@
     {
       "type": "wokwi-potentiometer",
       "id": "radioHardwareSeverityPot",
-      "top": 720,
-      "left": 1480,
+      "top": 505,
+      "left": 980,
       "attrs": {
         "value": "1023"
       }
     },
     {
       "type": "wokwi-text",
-      "id": "radioHardwareFaultLabel",
-      "top": 690,
-      "left": 1370,
+      "id": "mkTitle",
+      "top": 8,
+      "left": 770,
+      "attrs": {
+        "text": "AUTONOMOUS TELECOMMUNICATIONS BASE STATION"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkLcd1",
+      "top": 185,
+      "left": 470,
+      "attrs": {
+        "text": "LIVE SITE VALUES"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkLcd2",
+      "top": 185,
+      "left": 870,
+      "attrs": {
+        "text": "AI RECOMMENDATIONS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkLcd3",
+      "top": 185,
+      "left": 1275,
+      "attrs": {
+        "text": "PICO ACTIONS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkSensing",
+      "top": 285,
+      "left": 55,
+      "attrs": {
+        "text": "SITE SENSING"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkTemp",
+      "top": 315,
+      "left": 35,
+      "attrs": {
+        "text": "TEMP + HUMIDITY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkVibration",
+      "top": 490,
+      "left": 55,
+      "attrs": {
+        "text": "VIBRATION"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkPaTemp",
+      "top": 665,
+      "left": 35,
+      "attrs": {
+        "text": "PA TEMPERATURE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkEsp32",
+      "top": 855,
+      "left": 45,
+      "attrs": {
+        "text": "ESP32 CONTROLLER"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkRadioZone",
+      "top": 285,
+      "left": 650,
+      "attrs": {
+        "text": "LOCAL / RADIO"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkCarrier",
+      "top": 320,
+      "left": 440,
+      "attrs": {
+        "text": "CARRIER"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkNoise",
+      "top": 320,
+      "left": 590,
+      "attrs": {
+        "text": "INTERFERENCE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkRfActivity",
+      "top": 320,
+      "left": 900,
+      "attrs": {
+        "text": "RF ACTIVITY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkPathLoss",
+      "top": 490,
+      "left": 425,
+      "attrs": {
+        "text": "PATH LOSS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkInterference",
+      "top": 490,
+      "left": 555,
+      "attrs": {
+        "text": "INTERFERENCE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkMismatch",
+      "top": 490,
+      "left": 695,
+      "attrs": {
+        "text": "RF MISMATCH"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkRadioFail",
+      "top": 490,
+      "left": 830,
       "attrs": {
         "text": "RADIO HW FAIL"
       }
     },
     {
       "type": "wokwi-text",
-      "id": "radioHardwareSeverityLabel",
-      "top": 690,
-      "left": 1480,
+      "id": "mkSeverity",
+      "top": 490,
+      "left": 985,
       "attrs": {
         "text": "SEVERITY"
       }
     },
     {
       "type": "wokwi-text",
-      "id": "coolingPhysicalFaultLabel",
-      "top": 1460,
-      "left": 1940,
+      "id": "mkLocalTag",
+      "top": 650,
+      "left": 680,
+      "attrs": {
+        "text": "LOCAL FAULTS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkBackhaulZone",
+      "top": 285,
+      "left": 1430,
+      "attrs": {
+        "text": "UPSTREAM / BACKHAUL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkProbe",
+      "top": 320,
+      "left": 1330,
+      "attrs": {
+        "text": "PROBE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkPath",
+      "top": 320,
+      "left": 1550,
+      "attrs": {
+        "text": "PATH"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkAck",
+      "top": 410,
+      "left": 1550,
+      "attrs": {
+        "text": "ACK"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkDrop",
+      "top": 485,
+      "left": 1550,
+      "attrs": {
+        "text": "DROP"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkCongestion",
+      "top": 585,
+      "left": 1285,
+      "attrs": {
+        "text": "CONGESTION"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkImpairment",
+      "top": 585,
+      "left": 1425,
+      "attrs": {
+        "text": "IMPAIRMENT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkLinkFail",
+      "top": 585,
+      "left": 1560,
+      "attrs": {
+        "text": "LINK FAIL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkUpstreamFail",
+      "top": 585,
+      "left": 1680,
+      "attrs": {
+        "text": "UPSTREAM FAIL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkUpstreamTag",
+      "top": 650,
+      "left": 1430,
+      "attrs": {
+        "text": "UPSTREAM FAULTS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkTrafficZone",
+      "top": 755,
+      "left": 700,
+      "attrs": {
+        "text": "USER TRAFFIC"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkTrafficLow",
+      "top": 785,
+      "left": 445,
+      "attrs": {
+        "text": "LOW"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkTrafficMed",
+      "top": 785,
+      "left": 565,
+      "attrs": {
+        "text": "MEDIUM"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkTrafficHigh",
+      "top": 785,
+      "left": 715,
+      "attrs": {
+        "text": "HIGH"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkTrafficOverload",
+      "top": 785,
+      "left": 845,
+      "attrs": {
+        "text": "OVERLOAD"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkTrafficBurst",
+      "top": 785,
+      "left": 1000,
+      "attrs": {
+        "text": "BURST"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkPacketOut",
+      "top": 925,
+      "left": 1115,
+      "attrs": {
+        "text": "PACKET ACTIVITY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkPowerZone",
+      "top": 755,
+      "left": 1450,
+      "attrs": {
+        "text": "LOCAL / SITE POWER"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkDcV",
+      "top": 790,
+      "left": 1335,
+      "attrs": {
+        "text": "DC V"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkDcI",
+      "top": 790,
+      "left": 1465,
+      "attrs": {
+        "text": "DC I"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkGenerator",
+      "top": 790,
+      "left": 1650,
+      "attrs": {
+        "text": "GENERATOR"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkGrid",
+      "top": 1000,
+      "left": 1275,
+      "attrs": {
+        "text": "GRID"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkRectifier",
+      "top": 1000,
+      "left": 1370,
+      "attrs": {
+        "text": "RECTIFIER"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkFanSource",
+      "top": 1000,
+      "left": 1470,
+      "attrs": {
+        "text": "FAN SOURCE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkGenFb",
+      "top": 1000,
+      "left": 1595,
+      "attrs": {
+        "text": "GEN FB"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkBattery",
+      "top": 1000,
+      "left": 1720,
+      "attrs": {
+        "text": "BATTERY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkCooling",
+      "top": 1130,
+      "left": 1465,
       "attrs": {
         "text": "COOLING FAIL"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkPowerLocalTag",
+      "top": 1130,
+      "left": 1635,
+      "attrs": {
+        "text": "LOCAL FAULT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkTest",
+      "top": 1150,
+      "left": 1200,
+      "attrs": {
+        "text": "TEST INSTRUMENTS"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkControlTitle",
+      "top": 1350,
+      "left": 760,
+      "attrs": {
+        "text": "CONTROL + DECISION"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkControl1",
+      "top": 1405,
+      "left": 390,
+      "attrs": {
+        "text": "ESP32 SENSING"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkArrow1",
+      "top": 1405,
+      "left": 600,
+      "attrs": {
+        "text": "->"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkControl2",
+      "top": 1405,
+      "left": 660,
+      "attrs": {
+        "text": "LAPTOP AI"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkArrow2",
+      "top": 1405,
+      "left": 830,
+      "attrs": {
+        "text": "->"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkControl3",
+      "top": 1405,
+      "left": 890,
+      "attrs": {
+        "text": "PICO"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkArrow3",
+      "top": 1405,
+      "left": 1000,
+      "attrs": {
+        "text": "->"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mkControl4",
+      "top": 1405,
+      "left": 1060,
+      "attrs": {
+        "text": "ESP32 SAFETY + ACTUATION"
       }
     }
   ],
