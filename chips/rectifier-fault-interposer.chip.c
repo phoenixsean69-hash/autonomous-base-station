@@ -25,8 +25,10 @@ static float clampf_local(float value, float minimum, float maximum) {
 static void refresh(void *user_data) {
   chip_state_t *s = (chip_state_t *)user_data;
 
-  const float dc_in_v = clampf_local(pin_adc_read(s->dc_in), 0.0f, 3.3f);
-  const float battery_in_v = clampf_local(pin_adc_read(s->battery_in), 0.0f, 3.3f);
+  // Wokwi custom-chip analog I/O uses a 0..5V virtual reference.
+  // Keep the full range so healthy mode is a true pass-through.
+  const float dc_in_v = clampf_local(pin_adc_read(s->dc_in), 0.0f, 5.0f);
+  const float battery_in_v = clampf_local(pin_adc_read(s->battery_in), 0.0f, 5.0f);
   const bool source_ok = pin_read(s->rectifier_in) == HIGH;
   const bool fault_enabled = pin_read(s->fault_enable) == HIGH;
 
@@ -46,8 +48,8 @@ static void refresh(void *user_data) {
   // Battery voltage gradually sags toward 92% of source voltage while carrying the site.
   const float battery_factor = 1.0f - (0.08f * s->battery_progress);
 
-  const float dc_out_v = clampf_local(dc_in_v * dc_factor, 0.0f, 3.3f);
-  const float battery_out_v = clampf_local(battery_in_v * battery_factor, 0.0f, 3.3f);
+  const float dc_out_v = clampf_local(dc_in_v * dc_factor, 0.0f, 5.0f);
+  const float battery_out_v = clampf_local(battery_in_v * battery_factor, 0.0f, 5.0f);
 
   pin_dac_write(s->dc_out, dc_out_v);
   pin_dac_write(s->battery_out, battery_out_v);
