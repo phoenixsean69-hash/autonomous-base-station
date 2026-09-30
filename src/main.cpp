@@ -1401,16 +1401,29 @@ String determineFaultCandidate(
 // Once generator starts during a grid outage, it remains running
 // until grid returns. This prevents rapid start/stop oscillation.
 //
+bool isGridSupplyUsable()
+{
+  // Utility AC can only supply the site when the rectifier path is healthy.
+  // Keep gridAvailable as the raw AC-availability fact for diagnostics.
+  return
+      gridAvailable &&
+      rectifierNormal;
+}
+
+
 void applyFastPowerAutomation()
 {
+  const bool gridSupplyUsable =
+      isGridSupplyUsable();
+
   bool outputHigh =
       digitalRead(
           GENERATOR_CONTROL_PIN
       ) ==
       HIGH;
 
-  // Healthy grid always has priority.
-  if (gridAvailable)
+  // A healthy, usable grid-to-DC path always has priority.
+  if (gridSupplyUsable)
   {
     if (outputHigh)
     {
@@ -1465,7 +1478,12 @@ void applyFastPowerAutomation()
             FAST_BATTERY_CRITICAL_SOC_PCT
         )
             ? "Critical battery - generator supplying"
-            : "Grid off - generator supplying";
+            : (
+                  gridAvailable &&
+                  !rectifierNormal
+              )
+                  ? "Rectifier fault - generator supplying"
+                  : "Grid off - generator supplying";
 
     return;
   }
@@ -1519,7 +1537,12 @@ void applyFastPowerAutomation()
       "BATTERY_ACTIVE";
 
   fastPowerAutomationReason =
-      "Grid off - battery backup";
+      (
+          gridAvailable &&
+          !rectifierNormal
+      )
+          ? "Rectifier fault - battery backup"
+          : "Grid off - battery backup";
 }
 
 
@@ -3066,7 +3089,7 @@ String determineRequestedOperatingMode()
   // Always authoritative. AI cannot override this.
   //
   if (
-      !gridAvailable &&
+      !isGridSupplyUsable() &&
       !generatorRunning &&
       batterySOC <= 25.0f)
   {
@@ -3104,7 +3127,7 @@ String determineRequestedOperatingMode()
   // Existing deterministic fallback remains authoritative.
   //
   if (
-      !gridAvailable &&
+      !isGridSupplyUsable() &&
       !generatorRunning)
   {
     requestedOperatingModeReason =
@@ -3681,16 +3704,19 @@ void recalculateSystemState()
           rssi
       );
 
+  const bool gridSupplyUsable =
+      isGridSupplyUsable();
+
   activePowerSource =
       determineActivePowerSource(
-          gridAvailable,
+          gridSupplyUsable,
           generatorRunning,
           batterySOC
       );
 
   energyAction =
       determineEnergyAction(
-          gridAvailable,
+          gridSupplyUsable,
           generatorRunning,
           batterySOC
       );
