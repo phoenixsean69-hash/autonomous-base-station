@@ -232,6 +232,12 @@ const float THERMAL_FAST_RISE_THRESHOLD_C_PER_MIN = 2.00f;
 const float PA_THERMAL_HOT_C = 65.0f;
 const float PA_THERMAL_CRITICAL_C = 80.0f;
 
+// Demo-scale causal thermal plant driven by the confirmed fan state.
+// No hidden fault label is used as a temperature shortcut.
+const float COOLING_MODELED_MAX_RISE_C = 43.0f;
+const float COOLING_HEATUP_SECONDS = 45.0f;
+const float COOLING_COOLDOWN_SECONDS = 30.0f;
+
 // ====================================================
 // ENERGY GUARDRAILS / HYSTERESIS / RECOVERY
 // ====================================================
@@ -336,7 +342,12 @@ LiquidCrystal_I2C lcdPicoActions(
 // Environment
 float shelterTemperature = 0.0;
 float humidity = 0.0;
+
+// Physical DS18B20 base reading plus a causal thermal plant driven by
+// the confirmed cooling-fan operational state.
 float paTemperature = 0.0;
+float coolingThermalRiseC = 0.0f;
+unsigned long lastCoolingThermalModelTime = 0;
 
 // ----------------------------------------------------
 // Processed thermal features
@@ -4788,6 +4799,90 @@ void updateBackhaulSignalProcessing(
 
 
 // ====================================================
+// COOLING THERMAL PLANT
+// ====================================================
+//
+// The model reacts ONLY to fanOperational. The COOLING FAIL switch first
+// has to cause the interposer's FAN_OUT to go LOW; only then does the PA
+// temperature begin to rise.
+//
+// This keeps the fault causal:
+// physical control -> fan failure -> thermal consequence.
+//
+void updateCoolingThermalModel(
+    unsigned long now)
+{
+  if (lastCoolingThermalModelTime == 0)
+  {
+    lastCoolingThermalModelTime =
+        now;
+    return;
+  }
+
+  unsigned long elapsedMs =
+      now -
+      lastCoolingThermalModelTime;
+
+  lastCoolingThermalModelTime =
+      now;
+
+  float elapsedSeconds =
+      elapsedMs /
+      1000.0f;
+
+  // Prevent a debugger pause / simulator stall from creating an instant
+  // thermal jump when execution resumes.
+  if (elapsedSeconds > 0.25f)
+  {
+    elapsedSeconds =
+        0.25f;
+  }
+
+  float deltaC =
+      0.0f;
+
+  if (!fanOperational)
+  {
+    deltaC =
+        COOLING_MODELED_MAX_RISE_C *
+        (
+            elapsedSeconds /
+            COOLING_HEATUP_SECONDS
+        );
+
+    coolingThermalRiseC +=
+        deltaC;
+  }
+  else
+  {
+    deltaC =
+        COOLING_MODELED_MAX_RISE_C *
+        (
+            elapsedSeconds /
+            COOLING_COOLDOWN_SECONDS
+        );
+
+    coolingThermalRiseC -=
+        deltaC;
+  }
+
+  if (coolingThermalRiseC < 0.0f)
+  {
+    coolingThermalRiseC =
+        0.0f;
+  }
+
+  if (
+      coolingThermalRiseC >
+      COOLING_MODELED_MAX_RISE_C)
+  {
+    coolingThermalRiseC =
+        COOLING_MODELED_MAX_RISE_C;
+  }
+}
+
+
+// ====================================================
 // FAST ANALOG + SWITCH INPUTS
 // ====================================================
 
@@ -4976,6 +5071,10 @@ void readFastInputs()
           FAN_OPERATIONAL_PIN
       ) ==
       HIGH;
+
+  updateCoolingThermalModel(
+      processingNow
+  );
 
   rectifierNormal =
       digitalRead(
@@ -5352,10 +5451,13 @@ void updateThermalDerivedState()
   }
   else if (
       shelterTemperatureTrendCPerMin <=
-          -THERMAL_RISE_THRESHOLD_C_PER_MIN &&
+          -THERMAL_RISE_THRESHOLD_C_PER_MIN ||
       paTemperatureTrendCPerMin <=
           -THERMAL_RISE_THRESHOLD_C_PER_MIN)
   {
+    // A local PA cool-down must be visible even when the shelter
+    // temperature is stable. Either monitored thermal signal falling
+    // sufficiently is enough to classify the thermal trend as FALLING.
     thermalTrendState =
         "FALLING";
   }
@@ -5644,8 +5746,12 @@ void handleDS18B20(
         newPaTemperature !=
             DEVICE_DISCONNECTED_C)
     {
+      // The DS18B20 remains the physical/base PA sensor.
+      // The thermal plant contributes only the temperature rise caused
+      // by the confirmed failed-fan state.
       paTemperature =
-          newPaTemperature;
+          newPaTemperature +
+          coolingThermalRiseC;
 
       updatePaThermalProcessing(
           now
@@ -6890,6 +6996,9 @@ void printMachineReadableTelemetry()
   Serial.print(",\"pa_temp_c\":");
   Serial.print(paTemperature, 2);
 
+  Serial.print(",\"cooling_thermal_rise_c\":");
+  Serial.print(coolingThermalRiseC, 3);
+
   Serial.print(",\"pa_temp_ema_c\":");
   Serial.print(paTemperatureEMA, 2);
 
@@ -7428,6 +7537,15 @@ void printTelemetry()
   );
   Serial.print(
       paTemperature,
+      2
+  );
+  Serial.println(" C");
+
+  Serial.print(
+      "Cooling Thermal Rise: "
+  );
+  Serial.print(
+      coolingThermalRiseC,
       2
   );
   Serial.println(" C");
