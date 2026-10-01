@@ -7,28 +7,59 @@
     name="description"
     content="Autonomous Base Station live monitoring dashboard"
   />
-  <title>ABS Live Control Center</title>
+  <meta name="theme-color" content="#1b1b1b" />
+  <title>ABS Control Center</title>
+
+  <!-- RoadSafe AR visual language: Saira + Material Symbols.
+       Both have local/system fallbacks in styles.css if these hosted fonts
+       are unavailable. No dashboard telemetry/control logic depends on them. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Saira:wdth,wght@75..125,300..800&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet"
+  />
+
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <div id="app">
+  <div id="app" class="roadsafe-abs-shell">
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">
-          <span></span><span></span><span></span>
+          <span class="material-symbols-outlined">cell_tower</span>
         </div>
-        <div>
-          <strong>ABS</strong>
+        <div class="brand-copy">
+          <strong>ABS CONTROL</strong>
           <small>Autonomous Base Station</small>
         </div>
       </div>
 
       <nav class="tabs" aria-label="Dashboard sections">
-        <button class="tab active" data-tab="overview">Overview</button>
-        <button class="tab" data-tab="telemetry">Telemetry</button>
-        <button class="tab" data-tab="ai">AI Intelligence</button>
-        <button class="tab" data-tab="control">Control Chain</button>
-        <button class="tab" data-tab="models">Models</button>
+        <button class="tab active" data-tab="overview">
+          <span class="material-symbols-outlined" aria-hidden="true">dashboard</span>
+          <span>Overview</span>
+        </button>
+        <button class="tab" data-tab="telemetry">
+          <span class="material-symbols-outlined" aria-hidden="true">monitoring</span>
+          <span>Telemetry</span>
+        </button>
+        <button class="tab" data-tab="ai">
+          <span class="material-symbols-outlined" aria-hidden="true">neurology</span>
+          <span>AI Intelligence</span>
+        </button>
+        <button class="tab" data-tab="control">
+          <span class="material-symbols-outlined" aria-hidden="true">account_tree</span>
+          <span>Control Chain</span>
+        </button>
+        <button class="tab" data-tab="models">
+          <span class="material-symbols-outlined" aria-hidden="true">analytics</span>
+          <span>Models</span>
+        </button>
       </nav>
 
       <div class="top-status">
@@ -41,14 +72,36 @@
       </div>
     </header>
 
+    <div class="workstation-strip" aria-label="Dashboard mode">
+      <div>
+        <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+        <strong>READ-ONLY MONITORING</strong>
+      </div>
+      <span class="workstation-strip__separator"></span>
+      <div>
+        <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+        <span>ESP32 deterministic guardrails remain final authority</span>
+      </div>
+    </div>
+
     <main id="content"></main>
 
     <footer>
-      <span>Monitoring only — simulation controls come later.</span>
-      <span>ESP32 remains final actuation authority.</span>
+      <span>
+        <span class="material-symbols-outlined" aria-hidden="true">monitor_heart</span>
+        Live engineering telemetry
+      </span>
+      <span>
+        <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+        Monitoring only — no dashboard actuation
+      </span>
     </footer>
   </div>
 
+  <!-- Keep the original dashboard data/runtime code untouched. -->
   <script src="/app.js"></script>
+  <!-- Presentation-only decorator: adds RoadSafe-style semantic icons to
+       dynamic cards/panels after app.js renders them. -->
+  <script src="/roadsafe-ui.js"></script>
 </body>
 </html>
