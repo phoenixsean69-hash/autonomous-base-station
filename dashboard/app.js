@@ -278,7 +278,10 @@ function pipeline() {
 }
 
 function telemetryLive() {
-  return ageOf(state.meta?.telemetryUpdatedMs) < 4000;
+  // ESP32 machine telemetry is emitted about every 2 seconds.
+  // Allow several simulation cycles before declaring the source offline so
+  // one delayed RFC2217/Wokwi packet cannot make the UI flap LIVE/OFFLINE.
+  return ageOf(state.meta?.telemetryUpdatedMs) < 8000;
 }
 
 function aiFresh() {
