@@ -278,14 +278,22 @@ function pipeline() {
 }
 
 function telemetryLive() {
-  // ESP32 machine telemetry is emitted about every 2 seconds.
-  // Allow several simulation cycles before declaring the source offline so
-  // one delayed RFC2217/Wokwi packet cannot make the UI flap LIVE/OFFLINE.
-  return ageOf(state.meta?.telemetryUpdatedMs) < 8000;
+  // The full closed-loop AI bridge may synchronously wait up to ~5 s for
+  // Pico embedded-AI output and another ~5 s for the Pico control decision.
+  // During that processing window Wokwi can still be healthy while the
+  // latest_telemetry.json file timestamp temporarily stops advancing.
+  //
+  // This 20-second window is status debounce only. Dashboard values remain
+  // the exact latest ESP32 telemetry; no values are fabricated/interpolated.
+  return ageOf(state.meta?.telemetryUpdatedMs) < 20000;
 }
 
 function aiFresh() {
-  return ageOf(state.meta?.aiUpdatedMs) < 15000;
+  if (typeof state.meta?.aiFresh === "boolean") {
+    return state.meta.aiFresh;
+  }
+
+  return ageOf(state.meta?.aiUpdatedMs) < 30000;
 }
 
 function renderOverview() {
@@ -327,8 +335,18 @@ function renderOverview() {
           </p>
           <div class="pill-row">
             ${pill(telemetryLive() ? "LIVE" : "OFFLINE", "Telemetry")}
-            ${pill(aiFresh() ? "LIVE" : "WAITING", "AI")}
-            ${pill(cmd.dual_ai_agreement ?? "WAITING", "Dual AI")}
+            ${pill(
+              state.ai
+                ? (aiFresh() ? "LIVE" : "STALE")
+                : "WAITING",
+              "AI",
+            )}
+            ${pill(
+              state.ai
+                ? (cmd.dual_ai_agreement ?? "WAITING")
+                : "WAITING",
+              "Dual AI",
+            )}
           </div>
         </div>
 

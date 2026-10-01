@@ -13,6 +13,7 @@ const runtimeDir = path.join(repoRoot, "bridge", "runtime");
 const telemetryFile = path.join(runtimeDir, "latest_telemetry.json");
 const aiFile = path.join(runtimeDir, "latest_ai_result.json");
 const port = Number(process.env.DASHBOARD_PORT || 5173);
+const AI_FRESH_MS = 30000;
 
 async function readJsonWithMeta(filePath) {
   try {
@@ -45,14 +46,13 @@ async function snapshot() {
       ? nowMs - Number(ai.updatedMs)
       : Infinity;
 
-  // Never expose an old AI inference as if it were current.
-  // live_ai_bridge.py produces fresh inference snapshots every ~5 seconds
-  // after the 24-frame warmup. The UI already uses the same 15-second
-  // freshness contract for its LIVE/WAITING status.
-  const liveAi =
-    ai.data && aiAgeMs < 15000
-      ? ai.data
-      : null;
+  // Preserve the latest genuine AI result. Freshness is tracked
+  // separately so a real inference is never converted into fake WAITING.
+  const liveAi = ai.data;
+
+  const aiFresh =
+    Boolean(ai.data) &&
+    aiAgeMs < AI_FRESH_MS;
 
   return {
     serverTimeMs: nowMs,
@@ -61,7 +61,12 @@ async function snapshot() {
     meta: {
       telemetryUpdatedMs: telemetry.updatedMs,
       aiUpdatedMs: ai.updatedMs,
-      aiFresh: Boolean(liveAi),
+      aiFresh,
+      aiAgeMs:
+        Number.isFinite(aiAgeMs)
+          ? aiAgeMs
+          : null,
+      aiFreshWindowMs: AI_FRESH_MS,
       readOnly: true,
     },
   };
