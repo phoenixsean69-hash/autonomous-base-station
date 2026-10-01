@@ -39,13 +39,29 @@ async function snapshot() {
     readJsonWithMeta(aiFile),
   ]);
 
+  const nowMs = Date.now();
+  const aiAgeMs =
+    Number.isFinite(Number(ai.updatedMs))
+      ? nowMs - Number(ai.updatedMs)
+      : Infinity;
+
+  // Never expose an old AI inference as if it were current.
+  // live_ai_bridge.py produces fresh inference snapshots every ~5 seconds
+  // after the 24-frame warmup. The UI already uses the same 15-second
+  // freshness contract for its LIVE/WAITING status.
+  const liveAi =
+    ai.data && aiAgeMs < 15000
+      ? ai.data
+      : null;
+
   return {
-    serverTimeMs: Date.now(),
+    serverTimeMs: nowMs,
     telemetry: telemetry.data,
-    ai: ai.data,
+    ai: liveAi,
     meta: {
       telemetryUpdatedMs: telemetry.updatedMs,
       aiUpdatedMs: ai.updatedMs,
+      aiFresh: Boolean(liveAi),
       readOnly: true,
     },
   };
