@@ -50,7 +50,7 @@ AI_ACK_PREFIX = "ABS_AI_ACK|"
 
 NETWORK_COMMAND_PREFIX = "ABS_NET_CMD|"
 NETWORK_ACK_PREFIX = "ABS_NET_ACK|"
-DEFAULT_NETWORK_SIMULATOR = "http://127.0.0.1:8000"
+DEFAULT_BTS_SERVICE = "http://127.0.0.1:8100"
 
 SCHEMA = "abs.v1"
 DEFAULT_URL = "rfc2217://localhost:4001"
@@ -1513,116 +1513,211 @@ def attach_pico_decision(
 def fetch_network_snapshot(
     base_url: str,
 ) -> dict:
-    url = (
-        base_url.rstrip("/") +
-        "/base-station/telemetry"
+    candidate_paths = (
+        "/telemetry",
+        "/base-station/telemetry",
     )
 
-    request = urllib.request.Request(
-        url,
-        headers={
-            "Accept": "application/json",
-        },
-    )
+    last_error = None
 
-    with urllib.request.urlopen(
-        request,
-        timeout=0.35,
-    ) as response:
-        return json.loads(
-            response.read().decode(
-                "utf-8"
-            )
+    for path in candidate_paths:
+        url = (
+            base_url.rstrip("/") +
+            path
         )
+
+        request = urllib.request.Request(
+            url,
+            headers={
+                "Accept": "application/json",
+            },
+        )
+
+        try:
+            with urllib.request.urlopen(
+                request,
+                timeout=0.35,
+            ) as response:
+                return json.loads(
+                    response.read().decode(
+                        "utf-8"
+                    )
+                )
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+
+            if exc.code != 404:
+                raise
+
+    if last_error is not None:
+        raise last_error
+
+    raise ValueError(
+        "no BTS telemetry endpoint available"
+    )
 
 
 def build_network_command(
     snapshot: dict,
 ) -> dict:
-    if snapshot.get(
+    schema = snapshot.get(
         "schema"
-    ) != "abs.network.telemetry.v1":
-        raise ValueError(
-            "unexpected network simulator schema"
+    )
+
+    if schema == "bts.telemetry.v1":
+        if snapshot.get(
+            "hardware_connected"
+        ) is not True:
+            raise ValueError(
+                "BTS hardware telemetry is stale or unavailable"
+            )
+
+        backhaul_available = bool(
+            snapshot[
+                "backhaul_available"
+            ]
         )
 
-    backhaul = (
-        snapshot.get(
-            "backhaul"
-        ) or {}
-    )
+        return {
+            "schema":
+                "abs.net.cmd.v1",
+            "active_calls":
+                int(
+                    snapshot.get(
+                        "active_calls",
+                        0,
+                    )
+                ),
+            "latency_ms":
+                float(
+                    snapshot[
+                        "latency_ms"
+                    ]
+                ),
+            "packet_loss_pct":
+                float(
+                    snapshot[
+                        "packet_loss_pct"
+                    ]
+                ),
+            "rssi_dbm":
+                float(
+                    snapshot[
+                        "rssi_dbm"
+                    ]
+                ),
+            "traffic_load_pct":
+                float(
+                    snapshot[
+                        "traffic_load_pct"
+                    ]
+                ),
+            "rf_forward_w":
+                float(
+                    snapshot[
+                        "rf_forward_w"
+                    ]
+                ),
+            "rf_reflected_w":
+                float(
+                    snapshot[
+                        "rf_reflected_w"
+                    ]
+                ),
+            "link_up":
+                backhaul_available,
+            "upstream_reachable":
+                backhaul_available,
+            "radio_operational":
+                bool(
+                    snapshot[
+                        "radio_operational"
+                    ]
+                ),
+        }
 
-    access = (
-        snapshot.get(
-            "access"
-        ) or {}
-    )
+    if schema == "abs.network.telemetry.v1":
+        backhaul = (
+            snapshot.get(
+                "backhaul"
+            ) or {}
+        )
 
-    return {
-        "schema":
-            "abs.net.cmd.v1",
-        "active_calls":
-            int(
-                snapshot.get(
-                    "active_calls",
-                    0,
-                )
-            ),
-        "latency_ms":
-            float(
-                backhaul[
-                    "latency_ms"
-                ]
-            ),
-        "packet_loss_pct":
-            float(
-                backhaul[
-                    "packet_loss_pct"
-                ]
-            ),
-        "rssi_dbm":
-            float(
-                backhaul[
-                    "rssi_dbm"
-                ]
-            ),
-        "traffic_load_pct":
-            float(
-                snapshot[
-                    "traffic_load_pct"
-                ]
-            ),
-        "rf_forward_w":
-            float(
-                access[
-                    "rf_forward_w"
-                ]
-            ),
-        "rf_reflected_w":
-            float(
-                access[
-                    "rf_reflected_w"
-                ]
-            ),
-        "link_up":
-            bool(
-                backhaul[
-                    "link_up"
-                ]
-            ),
-        "upstream_reachable":
-            bool(
-                backhaul[
-                    "upstream_reachable"
-                ]
-            ),
-        "radio_operational":
-            bool(
-                access[
-                    "radio_operational"
-                ]
-            ),
-    }
+        access = (
+            snapshot.get(
+                "access"
+            ) or {}
+        )
+
+        return {
+            "schema":
+                "abs.net.cmd.v1",
+            "active_calls":
+                int(
+                    snapshot.get(
+                        "active_calls",
+                        0,
+                    )
+                ),
+            "latency_ms":
+                float(
+                    backhaul[
+                        "latency_ms"
+                    ]
+                ),
+            "packet_loss_pct":
+                float(
+                    backhaul[
+                        "packet_loss_pct"
+                    ]
+                ),
+            "rssi_dbm":
+                float(
+                    backhaul[
+                        "rssi_dbm"
+                    ]
+                ),
+            "traffic_load_pct":
+                float(
+                    snapshot[
+                        "traffic_load_pct"
+                    ]
+                ),
+            "rf_forward_w":
+                float(
+                    access[
+                        "rf_forward_w"
+                    ]
+                ),
+            "rf_reflected_w":
+                float(
+                    access[
+                        "rf_reflected_w"
+                    ]
+                ),
+            "link_up":
+                bool(
+                    backhaul[
+                        "link_up"
+                    ]
+                ),
+            "upstream_reachable":
+                bool(
+                    backhaul[
+                        "upstream_reachable"
+                    ]
+                ),
+            "radio_operational":
+                bool(
+                    access[
+                        "radio_operational"
+                    ]
+                ),
+        }
+
+    raise ValueError(
+        "unexpected BTS/network telemetry schema"
+    )
 
 
 def send_network_command(
@@ -1882,7 +1977,7 @@ def live(
     url: str,
     pico_url: str,
     sample_ms: int,
-    network_simulator: str,
+    bts_service: str,
 ) -> int:
     window = engine.new_buffer()
     sampler = Sampler(
@@ -1904,10 +1999,10 @@ def live(
         f"Pico endpoint        : {pico_url}"
     )
     print(
-        "Subscriber network   : " +
+        "BTS service          : " +
         (
-            network_simulator
-            if network_simulator
+            bts_service
+            if bts_service
             else "DISABLED"
         )
     )
@@ -1990,7 +2085,7 @@ def live(
             )
 
             if (
-                network_simulator and
+                bts_service and
                 now_monotonic >=
                 next_network_push
             ):
@@ -2002,7 +2097,7 @@ def live(
                 try:
                     snapshot = (
                         fetch_network_snapshot(
-                            network_simulator
+                            bts_service
                         )
                     )
 
@@ -2023,9 +2118,9 @@ def live(
 
                     if not network_feed_online:
                         print(
-                            "[NETWORK FEED] CONNECTED -> "
+                            "[BTS FEED] CONNECTED -> "
                             "ESP32 telecom inputs now follow "
-                            "the mobile/network simulator"
+                            "BTS-001 live hardware/service telemetry"
                         )
 
                     network_feed_online = True
@@ -2035,7 +2130,7 @@ def live(
                         network_commands_sent % 10 == 0
                     ):
                         print(
-                            "  [NETWORK PUSH] "
+                            "  [BTS PUSH] "
                             f"calls={network_command['active_calls']} | "
                             f"traffic={network_command['traffic_load_pct']:.1f}% | "
                             f"latency={network_command['latency_ms']:.1f} ms | "
@@ -2052,7 +2147,7 @@ def live(
                 ) as exc:
                     if network_feed_online:
                         print(
-                            "[NETWORK FEED] LOST -> "
+                            "[BTS FEED] LOST -> "
                             "ESP32 will return to circuit inputs "
                             f"after 3 seconds ({exc})"
                         )
@@ -2537,11 +2632,13 @@ def main() -> int:
     )
 
     parser.add_argument(
+        "--bts-service",
         "--network-simulator",
-        default=DEFAULT_NETWORK_SIMULATOR,
+        dest="bts_service",
+        default=DEFAULT_BTS_SERVICE,
         help=(
-            "HTTP base URL for the ABS mobile/network simulator. "
-            "Use an empty string to disable live network injection."
+            "HTTP base URL for BTS-001. "
+            "Use an empty string to disable live BTS telemetry injection."
         ),
     )
 
@@ -2566,7 +2663,7 @@ def main() -> int:
         args.url,
         args.pico_url,
         args.sample_ms,
-        args.network_simulator,
+        args.bts_service,
     )
 
 

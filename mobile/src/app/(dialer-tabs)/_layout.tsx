@@ -1,5 +1,6 @@
 import {
   Clock3,
+  MessageSquareText,
   Phone,
   RadioTower,
 } from "lucide-react-native";
@@ -65,6 +66,31 @@ export default function DialerTabsLayout() {
             focused,
           }) => (
             <Phone
+              size={
+                focused
+                  ? 22
+                  : 21
+              }
+              color={color}
+              strokeWidth={
+                focused
+                  ? 2.5
+                  : 2
+              }
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="messages"
+        options={{
+          title: "Messages",
+          tabBarIcon: ({
+            color,
+            focused,
+          }) => (
+            <MessageSquareText
               size={
                 focused
                   ? 22

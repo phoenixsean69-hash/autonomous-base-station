@@ -1914,7 +1914,7 @@ bool isNetworkCommandFresh()
 
   networkInputSource =
       fresh
-          ? "MOBILE_NETWORK_SIMULATOR"
+          ? "BTS_BACKHAUL"
           : "CIRCUIT";
 
   return fresh;
@@ -2129,7 +2129,7 @@ void handleNetworkCommandLine(
       millis();
 
   networkInputSource =
-      "MOBILE_NETWORK_SIMULATOR";
+      "BTS_BACKHAUL";
 
   printNetworkAck(
       true,

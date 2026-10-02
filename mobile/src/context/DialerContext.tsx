@@ -16,7 +16,7 @@ import {
 } from "react";
 
 import {
-  getNetworkSimulatorUrl,
+  getBtsUrl,
 } from "../config/network";
 
 export type Subscriber = {
@@ -62,6 +62,18 @@ export type RecentCall = {
   time: string;
 };
 
+export type SmsMessage = {
+  sms_id: string;
+  from: string;
+  to: string;
+  body: string;
+  timestamp_ms: number;
+  status: string;
+  direction:
+    | "incoming"
+    | "outgoing";
+};
+
 export const SUBSCRIBERS: Subscriber[] = [
   {
     id: "A",
@@ -85,11 +97,17 @@ type DialerContextValue = {
   activeCall: CallInfo | null;
   metrics: NetworkMetrics | null;
   recentCalls: RecentCall[];
+  messages: SmsMessage[];
   selectSubscriber:
     (subscriber: Subscriber) => void;
   resetSubscriber: () => void;
   startCall:
     (number: string) => boolean;
+  sendSms:
+    (
+      number: string,
+      body: string,
+    ) => boolean;
   answerCall: () => void;
   rejectCall: () => void;
   endCall: () => void;
@@ -149,7 +167,10 @@ function friendlyFailure(
     case "CALLEE_BUSY":
       return "The other phone is busy.";
     case "CALLEE_OFFLINE":
+    case "SUBSCRIBER_UNAVAILABLE":
       return "The other phone is currently unavailable.";
+    case "BTS_RADIO_UNAVAILABLE":
+      return "The BTS radio is currently unavailable.";
     case "INVALID_ANSWER":
       return "This call is no longer available.";
     default:
@@ -228,6 +249,14 @@ export function DialerProvider({
       [],
     );
 
+  const [
+    messages,
+    setMessages,
+  ] =
+    useState<SmsMessage[]>(
+      [],
+    );
+
   const socketRef =
     useRef<WebSocket | null>(
       null,
@@ -257,6 +286,41 @@ export function DialerProvider({
         ) ?? null
       );
     }, [activeSubscriber]);
+
+  const upsertMessage =
+    useCallback(
+      (next: SmsMessage) => {
+        setMessages(
+          (current) => {
+            const index =
+              current.findIndex(
+                (item) =>
+                  item.sms_id ===
+                  next.sms_id,
+              );
+
+            if (index < 0) {
+              return [
+                ...current,
+                next,
+              ].slice(-100);
+            }
+
+            const updated = [
+              ...current,
+            ];
+
+            updated[index] = {
+              ...updated[index],
+              ...next,
+            };
+
+            return updated;
+          },
+        );
+      },
+      [],
+    );
 
   const addRecentCall =
     useCallback(
@@ -370,7 +434,7 @@ export function DialerProvider({
       );
 
       const base =
-        getNetworkSimulatorUrl();
+        getBtsUrl();
 
       const number =
         normalizeNumber(
@@ -472,6 +536,89 @@ export function DialerProvider({
             ),
           );
 
+          return;
+        }
+
+        if (
+          type ===
+            "sms.incoming" ||
+          type ===
+            "sms.status"
+        ) {
+          const smsId =
+            String(
+              message.sms_id ??
+                "",
+            );
+
+          const from =
+            normalizeNumber(
+              String(
+                message.from ??
+                  "",
+              ),
+            );
+
+          const to =
+            normalizeNumber(
+              String(
+                message.to ??
+                  "",
+              ),
+            );
+
+          const body =
+            String(
+              message.body ??
+                "",
+            );
+
+          if (
+            !smsId ||
+            !from ||
+            !to ||
+            !body
+          ) {
+            return;
+          }
+
+          const own =
+            normalizeNumber(
+              activeSubscriber.number,
+            );
+
+          upsertMessage({
+            sms_id: smsId,
+            from,
+            to,
+            body,
+            timestamp_ms:
+              Number(
+                message.timestamp_ms ??
+                  Date.now(),
+              ),
+            status:
+              String(
+                message.status ??
+                  "DELIVERED",
+              ),
+            direction:
+              from === own
+                ? "outgoing"
+                : "incoming",
+          });
+
+          return;
+        }
+
+        if (
+          type ===
+          "sms.failed"
+        ) {
+          Alert.alert(
+            "Message not sent",
+            "The BTS could not send this message.",
+          );
           return;
         }
 
@@ -753,6 +900,7 @@ export function DialerProvider({
   }, [
     activeSubscriber,
     addRecentCall,
+    upsertMessage,
   ]);
 
   const send =
@@ -800,6 +948,36 @@ export function DialerProvider({
         return send({
           type: "call.start",
           to: normalized,
+        });
+      },
+      [send],
+    );
+
+  const sendSms =
+    useCallback(
+      (
+        number: string,
+        body: string,
+      ) => {
+        const normalized =
+          normalizeNumber(
+            number,
+          );
+
+        const trimmed =
+          body.trim();
+
+        if (
+          !normalized ||
+          !trimmed
+        ) {
+          return false;
+        }
+
+        return send({
+          type: "sms.send",
+          to: normalized,
+          body: trimmed,
         });
       },
       [send],
@@ -876,6 +1054,7 @@ export function DialerProvider({
       setActiveCall(null);
       setMetrics(null);
       setPeerOnline(false);
+      setMessages([]);
       setActiveSubscriber(null);
     }, []);
 
@@ -889,6 +1068,7 @@ export function DialerProvider({
         activeCall,
         metrics,
         recentCalls,
+        messages,
         selectSubscriber:
           (
             subscriber:
@@ -899,6 +1079,7 @@ export function DialerProvider({
             ),
         resetSubscriber,
         startCall,
+        sendSms,
         answerCall,
         rejectCall,
         endCall,
@@ -911,8 +1092,10 @@ export function DialerProvider({
         activeCall,
         metrics,
         recentCalls,
+        messages,
         resetSubscriber,
         startCall,
+        sendSms,
         answerCall,
         rejectCall,
         endCall,
