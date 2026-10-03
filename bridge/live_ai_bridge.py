@@ -1738,8 +1738,27 @@ def send_network_command(
         "utf-8"
     )
 
-    port.write(payload)
-    port.flush()
+    # The BTS network command is close to the size of a typical
+    # ESP32/Wokwi UART receive ring. Do not burst the whole line
+    # into RFC2217 at once; let the simulated ESP32 drain RX data
+    # between chunks, just as the larger AI command already does.
+    chunk_size = 32
+
+    for start in range(
+        0,
+        len(payload),
+        chunk_size,
+    ):
+        port.write(
+            payload[
+                start:
+                start + chunk_size
+            ]
+        )
+        port.flush()
+        time.sleep(
+            0.010
+        )
 
     return len(payload)
 
@@ -2078,6 +2097,12 @@ def live(
     next_network_push = 0.0
     network_feed_online = False
 
+    # pyserial readline() may return a partial line when its timeout
+    # expires before a slow Wokwi/RFC2217 UART finishes transmitting.
+    # Keep incomplete bytes until a newline arrives so JSON records
+    # are parsed only after the complete serial line has been received.
+    serial_rx_buffer = bytearray()
+
     try:
         while True:
             now_monotonic = (
@@ -2159,7 +2184,33 @@ def live(
             if not raw:
                 continue
 
-            line = raw.decode(
+            serial_rx_buffer.extend(
+                raw
+            )
+
+            if b"\n" not in serial_rx_buffer:
+                if len(
+                    serial_rx_buffer
+                ) > 16384:
+                    print(
+                        "[DROP] ESP32 serial line exceeded 16384 bytes "
+                        "without a newline; clearing receive buffer"
+                    )
+                    serial_rx_buffer.clear()
+
+                continue
+
+            complete_line, _, remainder = (
+                serial_rx_buffer.partition(
+                    b"\n"
+                )
+            )
+
+            serial_rx_buffer = bytearray(
+                remainder
+            )
+
+            line = complete_line.decode(
                 "utf-8",
                 errors="replace",
             ).strip()
