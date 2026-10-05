@@ -1,0 +1,2517 @@
+/* ABS TELEMETRY NOC REBUILD */
+
+body.telemetry-noc .workspace-grid {
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+}
+
+body.telemetry-noc .health-insight-rail,
+body.telemetry-noc .health-header {
+  display: none !important;
+}
+
+body.telemetry-noc .health-main-pane {
+  grid-template-rows: minmax(0, 1fr) !important;
+  border-right: 0;
+}
+
+body.telemetry-noc .health-content {
+  padding: 10px !important;
+  overflow: hidden !important;
+}
+
+.noc-page {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+}
+
+.noc-page-header {
+  min-width: 0;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 2px 2px;
+}
+
+.noc-page-header h1 {
+  margin: 2px 0 0;
+  color: #ededed;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.noc-page-header p {
+  margin: 4px 0 0;
+  color: #888f94;
+  font-size: 10px;
+}
+
+.noc-header-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.noc-workspace {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 292px;
+  gap: 8px;
+}
+
+.noc-canvas {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 34px minmax(245px, 1fr) auto auto;
+  gap: 8px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid #3d4245;
+  border-radius: 3px;
+  background:
+    linear-gradient(rgba(255,255,255,.016) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.016) 1px, transparent 1px),
+    #222527;
+  background-size: 24px 24px;
+}
+
+.noc-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #373b3e;
+}
+
+.noc-toolbar > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.noc-toolbar strong {
+  color: #d9dcde;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.noc-toolbar span {
+  color: #777f84;
+  font-size: 8px;
+}
+
+.noc-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.noc-legend > span,
+.noc-status-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.noc-dot {
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #73797d;
+}
+
+.noc-dot.good { background: #65bd91; }
+.noc-dot.warn { background: #d3a25b; }
+.noc-dot.bad { background: #d36556; }
+.noc-dot.neutral { background: #7c858b; }
+
+.noc-main-row {
+  min-width: 980px;
+  align-self: center;
+  display: grid;
+  grid-template-columns:
+    150px 64px
+    165px 72px
+    165px 72px
+    165px 72px
+    165px;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 8px 0;
+}
+
+.noc-phone-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.noc-node {
+  min-width: 0;
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid #444a4e;
+  border-radius: 3px;
+  background: #2b2f31;
+}
+
+.noc-node.good { border-color: #456b59; }
+.noc-node.warn { border-color: #6c5a3f; }
+.noc-node.bad { border-color: #704740; }
+.noc-node.neutral { border-color: #454b4f; }
+
+.noc-node > div:not(.noc-icon) { min-width: 0; }
+
+.noc-node span,
+.noc-node strong,
+.noc-node small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noc-node span {
+  color: #92999d;
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.noc-node strong {
+  margin-top: 3px;
+  color: #eceeef;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.noc-node small {
+  margin-top: 3px;
+  color: #80898f;
+  font-size: 7px;
+}
+
+.noc-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #464d51;
+  border-radius: 3px;
+  color: #a6b8c4;
+  background: #24282a;
+  font-size: 19px;
+}
+
+.noc-node.good .noc-icon { color: #7dcaa1; border-color: #456b59; }
+.noc-node.warn .noc-icon { color: #d9ac66; border-color: #6c5a3f; }
+.noc-node.bad .noc-icon { color: #dd8477; border-color: #704740; }
+
+.noc-equipment {
+  min-height: 126px;
+  align-content: center;
+}
+
+.noc-node-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-top: 7px;
+  border-top: 1px solid #3c4144;
+}
+
+.noc-node-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #7f878c;
+  font-size: 7px;
+  text-transform: none;
+}
+
+.noc-link {
+  position: relative;
+  min-width: 0;
+  height: 78px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+}
+
+.noc-link > span,
+.noc-link > small {
+  position: relative;
+  z-index: 2;
+  padding: 0 4px;
+  background: #222527;
+  white-space: nowrap;
+}
+
+.noc-link > span {
+  color: #8b9499;
+  font-size: 7px;
+  font-weight: 500;
+}
+
+.noc-link > small {
+  color: #737b80;
+  font-size: 6px;
+}
+
+.noc-link > b {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  left: 7px;
+  height: 2px;
+  color: #5f676d;
+  background: #5f676d;
+}
+
+.noc-link > b::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.noc-link.good > b {
+  color: #5eae86;
+  background: #5eae86;
+}
+
+.noc-link.warn > b {
+  color: #a07a45;
+  background: repeating-linear-gradient(90deg,#a07a45 0 7px,transparent 7px 12px);
+}
+
+.noc-link.bad > b {
+  color: #b25549;
+  background: repeating-linear-gradient(90deg,#b25549 0 6px,transparent 6px 11px);
+}
+
+.noc-control-loop {
+  display: grid;
+  grid-template-columns: minmax(150px,.7fr) minmax(180px,1fr) 90px minmax(180px,1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #3d4245;
+  border-radius: 3px;
+  background: #292d2f;
+}
+
+.noc-loop-label span,
+.noc-loop-label small,
+.noc-control-decision span,
+.noc-control-decision strong,
+.noc-control-decision small { display: block; }
+
+.noc-loop-label span,
+.noc-control-decision span {
+  color: #858d92;
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.noc-loop-label small {
+  margin-top: 3px;
+  color: #6f777c;
+  font-size: 7px;
+}
+
+.noc-control-decision {
+  padding: 7px 9px;
+  border-left: 2px solid #4a626f;
+  background: #25292b;
+}
+
+.noc-control-decision strong {
+  margin-top: 2px;
+  color: #e8eaeb;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.noc-control-decision small {
+  margin-top: 2px;
+  color: #818a8f;
+  font-size: 7px;
+}
+
+.noc-control-arrow { height: 40px; }
+
+.noc-power-layer {
+  display: grid;
+  gap: 7px;
+  padding-top: 1px;
+}
+
+.noc-power-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.noc-power-title span {
+  color: #8d959a;
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.noc-power-title small {
+  color: #686f73;
+  font-size: 7px;
+}
+
+.noc-power-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.noc-power-card { min-height: 78px; }
+
+.noc-side-rail {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.noc-side-panel {
+  border: 1px solid #3e4346;
+  border-radius: 3px;
+  background: #2c3032;
+}
+
+.noc-side-head {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 10px;
+  border-bottom: 1px solid #3b4043;
+}
+
+.noc-side-head strong {
+  color: #dedfe0;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.noc-side-head > span {
+  color: #7f898e;
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.noc-status-list {
+  display: grid;
+  padding: 3px 9px;
+}
+
+.noc-status-list > div {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  border-bottom: 1px solid #3a3f42;
+}
+
+.noc-status-list > div:last-child { border-bottom: 0; }
+
+.noc-status-list > div > span {
+  color: #939b9f;
+  font-size: 8px;
+}
+
+.noc-status-list > div > strong {
+  max-width: 56%;
+  overflow: hidden;
+  color: #dedfe0;
+  font-size: 8px;
+  font-weight: 500;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noc-call-card {
+  display: grid;
+  gap: 9px;
+  padding: 11px;
+}
+
+.noc-call-route {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 18px minmax(0,1fr);
+  align-items: center;
+  gap: 4px;
+}
+
+.noc-call-route strong {
+  overflow: hidden;
+  color: #e4e6e7;
+  font-size: 9px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noc-call-route .material-symbols-rounded {
+  color: #768189;
+  font-size: 15px;
+}
+
+.noc-call-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #858e93;
+  font-size: 7px;
+}
+
+.noc-call-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.noc-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 16px 10px;
+  text-align: center;
+}
+
+.noc-empty-state .material-symbols-rounded {
+  color: #767f84;
+  font-size: 23px;
+}
+
+.noc-empty-state strong {
+  color: #cfd2d3;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.noc-empty-state small {
+  color: #777f84;
+  font-size: 7px;
+}
+
+.noc-decision-grid {
+  display: grid;
+  padding: 4px 10px 8px;
+}
+
+.noc-decision-grid > div {
+  min-height: 29px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid #3a3f42;
+}
+
+.noc-decision-grid > div:last-child { border-bottom: 0; }
+
+.noc-decision-grid span {
+  color: #858e93;
+  font-size: 8px;
+}
+
+.noc-decision-grid strong {
+  color: #e1e3e4;
+  font-size: 9px;
+  font-weight: 500;
+  text-align: right;
+}
+
+@media (max-width: 1260px) {
+  .noc-workspace { grid-template-columns: minmax(0,1fr) 255px; }
+  .noc-main-row {
+    min-width: 900px;
+    grid-template-columns:135px 56px 150px 60px 150px 60px 150px 60px 150px;
+  }
+}
+
+@media (max-width: 980px) {
+  body.telemetry-noc .health-content { overflow:auto !important; }
+  .noc-page { height:auto; }
+  .noc-workspace { grid-template-columns:minmax(0,1fr); }
+  .noc-side-rail { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width: 720px) {
+  .noc-page-header { display:grid; }
+  .noc-header-status { justify-content:flex-start; }
+  .noc-side-rail,
+  .noc-power-grid { grid-template-columns:minmax(0,1fr); }
+}
+
+
+/* ==========================================================================
+   ABS TELEMETRY — BLENDER NODE EDITOR SKIN V3
+   Applied directly to dashboard/telemetry-noc.css
+   ========================================================================== */
+
+:root {
+  --bl-node-bg: #2b2b2b;
+  --bl-editor-bg: #1d1d1d;
+  --bl-grid-minor: rgba(255,255,255,.022);
+  --bl-grid-major: rgba(255,255,255,.040);
+  --bl-border: #111;
+  --bl-text: #dedede;
+  --bl-muted: #929292;
+}
+
+/* Use the full editor area. */
+.noc-workspace {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+}
+
+.noc-side-rail {
+  display: none !important;
+}
+
+.noc-canvas {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: 30px auto auto auto !important;
+  align-content: start !important;
+  gap: 10px !important;
+  padding: 8px !important;
+  overflow: auto !important;
+  border: 1px solid #0f0f0f !important;
+  border-radius: 0 !important;
+  background:
+    linear-gradient(var(--bl-grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bl-grid-minor) 1px, transparent 1px),
+    linear-gradient(var(--bl-grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bl-grid-major) 1px, transparent 1px),
+    var(--bl-editor-bg) !important;
+  background-size:
+    16px 16px,
+    16px 16px,
+    64px 64px,
+    64px 64px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.02) !important;
+}
+
+/* Editor toolbar — flat and compact. */
+.noc-toolbar {
+  min-height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 0 7px !important;
+  border: 0 !important;
+  border-bottom: 1px solid #111 !important;
+  background: #252525 !important;
+}
+
+.noc-toolbar strong {
+  color: #d5d5d5 !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+}
+
+.noc-toolbar span,
+.noc-legend > span {
+  color: #7d7d7d !important;
+  font-size: 7px !important;
+}
+
+/* Main graph fits inside the workspace instead of behaving like dashboard cards. */
+.noc-main-row {
+  min-width: 0 !important;
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns:
+    minmax(108px,.82fr) 44px
+    minmax(132px,1fr) 44px
+    minmax(132px,1fr) 44px
+    minmax(132px,1fr) 44px
+    minmax(132px,1fr) !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  gap: 0 !important;
+  padding: 14px 8px 8px !important;
+}
+
+/* Blender-like node body */
+.noc-node {
+  --node-head: #4d5961;
+  position: relative !important;
+  min-width: 0 !important;
+  min-height: 96px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) !important;
+  align-content: start !important;
+  gap: 3px !important;
+  padding: 29px 8px 8px !important;
+  overflow: visible !important;
+  border: 1px solid var(--bl-border) !important;
+  border-radius: 6px !important;
+  background:
+    linear-gradient(
+      to bottom,
+      var(--node-head) 0,
+      var(--node-head) 22px,
+      var(--bl-node-bg) 22px,
+      var(--bl-node-bg) 100%
+    ) !important;
+  box-shadow:
+    0 1px 1px rgba(0,0,0,.85),
+    0 4px 10px rgba(0,0,0,.18) !important;
+  opacity: 1 !important;
+}
+
+/* Subtle category title colors, not status-colored card borders */
+.noc-phone-stack .noc-node { --node-head: #405c6d; }
+.noc-main-row > .noc-equipment:nth-child(3) { --node-head: #704b39; }
+.noc-main-row > .noc-equipment:nth-child(5) { --node-head: #465d70; }
+.noc-main-row > .noc-equipment:nth-child(7) { --node-head: #57506a; }
+.noc-main-row > .noc-equipment:nth-child(9) { --node-head: #416154; }
+
+.noc-power-card:nth-child(1) { --node-head: #625536; }
+.noc-power-card:nth-child(2) { --node-head: #674637; }
+.noc-power-card:nth-child(3) { --node-head: #405d50; }
+.noc-power-card:nth-child(4) { --node-head: #435563; }
+
+.noc-node.good,
+.noc-node.warn,
+.noc-node.bad,
+.noc-node.neutral {
+  border-color: var(--bl-border) !important;
+}
+
+/* Node title sits in the colored header strip */
+.noc-node > div:not(.noc-icon) > span:first-child {
+  position: absolute !important;
+  top: 4px !important;
+  left: 8px !important;
+  right: 26px !important;
+  height: 14px !important;
+  overflow: hidden !important;
+  color: rgba(255,255,255,.94) !important;
+  font-size: 8px !important;
+  font-weight: 500 !important;
+  line-height: 14px !important;
+  text-overflow: ellipsis !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+}
+
+.noc-icon {
+  position: absolute !important;
+  top: 4px !important;
+  right: 5px !important;
+  width: 15px !important;
+  height: 15px !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: rgba(255,255,255,.82) !important;
+  background: transparent !important;
+  font-size: 13px !important;
+}
+
+.noc-node strong {
+  margin-top: 0 !important;
+  color: var(--bl-text) !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+}
+
+.noc-node small {
+  margin-top: 3px !important;
+  color: var(--bl-muted) !important;
+  font-size: 7px !important;
+}
+
+.noc-node-foot {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  gap: 4px !important;
+  margin-top: 6px !important;
+  padding-top: 6px !important;
+  border-top: 1px solid #3a3a3a !important;
+}
+
+.noc-node-foot span {
+  color: #8d8d8d !important;
+  font-size: 7px !important;
+  text-transform: none !important;
+}
+
+/* Blender-style sockets */
+.noc-node::before,
+.noc-node::after,
+.noc-control-decision::before,
+.noc-control-decision::after {
+  content: "" !important;
+  position: absolute !important;
+  z-index: 7 !important;
+  top: 50% !important;
+  width: 9px !important;
+  height: 9px !important;
+  border: 1px solid #0d0d0d !important;
+  border-radius: 50% !important;
+  background: #7d7d7d !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.10) !important;
+  transform: translateY(-50%) !important;
+}
+
+.noc-node::before,
+.noc-control-decision::before {
+  left: -5px !important;
+}
+
+.noc-node::after,
+.noc-control-decision::after {
+  right: -5px !important;
+}
+
+.noc-node.good::before,
+.noc-node.good::after {
+  background: #68a889 !important;
+}
+
+.noc-node.warn::before,
+.noc-node.warn::after {
+  background: #bd9256 !important;
+}
+
+.noc-node.bad::before,
+.noc-node.bad::after {
+  background: #bc5c50 !important;
+}
+
+.noc-phone-stack .noc-node::before {
+  display: none !important;
+}
+
+/* Noodles instead of dashboard arrows */
+.noc-link {
+  position: relative !important;
+  min-width: 0 !important;
+  height: 64px !important;
+  display: grid !important;
+  align-content: center !important;
+  justify-items: center !important;
+  gap: 3px !important;
+}
+
+.noc-link > span,
+.noc-link > small {
+  position: relative !important;
+  z-index: 3 !important;
+  max-width: 100% !important;
+  padding: 1px 3px !important;
+  overflow: hidden !important;
+  border-radius: 2px !important;
+  color: #8d8d8d !important;
+  background: var(--bl-editor-bg) !important;
+  font-size: 6px !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.noc-link > b {
+  position: absolute !important;
+  top: 50% !important;
+  right: 1px !important;
+  left: 1px !important;
+  height: 17px !important;
+  border: 0 !important;
+  border-top: 2px solid currentColor !important;
+  border-radius: 48% 52% 0 0 !important;
+  background: none !important;
+  transform: translateY(-2px) !important;
+}
+
+.noc-link > b::after {
+  content: "" !important;
+  position: absolute !important;
+  right: -3px !important;
+  top: -5px !important;
+  width: 8px !important;
+  height: 8px !important;
+  border: 1px solid #111 !important;
+  border-radius: 50% !important;
+  background: currentColor !important;
+  transform: none !important;
+}
+
+.noc-link.good > b { color: #62977f !important; }
+.noc-link.warn > b { color: #977549 !important; }
+.noc-link.bad > b { color: #9f564d !important; }
+.noc-link.neutral > b { color: #6d7377 !important; }
+
+.noc-phone-stack {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.noc-phone-stack .noc-node {
+  min-height: 80px !important;
+}
+
+.noc-equipment {
+  min-height: 112px !important;
+}
+
+/* Control loop as actual nodes */
+.noc-control-loop {
+  display: grid !important;
+  grid-template-columns:
+    minmax(110px,.7fr)
+    minmax(145px,1fr)
+    56px
+    minmax(145px,1fr) !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 7px 8px !important;
+  border: 0 !important;
+  border-top: 1px solid #111 !important;
+  border-radius: 0 !important;
+  background: rgba(35,35,35,.84) !important;
+}
+
+.noc-loop-label span {
+  color: #a0a0a0 !important;
+  font-size: 8px !important;
+}
+
+.noc-loop-label small {
+  color: #777 !important;
+  font-size: 6px !important;
+}
+
+.noc-control-decision {
+  position: relative !important;
+  min-height: 68px !important;
+  padding: 27px 8px 7px !important;
+  overflow: visible !important;
+  border: 1px solid #111 !important;
+  border-left: 1px solid #111 !important;
+  border-radius: 6px !important;
+  background:
+    linear-gradient(
+      to bottom,
+      #4b5761 0,
+      #4b5761 21px,
+      #2b2b2b 21px,
+      #2b2b2b 100%
+    ) !important;
+}
+
+.noc-control-decision > span:first-child {
+  position: absolute !important;
+  top: 4px !important;
+  left: 8px !important;
+  color: #ececec !important;
+  font-size: 7px !important;
+  text-transform: none !important;
+}
+
+.noc-control-decision::before,
+.noc-control-decision::after {
+  background: #679a83 !important;
+}
+
+.noc-control-arrow {
+  height: 50px !important;
+}
+
+/* Power layer uses the same node language */
+.noc-power-layer {
+  display: grid !important;
+  gap: 5px !important;
+  padding-top: 0 !important;
+}
+
+.noc-power-title {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 7px !important;
+  padding: 2px 2px 0 !important;
+}
+
+.noc-power-title span { font-size: 7px !important; }
+.noc-power-title small { font-size: 6px !important; }
+
+.noc-power-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4,minmax(0,1fr)) !important;
+  gap: 7px !important;
+}
+
+.noc-power-card {
+  min-height: 76px !important;
+}
+
+@media (max-width: 1180px) {
+  .noc-main-row {
+    grid-template-columns:
+      minmax(98px,.78fr) 40px
+      minmax(118px,1fr) 40px
+      minmax(118px,1fr) 40px
+      minmax(118px,1fr) 40px
+      minmax(118px,1fr) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .noc-canvas {
+    overflow-x: auto !important;
+  }
+
+  .noc-main-row {
+    min-width: 850px !important;
+  }
+}
+
+
+/* ==========================================================================
+   ABS TELEMETRY — 50/50 BLENDER NODE EDITOR + CONFIG INSPECTOR
+   ========================================================================== */
+
+:root {
+  --abs-node-bg: #2a2a2a;
+  --abs-node-head: #41484d;
+  --abs-node-head-selected: #52697a;
+  --abs-panel: #252525;
+  --abs-panel-2: #2c2c2c;
+  --abs-line: #3a3a3a;
+  --abs-text: #dddddd;
+  --abs-muted: #8b8b8b;
+  --abs-good: #69ad8d;
+  --abs-warn: #c59a5b;
+  --abs-bad: #bf6256;
+}
+
+/* Exact 50 / 50 split */
+.noc-workspace {
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 1px !important;
+  background: #111 !important;
+}
+
+.noc-canvas {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: auto !important;
+  border: 0 !important;
+  border-right: 1px solid #111 !important;
+}
+
+/* Hide the old NOC side rail; the JS patch adds the new inspector. */
+.noc-side-rail {
+  display: none !important;
+}
+
+/* Stop the rainbow headers. One restrained Blender-like node header. */
+.noc-node,
+.noc-phone-stack .noc-node,
+.noc-main-row > .noc-equipment:nth-child(3),
+.noc-main-row > .noc-equipment:nth-child(5),
+.noc-main-row > .noc-equipment:nth-child(7),
+.noc-main-row > .noc-equipment:nth-child(9),
+.noc-power-card:nth-child(1),
+.noc-power-card:nth-child(2),
+.noc-power-card:nth-child(3),
+.noc-power-card:nth-child(4) {
+  --node-head: var(--abs-node-head) !important;
+}
+
+/* Selection is the one stronger header color. */
+.noc-node.abs-node-selected,
+.noc-control-decision.abs-node-selected {
+  --node-head: var(--abs-node-head-selected) !important;
+  outline: 1px solid #7894a8 !important;
+  outline-offset: 1px !important;
+  box-shadow:
+    0 0 0 1px rgba(120,148,168,.16),
+    0 6px 14px rgba(0,0,0,.24) !important;
+}
+
+/* Status lives in sockets/dots, not giant colored node bodies. */
+.noc-node.good,
+.noc-node.warn,
+.noc-node.bad,
+.noc-node.neutral {
+  border-color: #111 !important;
+}
+
+.noc-node {
+  cursor: default !important;
+}
+
+.noc-node:hover,
+.noc-control-decision:hover,
+.noc-power-card:hover {
+  filter: brightness(1.05);
+}
+
+/* Left node editor should feel like a canvas, not cards stretched to width. */
+.noc-main-row {
+  min-width: 860px !important;
+  width: 860px !important;
+  margin: 0 auto !important;
+  grid-template-columns:
+    118px 44px
+    140px 44px
+    140px 44px
+    140px 44px
+    140px !important;
+}
+
+.noc-control-loop {
+  min-width: 720px !important;
+  width: 720px !important;
+  margin: 0 auto !important;
+}
+
+.noc-power-grid {
+  min-width: 720px !important;
+  width: 720px !important;
+  margin: 0 auto !important;
+}
+
+.noc-power-title {
+  min-width: 720px !important;
+  width: 720px !important;
+  margin: 0 auto !important;
+}
+
+/* New right-side Blender property editor */
+.abs-node-inspector {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 34px auto 30px minmax(0, 1fr) 34px;
+  overflow: hidden;
+  background: var(--abs-panel);
+}
+
+.abs-inspector-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 10px;
+  border-bottom: 1px solid #111;
+  background: #2b2b2b;
+}
+
+.abs-inspector-titlebar strong {
+  color: #d7d7d7;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.abs-inspector-titlebar span {
+  color: #757575;
+  font-size: 8px;
+}
+
+.abs-inspector-node-head {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border-bottom: 1px solid #171717;
+  background: #262626;
+}
+
+.abs-inspector-node-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #454545;
+  border-radius: 3px;
+  color: #aeb9c1;
+  background: #202020;
+  font-size: 18px;
+}
+
+.abs-inspector-node-copy {
+  min-width: 0;
+}
+
+.abs-inspector-node-copy span,
+.abs-inspector-node-copy strong,
+.abs-inspector-node-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.abs-inspector-node-copy span {
+  color: #777;
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.abs-inspector-node-copy strong {
+  margin-top: 2px;
+  color: #e0e0e0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.abs-inspector-node-copy small {
+  margin-top: 2px;
+  color: #858585;
+  font-size: 8px;
+}
+
+.abs-inspector-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  border: 1px solid #444;
+  border-radius: 2px;
+  color: #aaa;
+  background: #303030;
+  font-size: 7px;
+}
+
+.abs-inspector-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #777;
+}
+
+.abs-inspector-status.good i { background: var(--abs-good); }
+.abs-inspector-status.warn i { background: var(--abs-warn); }
+.abs-inspector-status.bad i { background: var(--abs-bad); }
+
+.abs-inspector-tabs {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid #111;
+  border-bottom: 1px solid #111;
+  background: #292929;
+}
+
+.abs-inspector-tab {
+  min-width: 0;
+  padding: 0 11px;
+  border: 0;
+  border-right: 1px solid #171717;
+  color: #8b8b8b;
+  background: transparent;
+  font-size: 8px;
+}
+
+.abs-inspector-tab:hover {
+  color: #d5d5d5;
+  background: #333;
+}
+
+.abs-inspector-tab.active {
+  color: #efefef;
+  background: #3b3b3b;
+}
+
+.abs-inspector-body {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px;
+  background:
+    linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
+    #242424;
+  background-size: 100% 24px;
+}
+
+.abs-prop-section {
+  margin-bottom: 8px;
+  border: 1px solid #3a3a3a;
+  background: #2a2a2a;
+}
+
+.abs-prop-section > header {
+  min-height: 25px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-bottom: 1px solid #363636;
+  color: #b6b6b6;
+  background: #303030;
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.abs-prop-section > header .material-symbols-rounded {
+  color: #7f8f99;
+  font-size: 14px;
+}
+
+.abs-prop-grid {
+  display: grid;
+  padding: 4px 8px;
+}
+
+.abs-prop-row {
+  min-height: 29px;
+  display: grid;
+  grid-template-columns: minmax(110px, .78fr) minmax(0, 1.22fr);
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #363636;
+}
+
+.abs-prop-row:last-child {
+  border-bottom: 0;
+}
+
+.abs-prop-row > span {
+  color: #858585;
+  font-size: 8px;
+}
+
+.abs-prop-value,
+.abs-prop-input {
+  min-width: 0;
+  overflow: hidden;
+  color: #d2d2d2;
+  font-size: 8px;
+  font-weight: 500;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.abs-prop-input {
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid #454545;
+  border-radius: 2px;
+  outline: none;
+  color: #cfcfcf;
+  background: #1f1f1f;
+  font-weight: 400;
+  text-align: left;
+}
+
+.abs-prop-input[readonly] {
+  color: #9c9c9c;
+}
+
+.abs-link-list {
+  display: grid;
+  padding: 5px 8px;
+}
+
+.abs-link-item {
+  min-height: 34px;
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  border-bottom: 1px solid #363636;
+}
+
+.abs-link-item:last-child {
+  border-bottom: 0;
+}
+
+.abs-link-socket {
+  width: 7px;
+  height: 7px;
+  border: 1px solid #111;
+  border-radius: 50%;
+  background: #6b8b7c;
+}
+
+.abs-link-item span {
+  overflow: hidden;
+  color: #aaa;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.abs-link-item strong {
+  color: #777;
+  font-size: 7px;
+  font-weight: 400;
+}
+
+.abs-inspector-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  border-top: 1px solid #111;
+  background: #111;
+}
+
+.abs-inspector-actions button {
+  border: 0;
+  color: #9b9b9b;
+  background: #303030;
+  font-size: 8px;
+}
+
+.abs-inspector-actions button:hover {
+  color: #fff;
+  background: #3b3b3b;
+}
+
+.abs-inspector-empty {
+  height: 100%;
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  color: #747474;
+  text-align: center;
+}
+
+.abs-inspector-empty .material-symbols-rounded {
+  font-size: 27px;
+}
+
+.abs-inspector-empty strong {
+  color: #aaa;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.abs-inspector-empty small {
+  max-width: 260px;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+/* Highlight only the selected node's immediate graph context */
+.noc-canvas.abs-focus-mode .noc-node:not(.abs-node-selected),
+.noc-canvas.abs-focus-mode .noc-control-decision:not(.abs-node-selected),
+.noc-canvas.abs-focus-mode .noc-power-card:not(.abs-node-selected) {
+  opacity: .38 !important;
+}
+
+.noc-canvas.abs-focus-mode .noc-link {
+  opacity: .3 !important;
+}
+
+/* Keep mobile sane: stack editor and inspector */
+@media (max-width: 900px) {
+  .noc-workspace {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .abs-node-inspector {
+    min-height: 460px;
+    height: auto;
+  }
+
+  .noc-canvas {
+    min-height: 520px !important;
+  }
+}
+
+
+/* ==========================================================================
+   ABS TELEMETRY — BLENDER COMPACT WORKSPACE V4
+   Fixes oversized nodes, title overlap, stretched layout and inspector form feel.
+   ========================================================================== */
+
+/* Keep the user's requested exact half / half split. */
+.noc-workspace {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 1px !important;
+  background: #111 !important;
+}
+
+/* LEFT: compact node editor */
+.noc-canvas {
+  position: relative !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: auto !important;
+  background:
+    linear-gradient(rgba(255,255,255,.020) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.020) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,.034) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.034) 1px, transparent 1px),
+    #1b1b1b !important;
+  background-size:
+    16px 16px,
+    16px 16px,
+    64px 64px,
+    64px 64px !important;
+}
+
+/* Very small editor header, like Blender. */
+.noc-toolbar {
+  position: sticky !important;
+  z-index: 30 !important;
+  top: 0 !important;
+  min-height: 26px !important;
+  height: 26px !important;
+  padding: 0 7px !important;
+  border-bottom: 1px solid #0d0d0d !important;
+  background: #242424 !important;
+}
+
+.noc-toolbar strong {
+  font-size: 9px !important;
+}
+
+.noc-toolbar > div:first-child span,
+.noc-legend {
+  display: none !important;
+}
+
+/* Compact graph — NO artificial 860px wide lane. */
+.noc-main-row {
+  position: relative !important;
+  z-index: 5 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  margin: 0 !important;
+  grid-template-columns:
+    minmax(98px, .88fr) 20px
+    minmax(112px, 1fr) 20px
+    minmax(112px, 1fr) 20px
+    minmax(112px, 1fr) 20px
+    minmax(112px, 1fr) !important;
+  gap: 0 !important;
+  padding: 30px 16px 22px !important;
+}
+
+.noc-phone-stack {
+  gap: 10px !important;
+}
+
+/* Nodes should look like compact editor nodes, not dashboard cards. */
+.noc-node {
+  --node-head: #465159 !important;
+  min-height: 76px !important;
+  padding: 24px 7px 7px !important;
+  gap: 2px !important;
+  border-radius: 5px !important;
+  box-shadow:
+    0 1px 1px rgba(0,0,0,.85),
+    0 3px 7px rgba(0,0,0,.22) !important;
+}
+
+/* One family of header color. AI is only slightly different. */
+.noc-phone-stack .noc-node,
+.noc-main-row > .noc-equipment:nth-child(3),
+.noc-main-row > .noc-equipment:nth-child(5),
+.noc-main-row > .noc-equipment:nth-child(9),
+.noc-power-card {
+  --node-head: #465159 !important;
+}
+
+.noc-main-row > .noc-equipment:nth-child(7) {
+  --node-head: #514d5c !important;
+}
+
+.noc-node.abs-node-selected,
+.noc-control-decision.abs-node-selected {
+  --node-head: #566d7d !important;
+}
+
+/* IMPORTANT: undo the previous broad selector that pulled status text into headers. */
+.noc-node span,
+.noc-node-foot span {
+  position: static !important;
+}
+
+/* Only the REAL node name gets placed in the title strip. */
+.noc-phone-stack .noc-node > div:not(.noc-icon) > span:first-child,
+.noc-equipment .noc-equipment-copy > span:first-child,
+.noc-power-card > div:not(.noc-icon) > span:first-child {
+  position: absolute !important;
+  top: 3px !important;
+  left: 7px !important;
+  right: 23px !important;
+  height: 15px !important;
+  color: #eeeeee !important;
+  font-size: 7px !important;
+  font-weight: 500 !important;
+  line-height: 15px !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.noc-icon {
+  top: 4px !important;
+  right: 5px !important;
+  width: 13px !important;
+  height: 13px !important;
+  font-size: 12px !important;
+}
+
+.noc-node strong {
+  font-size: 9px !important;
+}
+
+.noc-node small {
+  margin-top: 2px !important;
+  font-size: 6px !important;
+  line-height: 1.25 !important;
+}
+
+.noc-node-foot {
+  display: grid !important;
+  gap: 3px !important;
+  margin-top: 4px !important;
+  padding-top: 4px !important;
+}
+
+.noc-node-foot span {
+  color: #898989 !important;
+  font-size: 6px !important;
+  white-space: nowrap !important;
+}
+
+/* Smaller sockets, closer to Blender. */
+.noc-node::before,
+.noc-node::after,
+.noc-control-decision::before,
+.noc-control-decision::after {
+  width: 7px !important;
+  height: 7px !important;
+}
+
+.noc-node::before,
+.noc-control-decision::before {
+  left: -4px !important;
+}
+
+.noc-node::after,
+.noc-control-decision::after {
+  right: -4px !important;
+}
+
+/* Existing link components remain only as layout spacers.
+   Actual wires are drawn by the V4 SVG noodle overlay. */
+.noc-link {
+  height: 46px !important;
+}
+
+.noc-link > span,
+.noc-link > small,
+.noc-link > b {
+  visibility: hidden !important;
+}
+
+/* Control section: narrow, compact, Blender-node-like. */
+.noc-control-loop {
+  position: relative !important;
+  z-index: 5 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  margin: 0 14px 10px !important;
+  grid-template-columns:
+    100px
+    minmax(120px, 1fr)
+    28px
+    minmax(120px, 1fr) !important;
+  gap: 8px !important;
+  padding: 8px !important;
+  border: 1px solid #292929 !important;
+  background: rgba(30,30,30,.80) !important;
+}
+
+.noc-loop-label span {
+  font-size: 7px !important;
+}
+
+.noc-loop-label small {
+  font-size: 6px !important;
+}
+
+.noc-control-decision {
+  min-height: 54px !important;
+  padding: 22px 7px 6px !important;
+  border-radius: 5px !important;
+}
+
+.noc-control-decision > span:first-child {
+  top: 3px !important;
+  left: 7px !important;
+  font-size: 7px !important;
+}
+
+.noc-control-decision strong {
+  font-size: 9px !important;
+}
+
+.noc-control-decision small {
+  font-size: 6px !important;
+}
+
+.noc-control-arrow {
+  visibility: hidden !important;
+  height: 35px !important;
+}
+
+/* Power nodes occupy a compact 2x2 patch, like a lower node cluster. */
+.noc-power-layer {
+  position: relative !important;
+  z-index: 5 !important;
+  margin: 0 14px 18px !important;
+  padding: 8px !important;
+  border: 1px solid #292929 !important;
+  background: rgba(28,28,28,.70) !important;
+}
+
+.noc-power-title {
+  min-width: 0 !important;
+  width: auto !important;
+  margin: 0 0 6px !important;
+}
+
+.noc-power-title span {
+  font-size: 7px !important;
+}
+
+.noc-power-title small {
+  display: none !important;
+}
+
+.noc-power-grid {
+  min-width: 0 !important;
+  width: auto !important;
+  margin: 0 !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.noc-power-card {
+  min-height: 58px !important;
+}
+
+/* SVG noodle layer. */
+.abs-blender-noodles {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.abs-blender-noodles path {
+  fill: none;
+  stroke: #55766d;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  opacity: .88;
+}
+
+.abs-blender-noodles path.abs-noodle-idle {
+  stroke: #78684e;
+  opacity: .65;
+}
+
+.abs-blender-noodles path.abs-noodle-bad {
+  stroke: #87554f;
+  opacity: .72;
+}
+
+.abs-blender-noodles path.abs-noodle-control {
+  stroke: #647987;
+}
+
+/* RIGHT: make the inspector feel like Blender Properties, not a web form. */
+.abs-node-inspector {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: 36px minmax(0, 1fr) !important;
+  grid-template-rows: 30px auto minmax(0, 1fr) 30px !important;
+  overflow: hidden !important;
+  background: #252525 !important;
+}
+
+/* Header spans both columns. */
+.abs-inspector-titlebar {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  min-height: 30px !important;
+  height: 30px !important;
+  padding: 0 8px !important;
+  background: #292929 !important;
+}
+
+.abs-inspector-titlebar strong {
+  font-size: 9px !important;
+}
+
+.abs-inspector-titlebar span {
+  display: none !important;
+}
+
+/* Vertical Properties icon rail. */
+.abs-inspector-tabs {
+  grid-column: 1 !important;
+  grid-row: 2 / 4 !important;
+  display: grid !important;
+  grid-template-rows: repeat(3, 36px) !important;
+  align-content: start !important;
+  border: 0 !important;
+  border-right: 1px solid #111 !important;
+  background: #202020 !important;
+}
+
+.abs-inspector-tab {
+  width: 36px !important;
+  min-width: 36px !important;
+  height: 36px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #111 !important;
+  color: transparent !important;
+  background: #292929 !important;
+  font-size: 0 !important;
+  position: relative !important;
+}
+
+.abs-inspector-tab::before {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #878787;
+  font-family: "Material Symbols Rounded";
+  font-size: 17px;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20;
+}
+
+.abs-inspector-tab[data-abs-tab="properties"]::before {
+  content: "tune";
+}
+
+.abs-inspector-tab[data-abs-tab="live"]::before {
+  content: "monitoring";
+}
+
+.abs-inspector-tab[data-abs-tab="links"]::before {
+  content: "account_tree";
+}
+
+.abs-inspector-tab:hover::before,
+.abs-inspector-tab.active::before {
+  color: #e2e2e2;
+}
+
+.abs-inspector-tab.active {
+  background: #353535 !important;
+  box-shadow: inset 2px 0 0 #6c8799 !important;
+}
+
+/* Selected node header occupies content column. */
+.abs-inspector-node-head {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  min-height: 64px !important;
+  padding: 8px !important;
+}
+
+.abs-inspector-node-icon {
+  width: 27px !important;
+  height: 27px !important;
+  font-size: 15px !important;
+}
+
+.abs-inspector-node-copy span {
+  font-size: 6px !important;
+}
+
+.abs-inspector-node-copy strong {
+  font-size: 11px !important;
+}
+
+.abs-inspector-node-copy small {
+  font-size: 7px !important;
+}
+
+.abs-inspector-status {
+  padding: 3px 5px !important;
+  font-size: 6px !important;
+}
+
+/* Properties body */
+.abs-inspector-body {
+  grid-column: 2 !important;
+  grid-row: 3 !important;
+  padding: 6px !important;
+  background: #242424 !important;
+}
+
+.abs-prop-section {
+  margin-bottom: 6px !important;
+  border-color: #363636 !important;
+}
+
+.abs-prop-section > header {
+  min-height: 22px !important;
+  height: 22px !important;
+  padding: 0 6px !important;
+  font-size: 7px !important;
+}
+
+.abs-prop-section > header .material-symbols-rounded {
+  font-size: 12px !important;
+}
+
+.abs-prop-grid {
+  padding: 2px 6px !important;
+}
+
+.abs-prop-row {
+  min-height: 25px !important;
+  grid-template-columns: 92px minmax(0, 1fr) !important;
+  gap: 6px !important;
+}
+
+.abs-prop-row > span,
+.abs-prop-value,
+.abs-prop-input {
+  font-size: 7px !important;
+}
+
+.abs-prop-input {
+  height: 19px !important;
+  padding: 0 5px !important;
+  border-radius: 1px !important;
+}
+
+.abs-link-item {
+  min-height: 28px !important;
+}
+
+.abs-link-item span,
+.abs-link-item strong {
+  font-size: 7px !important;
+}
+
+/* Bottom action bar spans full inspector. */
+.abs-inspector-actions {
+  grid-column: 1 / -1 !important;
+  grid-row: 4 !important;
+  height: 30px !important;
+}
+
+.abs-inspector-actions button {
+  font-size: 7px !important;
+}
+
+/* Hide the noisy status pill row inside the page. Global footer status remains. */
+.noc-header-status {
+  gap: 3px !important;
+}
+
+.noc-header-status .pill {
+  min-height: 18px !important;
+  padding: 0 6px !important;
+  font-size: 6px !important;
+}
+
+/* Responsive fallback only. */
+@media (max-width: 900px) {
+  .noc-workspace {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .abs-node-inspector {
+    min-height: 420px !important;
+  }
+}
+
+
+/* ==========================================================================
+   ABS TELEMETRY — TRUE BLENDER NODE EDITOR V5
+   Standalone editor layered over the previous NOC implementation.
+   ========================================================================== */
+
+.noc-page {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: 6px !important;
+  overflow: hidden !important;
+}
+
+/* The old topology remains in the DOM as a safe fallback, but is not displayed. */
+.noc-page > .noc-workspace {
+  display: none !important;
+}
+
+.be-workspace {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #111;
+  background: #111;
+}
+
+.be-editor {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 28px minmax(0, 1fr);
+  overflow: hidden;
+  background: #1b1b1b;
+}
+
+.be-editor-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 7px;
+  border-bottom: 1px solid #111;
+  background: #262626;
+  user-select: none;
+}
+
+.be-editor-bar-left,
+.be-editor-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.be-editor-bar strong {
+  color: #d6d6d6;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.be-editor-bar span {
+  color: #787878;
+  font-size: 7px;
+}
+
+.be-tool {
+  height: 20px;
+  padding: 0 7px;
+  border: 1px solid #3b3b3b;
+  border-radius: 2px;
+  color: #a7a7a7;
+  background: #303030;
+  font-size: 7px;
+}
+
+.be-tool:hover {
+  color: #eee;
+  background: #3a3a3a;
+}
+
+.be-zoom-label {
+  min-width: 36px;
+  color: #7d7d7d !important;
+  text-align: right;
+}
+
+.be-viewport {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  cursor: default;
+  background:
+    linear-gradient(rgba(255,255,255,.021) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.021) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,.038) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.038) 1px, transparent 1px),
+    #1b1b1b;
+  background-size: 16px 16px, 16px 16px, 64px 64px, 64px 64px;
+}
+
+.be-viewport.is-panning {
+  cursor: grabbing;
+}
+
+.be-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1000px;
+  height: 650px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.be-wires {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 1000px;
+  height: 650px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.be-wire {
+  fill: none;
+  stroke: #58656d;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  opacity: .88;
+}
+
+.be-wire.control {
+  stroke: #687b87;
+}
+
+.be-wire.power {
+  stroke: #606760;
+}
+
+.be-wire.idle {
+  stroke: #72654f;
+  opacity: .65;
+}
+
+.be-wire.down {
+  stroke: #80534e;
+  opacity: .72;
+}
+
+.be-node {
+  --head: #46545e;
+  position: absolute;
+  z-index: 3;
+  width: 150px;
+  min-height: 76px;
+  overflow: visible;
+  border: 1px solid #111;
+  border-radius: 6px;
+  color: #d7d7d7;
+  background: #2a2a2a;
+  box-shadow: 0 2px 7px rgba(0,0,0,.45);
+  user-select: none;
+}
+
+.be-node.compact {
+  width: 132px;
+  min-height: 66px;
+}
+
+.be-node.selected {
+  outline: 1px solid #7795a8;
+  outline-offset: 1px;
+}
+
+.be-node-head {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 6px 0 7px;
+  border-radius: 5px 5px 0 0;
+  color: #f0f0f0;
+  background: var(--head);
+  cursor: grab;
+}
+
+.be-node-head:active {
+  cursor: grabbing;
+}
+
+.be-node-head strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 8px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.be-node-head .material-symbols-rounded {
+  flex: 0 0 auto;
+  color: rgba(255,255,255,.82);
+  font-size: 13px;
+}
+
+.be-node-body {
+  display: grid;
+  gap: 3px;
+  padding: 7px;
+}
+
+.be-node-value {
+  overflow: hidden;
+  color: #e3e3e3;
+  font-size: 10px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.be-node-meta {
+  overflow: hidden;
+  color: #8a8a8a;
+  font-size: 6px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.be-node-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  color: #8b8b8b;
+  font-size: 6px;
+}
+
+.be-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: #737373;
+}
+
+.be-dot.good { background: #69ad8d; }
+.be-dot.warn { background: #c59a5b; }
+.be-dot.bad { background: #bf6256; }
+
+.be-port {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border: 1px solid #0d0d0d;
+  border-radius: 50%;
+  background: #777;
+  transform: translateY(-50%);
+}
+
+.be-port.in { left: -5px; }
+.be-port.out { right: -5px; }
+
+.be-node.good .be-port { background: #68a889; }
+.be-node.warn .be-port { background: #bd9256; }
+.be-node.bad .be-port { background: #bc5c50; }
+
+.be-node.phone .be-port.in {
+  display: none;
+}
+
+/* RIGHT HALF — Blender-like Properties editor */
+.be-inspector {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-rows: 28px auto minmax(0, 1fr);
+  overflow: hidden;
+  background: #252525;
+}
+
+.be-inspector-title {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px;
+  border-bottom: 1px solid #111;
+  background: #292929;
+}
+
+.be-inspector-title strong {
+  color: #d6d6d6;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.be-inspector-title span {
+  color: #757575;
+  font-size: 7px;
+}
+
+.be-tabs {
+  grid-column: 1;
+  grid-row: 2 / 4;
+  display: grid;
+  grid-template-rows: repeat(3, 36px);
+  align-content: start;
+  border-right: 1px solid #111;
+  background: #202020;
+}
+
+.be-tab {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #111;
+  color: #858585;
+  background: #292929;
+}
+
+.be-tab:hover,
+.be-tab.active {
+  color: #eee;
+  background: #353535;
+}
+
+.be-tab.active {
+  box-shadow: inset 2px 0 0 #6f8a9c;
+}
+
+.be-tab .material-symbols-rounded {
+  font-size: 17px;
+}
+
+.be-selection {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: 30px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid #151515;
+  background: #262626;
+}
+
+.be-selection-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #444;
+  border-radius: 3px;
+  color: #aab6bd;
+  background: #202020;
+  font-size: 16px;
+}
+
+.be-selection-copy {
+  min-width: 0;
+}
+
+.be-selection-copy span,
+.be-selection-copy strong,
+.be-selection-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.be-selection-copy span {
+  color: #777;
+  font-size: 6px;
+  text-transform: uppercase;
+}
+
+.be-selection-copy strong {
+  margin-top: 2px;
+  color: #dfdfdf;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.be-selection-copy small {
+  margin-top: 2px;
+  color: #858585;
+  font-size: 7px;
+}
+
+.be-selection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  border: 1px solid #414141;
+  border-radius: 2px;
+  color: #9a9a9a;
+  background: #303030;
+  font-size: 6px;
+}
+
+.be-inspector-body {
+  grid-column: 2;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 6px;
+  background: #242424;
+}
+
+.be-section {
+  margin-bottom: 6px;
+  border: 1px solid #373737;
+  background: #2a2a2a;
+}
+
+.be-section-head {
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 6px;
+  border-bottom: 1px solid #363636;
+  color: #b6b6b6;
+  background: #303030;
+  font-size: 7px;
+  font-weight: 500;
+}
+
+.be-section-head .material-symbols-rounded {
+  color: #7f8e97;
+  font-size: 12px;
+}
+
+.be-rows {
+  display: grid;
+  padding: 2px 6px;
+}
+
+.be-row {
+  min-height: 25px;
+  display: grid;
+  grid-template-columns: 96px minmax(0,1fr);
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #363636;
+}
+
+.be-row:last-child {
+  border-bottom: 0;
+}
+
+.be-row span {
+  color: #858585;
+  font-size: 7px;
+}
+
+.be-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #d0d0d0;
+  font-size: 7px;
+  font-weight: 500;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.be-link-row {
+  min-height: 28px;
+  display: grid;
+  grid-template-columns: 8px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #363636;
+}
+
+.be-link-row:last-child {
+  border-bottom: 0;
+}
+
+.be-link-socket {
+  width: 7px;
+  height: 7px;
+  border: 1px solid #111;
+  border-radius: 50%;
+  background: #6e8a7d;
+}
+
+.be-link-row span {
+  color: #aaa;
+  font-size: 7px;
+}
+
+.be-link-row small {
+  color: #777;
+  font-size: 6px;
+}
+
+@media (max-width: 900px) {
+  .be-workspace {
+    grid-template-columns: minmax(0,1fr);
+  }
+
+  .be-editor {
+    min-height: 520px;
+  }
+
+  .be-inspector {
+    min-height: 420px;
+  }
+}
+
+/* REMOVE TELEMETRY PAGE HERO / HEADER */
+.noc-page-header,
+.noc-header-status {
+  display: none !important;
+}
+
+.noc-page {
+  grid-template-rows: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  padding-top: 0 !important;
+}
+
+.noc-page > .be-workspace,
+.noc-page > .noc-workspace {
+  margin-top: 0 !important;
+}
+

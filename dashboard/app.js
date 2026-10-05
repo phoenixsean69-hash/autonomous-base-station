@@ -20,6 +20,12 @@ let lastTelemetryTimestamp = null;
 
 const MAX_HISTORY = 180;
 
+window.ABSDashboardGetState =
+  () => state;
+
+window.ABSDashboardGetActiveTab =
+  () => activeTab;
+
 function esc(value) {
   return String(value ?? "—")
     .replaceAll("&", "&amp;")
@@ -95,6 +101,7 @@ function tone(value) {
       "WAITING",
       "STARTING",
       "RECONNECTING",
+      "STALE",
       "HOLD",
     ].includes(v)
   ) {
@@ -248,7 +255,7 @@ function pipeline() {
   const cmd = ai?.runtime?.ai_command ?? {};
 
   const stages = [
-    ["ESP32", "Sensors + guardrails", telemetryLive() ? "LIVE" : "OFFLINE"],
+    ["ESP32", "Sensors + guardrails", telemetryStatus()],
     ["Laptop AI", ai?.fault_domain?.label ?? "Temporal AI", aiFresh() ? "LIVE" : "WAITING"],
     ["Pico", cmd.pico_ai_fault_domain ?? "Embedded AI", cmd.pico_decision_status ?? "WAITING"],
     ["ESP32", "Final authority", t.guardrail_status ?? "WAITING"],
@@ -277,15 +284,31 @@ function pipeline() {
   `;
 }
 
+function telemetryStatus() {
+  const explicit =
+    String(
+      state.meta?.telemetryStatus ?? "",
+    ).toUpperCase();
+
+  if (
+    ["LIVE", "STALE", "OFFLINE", "WAITING"].includes(explicit)
+  ) {
+    return explicit;
+  }
+
+  // Fallback for an older dashboard server.
+  const age = ageOf(
+    state.meta?.telemetryUpdatedMs,
+  );
+
+  if (!state.telemetry) return "WAITING";
+  if (age < 30000) return "LIVE";
+  if (age < 120000) return "STALE";
+  return "OFFLINE";
+}
+
 function telemetryLive() {
-  // The full closed-loop AI bridge may synchronously wait up to ~5 s for
-  // Pico embedded-AI output and another ~5 s for the Pico control decision.
-  // During that processing window Wokwi can still be healthy while the
-  // latest_telemetry.json file timestamp temporarily stops advancing.
-  //
-  // This 20-second window is status debounce only. Dashboard values remain
-  // the exact latest ESP32 telemetry; no values are fabricated/interpolated.
-  return ageOf(state.meta?.telemetryUpdatedMs) < 20000;
+  return telemetryStatus() === "LIVE";
 }
 
 function aiFresh() {
@@ -334,7 +357,7 @@ function renderOverview() {
             deterministic guardrails.
           </p>
           <div class="pill-row">
-            ${pill(telemetryLive() ? "LIVE" : "OFFLINE", "Telemetry")}
+            ${pill(telemetryStatus(), "Telemetry")}
             ${pill(
               state.ai
                 ? (aiFresh() ? "LIVE" : "STALE")
@@ -515,65 +538,152 @@ function metricGroup(title, eyebrow, items) {
   `;
 }
 
-function renderTelemetry() {
+function renderConnectionMap2D() {
   const t = state.telemetry ?? {};
+  const ai = state.ai ?? {};
+  const runtime = ai.runtime ?? {};
+  const cmd = runtime.ai_command ?? {};
+  const pico = runtime.pico_decision ?? {};
 
-  const groups = [
-    metricGroup("Thermal", "ENVIRONMENT", [
-      ["Shelter temperature", num(t.shelter_temp_c, 2), " °C"],
-      ["Humidity", num(t.humidity_pct, 2), " %"],
-      ["PA temperature", num(t.pa_temp_c, 2), " °C"],
-      ["PA temperature trend", num(t.pa_temp_trend_c_per_min, 3), " °C/min"],
-      ["PA - shelter delta", num(t.pa_shelter_delta_c, 2), " °C"],
-    ]),
-    metricGroup("Vibration", "MECHANICAL", [
-      ["RMS", num(t.vibration_rms_mps2, 4), " m/s²"],
-      ["Standard deviation", num(t.vibration_std_mps2, 4), " m/s²"],
-      ["Peak-to-peak", num(t.vibration_peak_to_peak_mps2, 4), " m/s²"],
-      ["Dominant frequency", num(t.vibration_dominant_hz, 2), " Hz"],
-    ]),
-    metricGroup("DC + Battery", "POWER", [
-      ["DC voltage", num(t.dc_voltage_v, 2), " V"],
-      ["DC current", num(t.dc_current_a, 2), " A"],
-      ["DC power", num(t.dc_power_w, 2), " W"],
-      ["Battery voltage", num(t.battery_voltage_v, 3), " V"],
-      ["Battery State of Charge", num(t.battery_soc_pct, 2), " %"],
-      ["Battery SoC trend", num(t.battery_soc_trend_pct_per_min, 3), " %/min"],
-    ]),
-    metricGroup("RF", "RADIO FREQUENCY", [
-      ["Forward power", num(t.rf_forward_w, 2), " W"],
-      ["Reflection ratio", num(t.rf_reflection_ratio_pct, 3), " %"],
-      ["Reflected power", num(t.rf_reflected_w, 2), " W"],
-      ["VSWR", num(t.vswr, 3)],
-      ["Return loss", num(t.return_loss_db, 3), " dB"],
-    ]),
-    metricGroup("Network", "BACKHAUL", [
-      ["Latency", num(t.latency_ms, 2), " ms"],
-      ["Latency jitter", num(t.latency_jitter_ms, 3), " ms"],
-      ["Packet loss", num(t.packet_loss_pct, 3), " %"],
-      ["RSSI", num(t.rssi_dbm, 2), " dBm"],
-      ["RSSI drop", num(t.rssi_drop_db, 2), " dB"],
-      ["Traffic load", num(t.traffic_load_pct, 2), " %"],
-    ]),
-    metricGroup("Equipment + Connectivity", "BOOLEAN INPUTS", [
-      ["Physical link", boolText(t.physical_link_up, "UP", "DOWN")],
-      ["Upstream reachable", boolText(t.upstream_reachable, "YES", "NO")],
-      ["Grid available", boolText(t.grid_available, "YES", "NO")],
-      ["Generator running", boolText(t.generator_running, "YES", "NO")],
-      ["Cooling fan", boolText(t.fan_operational, "OPERATIONAL", "FAILED")],
-      ["Rectifier", boolText(t.rectifier_normal, "NORMAL", "FAULT")],
-      ["Radio subsystem", boolText(t.radio_operational, "OPERATIONAL", "FAULT")],
-    ]),
-  ];
+  const source = String(t.network_input_source ?? "UNKNOWN").toUpperCase();
+  const telemetryState =
+    typeof telemetryStatus === "function"
+      ? telemetryStatus()
+      : telemetryLive()
+        ? "LIVE"
+        : "OFFLINE";
+
+  const btsLinked = source === "BTS_BACKHAUL" && telemetryState !== "OFFLINE";
+  const linkUp = t.physical_link_up === true;
+  const upstream = t.upstream_reachable === true;
+  const radio = t.radio_operational === true;
+  const activeCalls = Math.max(0, Number(t.network_active_calls ?? 0) || 0);
+  const laptopReady = Boolean(state.ai) && aiFresh();
+  const picoReady = Boolean(cmd.pico_ai_fault_domain || pico.mode_decision);
+  const decisionReady = Boolean(pico.mode_decision);
+  const guardPassed = String(t.guardrail_status ?? "").toUpperCase() === "PASSED";
+  const networkGood = linkUp && upstream && radio;
+
+  const edge = (ok) => ok ? "map-link live" : "map-link down";
+  const node = (ok) => ok ? "connection-node live" : "connection-node down";
+
+  const aiLabel = ai?.fault_domain?.label ?? "WAITING";
+  const picoDomain = cmd.pico_ai_fault_domain ?? "WAITING";
+  const agreement = cmd.dual_ai_agreement ?? "WAITING";
+  const finalMode = t.operating_mode ?? "—";
+  const generator =
+    (t.generator_feedback_running ?? t.generator_running)
+      ? "RUNNING"
+      : "STOPPED";
 
   return `
-    <div class="page-stack">
-      <section class="page-title">
-        <span class="eyebrow">33-FEATURE INPUT WINDOW</span>
-        <h1>Live Telemetry</h1>
-        <p>The same engineering signals feeding the temporal AI models.</p>
+    <section class="panel connection-map-panel">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow">LIVE 2D TOPOLOGY</span>
+          <h2>Current system connections</h2>
+        </div>
+        <div class="connection-map-legend">
+          <span><i class="legend-dot live"></i>Live</span>
+          <span><i class="legend-dot idle"></i>Idle / waiting</span>
+          <span><i class="legend-dot down"></i>Unavailable</span>
+        </div>
+      </div>
+
+      <div class="connection-map-wrap">
+        <svg class="connection-map-lines" viewBox="0 0 1200 460" preserveAspectRatio="none" aria-hidden="true">
+          <path class="${activeCalls > 0 ? "map-link active" : "map-link idle"}" d="M115 225 C175 225 205 225 270 225"></path>
+          <path class="${edge(btsLinked)}" d="M390 225 C455 225 485 225 550 225"></path>
+          <path class="${edge(laptopReady)}" d="M670 225 C735 225 765 225 830 225"></path>
+          <path class="${edge(picoReady)}" d="M950 225 C1010 225 1035 225 1090 225"></path>
+          <path class="${edge(btsLinked)}" d="M330 120 C330 160 330 175 330 205"></path>
+          <path class="${edge(decisionReady)}" d="M890 245 C890 300 890 320 890 355"></path>
+          <path class="${edge(guardPassed)}" d="M1090 245 C1090 300 1090 320 1090 355"></path>
+
+          ${btsLinked ? `<circle class="flow-dot live" r="5"><animateMotion dur="1.8s" repeatCount="indefinite" path="M390 225 C455 225 485 225 550 225"></animateMotion></circle>` : ""}
+          ${laptopReady ? `<circle class="flow-dot live" r="5"><animateMotion dur="2.2s" repeatCount="indefinite" path="M670 225 C735 225 765 225 830 225"></animateMotion></circle>` : ""}
+          ${picoReady ? `<circle class="flow-dot live" r="5"><animateMotion dur="2s" repeatCount="indefinite" path="M950 225 C1010 225 1035 225 1090 225"></animateMotion></circle>` : ""}
+        </svg>
+
+        <div class="connection-node-grid">
+          <article class="${activeCalls > 0 ? "connection-node active" : "connection-node idle"}" style="--x:2%;--y:39%;">
+            <div class="node-icon material-symbols-rounded">smartphone</div>
+            <div class="node-copy"><span>Mobile users</span><strong>${activeCalls} active call${activeCalls === 1 ? "" : "s"}</strong><small>${activeCalls > 0 ? "CALL IN PROGRESS" : "IDLE"}</small></div>
+          </article>
+
+          <article class="${node(btsLinked)}" style="--x:24%;--y:39%;">
+            <div class="node-icon material-symbols-rounded">cell_tower</div>
+            <div class="node-copy"><span>BTS-001 service</span><strong>:8100</strong><small>${source === "BTS_BACKHAUL" ? "ROUTING TO ABS" : "NOT ACTIVE SOURCE"}</small></div>
+          </article>
+
+          <article class="${node(btsLinked)} compact" style="--x:24%;--y:4%;">
+            <div class="node-icon material-symbols-rounded">router</div>
+            <div class="node-copy"><span>BTS hardware</span><strong>:4010</strong><small>RF / backhaul plant</small></div>
+          </article>
+
+          <article class="${node(telemetryState !== "OFFLINE")}" style="--x:47%;--y:39%;">
+            <div class="node-icon material-symbols-rounded">developer_board</div>
+            <div class="node-copy"><span>Main ESP32</span><strong>:4001</strong><small>${telemetryState} · ${esc(source)}</small></div>
+          </article>
+
+          <article class="${node(laptopReady)}" style="--x:70%;--y:39%;">
+            <div class="node-icon material-symbols-rounded">neurology</div>
+            <div class="node-copy"><span>Laptop AI</span><strong>${esc(aiLabel)}</strong><small>${laptopReady ? "TEMPORAL AI LIVE" : "WAITING / STALE"}</small></div>
+          </article>
+
+          <article class="${node(picoReady)}" style="--x:89%;--y:39%;">
+            <div class="node-icon material-symbols-rounded">memory</div>
+            <div class="node-copy"><span>Raspberry Pi Pico</span><strong>:4000</strong><small>${esc(picoDomain)} · ${esc(agreement)}</small></div>
+          </article>
+
+          <article class="${node(decisionReady)} compact" style="--x:70%;--y:75%;">
+            <div class="node-icon material-symbols-rounded">account_tree</div>
+            <div class="node-copy"><span>Pico decision</span><strong>${esc(pico.mode_decision ?? "WAITING")}</strong><small>${esc(pico.power_source_decision ?? "—")} · ${esc(pico.generator_action ?? "—")}</small></div>
+          </article>
+
+          <article class="${node(guardPassed)} compact" style="--x:89%;--y:75%;">
+            <div class="node-icon material-symbols-rounded">shield</div>
+            <div class="node-copy"><span>ESP32 guardrails</span><strong>${esc(finalMode)}</strong><small>${esc(t.guardrail_status ?? "WAITING")} · GEN ${generator}</small></div>
+          </article>
+        </div>
+
+        <div class="connection-live-strip">
+          <div><span>Backhaul</span><strong>${networkGood ? "AVAILABLE" : "DEGRADED / DOWN"}</strong></div>
+          <div><span>Latency</span><strong>${num(t.latency_ms, 1)} ms</strong></div>
+          <div><span>Packet loss</span><strong>${num(t.packet_loss_pct, 2)}%</strong></div>
+          <div><span>RSSI</span><strong>${num(t.rssi_dbm, 1)} dBm</strong></div>
+          <div><span>Traffic</span><strong>${num(t.traffic_load_pct, 1)}%</strong></div>
+          <div><span>Radio</span><strong>${radio ? "OPERATIONAL" : "FAULT"}</strong></div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderTelemetry() {
+  const status =
+    typeof telemetryStatus === "function"
+      ? telemetryStatus()
+      : telemetryLive()
+        ? "LIVE"
+        : "OFFLINE";
+
+  return `
+    <div class="telemetry-topology-page">
+      <section class="telemetry-topology-title">
+        <div>
+          <span class="eyebrow">LIVE DIGITAL TWIN</span>
+          <h1>Live System Topology</h1>
+          <p>Real-time service, telemetry, AI, control and power connections across the complete autonomous base-station system.</p>
+        </div>
+
+        <div class="topology-title-actions">
+          ${pill(status, "Telemetry")}
+          ${pill(aiFresh() ? "LIVE" : "STALE", "AI")}
+        </div>
       </section>
-      <div class="metric-groups">${groups.join("")}</div>
+
+      ${renderConnectionMap2D()}
     </div>
   `;
 }
@@ -840,6 +950,11 @@ function renderModels() {
 }
 
 function render() {
+  window.dispatchEvent(
+    new Event(
+      "abs-dashboard-before-render",
+    ),
+  );
   if (activeTab === "overview") content.innerHTML = renderOverview();
   if (activeTab === "telemetry") content.innerHTML = renderTelemetry();
   if (activeTab === "ai") content.innerHTML = renderAI();
@@ -849,9 +964,15 @@ function render() {
   dashboardStatus.className = `pill ${tone(socketState)}`;
   dashboardStatus.innerHTML = `<i></i>Dashboard: ${esc(socketState)}`;
 
-  const esp = telemetryLive() ? "LIVE" : "OFFLINE";
+  const esp = telemetryStatus();
   espStatus.className = `pill ${tone(esp)}`;
   espStatus.innerHTML = `<i></i>ESP32: ${esc(esp)}`;
+
+  window.dispatchEvent(
+    new Event(
+      "abs-dashboard-rendered",
+    ),
+  );
 }
 
 function applyState(next) {
@@ -930,6 +1051,30 @@ async function connect() {
   });
 }
 
-setInterval(render, 1000);
+function refreshRuntimeStatus() {
+  dashboardStatus.className =
+    `pill ${tone(socketState)}`;
+
+  dashboardStatus.innerHTML =
+    `<i></i>Dashboard: ${esc(socketState)}`;
+
+  const esp =
+    typeof telemetryStatus === "function"
+      ? telemetryStatus()
+      : telemetryLive()
+        ? "LIVE"
+        : "OFFLINE";
+
+  espStatus.className =
+    `pill ${tone(esp)}`;
+
+  espStatus.innerHTML =
+    `<i></i>ESP32: ${esc(esp)}`;
+}
+
+setInterval(
+  refreshRuntimeStatus,
+  1000,
+);
 render();
 connect();

@@ -3,189 +3,154 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta
-    name="description"
-    content="Autonomous Base Station live monitoring dashboard"
-  />
-  <meta name="theme-color" content="#f8f5f1" />
+  <meta name="description" content="Autonomous Base Station live monitoring dashboard" />
+  <meta name="theme-color" content="#1b1b1b" />
   <title>ABS Control Center</title>
-
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
-
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,-50..200" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/telemetry-noc.css" />
 </head>
 <body>
   <div id="app" class="health-shell">
-    <aside class="health-sidebar" aria-label="Dashboard navigation">
-      <div class="health-logo" aria-label="ABS Control">
-        <span class="health-logo-mark" aria-hidden="true">⌘</span>
+    <header class="app-menu-bar">
+      <div class="brand-chip">
+        <span class="brand-symbol material-symbols-rounded" aria-hidden="true">cell_tower</span>
+        <strong>ABS Control Center</strong>
       </div>
-
-      <nav class="health-nav">
-        <button class="tab health-nav-btn active" data-tab="overview" aria-label="Overview">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="4" y="4" width="6" height="6" rx="1"></rect>
-            <rect x="14" y="4" width="6" height="6" rx="1"></rect>
-            <rect x="4" y="14" width="6" height="6" rx="1"></rect>
-            <rect x="14" y="14" width="6" height="6" rx="1"></rect>
-          </svg>
-        </button>
-
-        <button class="tab health-nav-btn" data-tab="telemetry" aria-label="Telemetry">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="5" y="5" width="14" height="14" rx="2"></rect>
-            <path d="M8 2v4M16 2v4M8 10h8M8 14h5"></path>
-          </svg>
-        </button>
-
-        <button class="tab health-nav-btn" data-tab="ai" aria-label="AI Intelligence">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="7"></circle>
-            <path d="M9 12h.01M15 12h.01M9 16c1.6 1 4.4 1 6 0"></path>
-          </svg>
-        </button>
-
-        <button class="tab health-nav-btn" data-tab="control" aria-label="Control Chain">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="6" cy="6" r="2"></circle>
-            <circle cx="18" cy="18" r="2"></circle>
-            <path d="M8 6h4a4 4 0 0 1 4 4v2M16 12v4"></path>
-          </svg>
-        </button>
-
-        <button class="tab health-nav-btn" data-tab="models" aria-label="Models">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>
-          </svg>
-        </button>
-      </nav>
-
-      <div class="health-nav-bottom">
-        <button class="health-nav-btn health-nav-static" aria-label="Settings">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1A8 8 0 0 0 15 6l-.3-2.6h-4L10.4 6A8 8 0 0 0 8 7.1l-2.4-1-2 3.4L5.6 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.4-1A8 8 0 0 0 10.4 18l.3 2.6h4L15 18a8 8 0 0 0 1.5-1.1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1z"></path>
-          </svg>
-        </button>
+      <div class="main-menu" aria-label="Application menu">
+        <button type="button" class="shell-menu-btn" data-menu="file">File</button>
+        <button type="button" class="shell-menu-btn" data-menu="view">View</button>
+        <button type="button" class="shell-menu-btn" data-menu="system">System</button>
+        <button type="button" class="shell-menu-btn" data-menu="ai">AI</button>
+        <button type="button" class="shell-menu-btn" data-menu="help">Help</button>
+        <div id="shellMenuDropdown" class="shell-dropdown" hidden></div>
       </div>
-    </aside>
-
-    <section class="health-main-pane">
-      <header class="health-header">
-        <div>
-          <h1 id="healthPageTitle">Base Station Overview</h1>
-          <p id="healthPageSubtitle">Live telecom control and system health</p>
-        </div>
-
-        <div class="health-header-actions">
-          <button class="health-round-btn" aria-label="Search">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="6"></circle>
-              <path d="m16 16 4 4"></path>
-            </svg>
-          </button>
-          <button class="health-round-btn" aria-label="Notifications">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"></path>
-              <path d="M10 19h4"></path>
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      <main id="content" class="health-content"></main>
-    </section>
-
-    <aside class="health-insight-rail">
-      <div class="insight-header">
-        <div>
-          <span class="insight-kicker">System Health</span>
-          <h2>Live Status</h2>
-        </div>
-        <span class="insight-period">Live Feed⌄</span>
+      <div class="top-status">
+        <span class="prototype-tag">Autonomous Base Station</span>
+        <span class="status-indicator"><i></i>BTS-001 workspace</span>
       </div>
+    </header>
 
-      <section class="insight-card insight-summary">
-        <div class="summary-label">Fault Domain</div>
-        <div class="summary-value" id="railFault">—</div>
-        <span id="railHealthTag" class="rail-health-tag">Waiting for telemetry</span>
+    <div class="workspace-tabs-bar">
+      <div class="workspace-tabs" role="tablist" aria-label="Dashboard workspaces">
+        <button class="tab active" data-tab="overview" type="button">Overview</button>
+        <button class="tab" data-tab="telemetry" type="button">Telemetry</button>
+        <button class="tab" data-tab="ai" type="button">AI Intelligence</button>
+        <button class="tab" data-tab="control" type="button">Control Chain</button>
+        <button class="tab" data-tab="models" type="button">Models</button>
+      </div>
+      <div class="scene-file">BTS-001 · ESP32 :4001 · Pico :4000</div>
+    </div>
 
-        <div class="health-spectrum">
-          <div class="health-spectrum-bar"></div>
-          <span class="health-spectrum-marker" id="railSpectrumMarker"></span>
-        </div>
+    <div class="workspace-grid">
+      <aside class="tool-rail" aria-label="System layers">
+        <button type="button" class="tool-icon shell-nav active material-symbols-rounded" data-tab-target="overview" aria-label="System overview" title="System overview">dashboard</button>
+        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="telemetry" aria-label="BTS and RF telemetry" title="BTS and RF telemetry">cell_tower</button>
+        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="telemetry" aria-label="Live telemetry" title="Live telemetry">monitoring</button>
+        <span class="tool-separator"></span>
+        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="ai" aria-label="Laptop AI" title="Laptop AI">memory</button>
+        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="ai" aria-label="Pico embedded AI" title="Pico embedded AI">developer_board</button>
+        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="control" aria-label="Safety guardrails" title="Safety guardrails">shield</button>
+        <span class="tool-separator"></span>
+        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="control" aria-label="Power system" title="Power system">bolt</button>
+        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="telemetry" aria-label="Network and backhaul" title="Network and backhaul">lan</button>
+      </aside>
 
-        <div class="summary-grid">
+      <section class="health-main-pane">
+        <header class="health-header">
           <div>
-            <span>Final mode</span>
-            <strong id="railMode">—</strong>
+            <span class="section-kicker">LIVE DIGITAL TWIN</span>
+            <h1 id="healthPageTitle">Base Station Overview</h1>
+            <p id="healthPageSubtitle">Live telecom control and system health</p>
           </div>
-          <div>
-            <span>Power source</span>
-            <strong id="railSource">—</strong>
+          <div class="header-context">
+            <button type="button" class="context-item shell-nav" data-tab-target="telemetry" aria-label="Open BTS backhaul telemetry">
+              <span class="material-symbols-rounded">radio</span>BTS Backhaul
+            </button>
+            <button type="button" class="context-item shell-nav" data-tab-target="ai" aria-label="Open dual AI intelligence">
+              <span class="material-symbols-rounded">neurology</span>Dual AI
+            </button>
           </div>
-        </div>
+        </header>
+        <main id="content" class="health-content"></main>
       </section>
 
-      <div class="insight-divider"></div>
-
-      <section class="site-health-block">
-        <div class="site-health-copy">
-          <h3>Site Measurements</h3>
-          <p>Live equipment and network state</p>
+      <aside class="health-insight-rail">
+        <div class="editor-header">
+          <span>System Inspector</span>
+          <button type="button" class="inspector-action material-symbols-rounded shell-nav" data-tab-target="control" aria-label="Open control chain" title="Open control chain">tune</button>
         </div>
 
-        <div class="tower-stage" aria-hidden="true">
-          <svg viewBox="0 0 180 230" role="img">
-            <defs>
-              <linearGradient id="mastGlow" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#ffd4ab"></stop>
-                <stop offset="1" stop-color="#f2a47c"></stop>
-              </linearGradient>
-            </defs>
-            <path d="M88 26 61 202h54L92 26z" fill="none" stroke="url(#mastGlow)" stroke-width="5" stroke-linejoin="round"></path>
-            <path d="M73 84h33M68 115h43M63 147h53M58 179h63" stroke="#ffd4ab" stroke-width="3" stroke-linecap="round"></path>
-            <path d="M90 34v168" stroke="#f7f7f7" stroke-width="3" stroke-linecap="round"></path>
-            <ellipse cx="90" cy="78" rx="58" ry="14" fill="none" stroke="#ca6b6e" stroke-width="2"></ellipse>
-            <ellipse cx="90" cy="116" rx="68" ry="17" fill="none" stroke="#478f96" stroke-width="2"></ellipse>
-            <ellipse cx="90" cy="158" rx="78" ry="20" fill="none" stroke="#d08726" stroke-width="2"></ellipse>
-            <circle cx="90" cy="24" r="7" fill="#f8debd"></circle>
-            <path d="M48 204h84M62 204l-12 14M118 204l12 14" stroke="#f7f7f7" stroke-width="4" stroke-linecap="round"></path>
-          </svg>
-        </div>
+        <section class="inspector-section">
+          <span class="section-title">Operating state</span>
+          <div class="inspector-primary">
+            <span>Fault domain</span>
+            <strong id="railFault">—</strong>
+            <span id="railHealthTag" class="rail-health-tag">Waiting for telemetry</span>
+          </div>
+          <div class="health-spectrum">
+            <div class="health-spectrum-bar"></div>
+            <span class="health-spectrum-marker" id="railSpectrumMarker"></span>
+          </div>
+          <div class="property-list">
+            <div><span>Final mode</span><strong id="railMode">—</strong></div>
+            <div><span>Power source</span><strong id="railSource">—</strong></div>
+          </div>
+        </section>
 
-        <div class="measurement-stack">
-          <div class="measurement-card">
-            <span>Battery</span>
-            <strong id="railBattery">—</strong>
-            <small class="trend coral">live</small>
+        <section class="inspector-section">
+          <span class="section-title">Site measurements</span>
+          <div class="property-list">
+            <div><span>Battery</span><strong id="railBattery">—</strong></div>
+            <div><span>Traffic</span><strong id="railTraffic">—</strong></div>
+            <div><span>Generator</span><strong id="railGenerator">—</strong></div>
           </div>
-          <div class="measurement-card">
-            <span>Traffic</span>
-            <strong id="railTraffic">—</strong>
-            <small class="trend teal">load</small>
-          </div>
-          <div class="measurement-card">
-            <span>Generator</span>
-            <strong id="railGenerator">—</strong>
-            <small class="trend orange">state</small>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <div class="insight-connection">
+        <section class="inspector-section">
+          <span class="section-title">Architecture</span>
+          <div class="mini-flow">
+            <div><span class="material-symbols-rounded">cell_tower</span><b>BTS</b><small>:8100 / :4010</small></div>
+            <i></i>
+            <div><span class="material-symbols-rounded">developer_board</span><b>ESP32</b><small>:4001</small></div>
+            <i></i>
+            <div><span class="material-symbols-rounded">neurology</span><b>AI + Pico</b><small>:4000</small></div>
+          </div>
+        </section>
+
+        <section class="inspector-section inspector-note">
+          <span class="section-title">Authority</span>
+          <p>Laptop AI recommends. Pico validates. ESP32 deterministic guardrails remain the final actuation authority.</p>
+        </section>
+      </aside>
+    </div>
+
+    <footer class="status-bar">
+      <div class="status-left">
         <span id="dashboardStatus" class="pill neutral"><i></i>Dashboard: CONNECTING</span>
         <span id="espStatus" class="pill neutral"><i></i>ESP32: WAITING</span>
       </div>
-    </aside>
+      <div class="status-right">
+        <span>BTS :4010</span><span>Service :8100</span><span>ESP32 :4001</span><span>Pico :4000</span>
+      </div>
+    </footer>
   </div>
 
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/three.module.js",
+        "three/addons/": "/vendor/three-addons/"
+      }
+    }
+  </script>
   <script src="/app.js"></script>
   <script src="/healthcare-ui.js"></script>
+  <script type="module" src="/three-ui.js"></script>
+  <script src="/shell-actions.js"></script>
+  <script src="/telemetry-noc.js"></script>
 </body>
 </html>

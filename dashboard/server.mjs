@@ -14,6 +14,12 @@ const telemetryFile = path.join(runtimeDir, "latest_telemetry.json");
 const aiFile = path.join(runtimeDir, "latest_ai_result.json");
 const port = Number(process.env.DASHBOARD_PORT || 5173);
 const AI_FRESH_MS = 30000;
+const TELEMETRY_LIVE_MS = Number(
+  process.env.DASHBOARD_TELEMETRY_LIVE_MS || 30000,
+);
+const TELEMETRY_OFFLINE_MS = Number(
+  process.env.DASHBOARD_TELEMETRY_OFFLINE_MS || 120000,
+);
 
 async function readJsonWithMeta(filePath) {
   try {
@@ -41,6 +47,21 @@ async function snapshot() {
   ]);
 
   const nowMs = Date.now();
+
+  const telemetryAgeMs =
+    Number.isFinite(Number(telemetry.updatedMs))
+      ? nowMs - Number(telemetry.updatedMs)
+      : Infinity;
+
+  const telemetryStatus =
+    !telemetry.data
+      ? "WAITING"
+      : telemetryAgeMs < TELEMETRY_LIVE_MS
+        ? "LIVE"
+        : telemetryAgeMs < TELEMETRY_OFFLINE_MS
+          ? "STALE"
+          : "OFFLINE";
+
   const aiAgeMs =
     Number.isFinite(Number(ai.updatedMs))
       ? nowMs - Number(ai.updatedMs)
@@ -60,6 +81,13 @@ async function snapshot() {
     ai: liveAi,
     meta: {
       telemetryUpdatedMs: telemetry.updatedMs,
+      telemetryStatus,
+      telemetryAgeMs:
+        Number.isFinite(telemetryAgeMs)
+          ? telemetryAgeMs
+          : null,
+      telemetryLiveWindowMs: TELEMETRY_LIVE_MS,
+      telemetryOfflineWindowMs: TELEMETRY_OFFLINE_MS,
       aiUpdatedMs: ai.updatedMs,
       aiFresh,
       aiAgeMs:
@@ -75,6 +103,31 @@ async function snapshot() {
 const app = express();
 app.disable("x-powered-by");
 app.use(express.json());
+
+app.use(
+  "/vendor/three",
+  express.static(
+    path.join(
+      __dirname,
+      "node_modules",
+      "three",
+      "build",
+    ),
+  ),
+);
+
+app.use(
+  "/vendor/three-addons",
+  express.static(
+    path.join(
+      __dirname,
+      "node_modules",
+      "three",
+      "examples",
+      "jsm",
+    ),
+  ),
+);
 
 app.get("/api/health", async (_req, res) => {
   const state = await snapshot();
