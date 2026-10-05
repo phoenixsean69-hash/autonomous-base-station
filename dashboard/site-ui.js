@@ -401,37 +401,805 @@ function addRoutes(root) {
   return pulses;
 }
 
+
+/* ==========================================================================
+   ABS SITE 3D — TWO-STATION LIVE DIGITAL TWIN V7
+   BTS-001 + Main Autonomous Base Station
+   ========================================================================== */
+
+const TWIN_V7_INFO = {
+  btsRadio: {
+    title: "BTS Radio + RF Plant",
+    type: "BTS radio equipment",
+    icon: "cell_tower",
+    role: "Radio access, RF power/amplification and BTS environmental state",
+  },
+  btsService: {
+    title: "BTS Service Cabinet",
+    type: "BTS network/service node",
+    icon: "router",
+    role: "Routes calls/SMS and BTS telemetry toward the autonomous base station",
+  },
+  btsBackhaul: {
+    title: "BTS Backhaul Terminal",
+    type: "Microwave/backhaul terminal",
+    icon: "settings_input_antenna",
+    role: "BTS-side transport link toward the main autonomous base station",
+  },
+  mainBackhaul: {
+    title: "Main Backhaul Terminal",
+    type: "Backhaul receiver",
+    icon: "settings_input_antenna",
+    role: "Receives BTS traffic and telemetry at the main autonomous base station",
+  },
+  mainControl: {
+    title: "Main ESP32 Control Cabinet",
+    type: "Main station controller",
+    icon: "developer_board",
+    role: "Receives telemetry, applies deterministic guardrails and controls final actuation",
+  },
+  aiPico: {
+    title: "AI + Pico Decision Cabinet",
+    type: "AI and embedded decision equipment",
+    icon: "neurology",
+    role: "Laptop temporal AI inference plus Raspberry Pi Pico independent decision validation",
+  },
+  rectifier: {
+    title: "Rectifier + DC Power Plant",
+    type: "Managed DC power equipment",
+    icon: "electric_bolt",
+    role: "Combines grid, generator and battery sources into managed site power",
+  },
+  siteLoad: {
+    title: "Managed Site Load",
+    type: "Telecommunications site load",
+    icon: "dns",
+    role: "Represents the controlled load served by the autonomous station",
+  },
+};
+
+Object.assign(SITE_COMPONENT_INFO, TWIN_V7_INFO);
+
+function twinV7Rows(component) {
+  const s = dashboardState();
+  const t = s.telemetry ?? {};
+  const ai = s.ai ?? {};
+  const cmd = ai?.runtime?.ai_command ?? {};
+  const pico = ai?.runtime?.pico_decision ?? {};
+
+  const rows = {
+    btsRadio: [
+      ["Radio", t.radio_operational === true ? "OPERATIONAL" : "FAULT / UNKNOWN"],
+      ["RSSI", `${Number(t.rssi_dbm ?? 0).toFixed(1)} dBm`],
+      ["Traffic", `${Number(t.traffic_load_pct ?? 0).toFixed(1)}%`],
+      ["Active calls", `${Number(t.network_active_calls ?? 0)}`],
+      ["RF forward", `${Number(t.rf_forward_w ?? 0).toFixed(1)} W`],
+      ["RF reflected", `${Number(t.rf_reflected_w ?? 0).toFixed(1)} W`],
+    ],
+    btsService: [
+      ["Service", ":8100"],
+      ["Input source", t.network_input_source ?? "—"],
+      ["Physical link", t.physical_link_up === true ? "UP" : "DOWN / UNKNOWN"],
+      ["Upstream", t.upstream_reachable === true ? "REACHABLE" : "DOWN / UNKNOWN"],
+      ["Traffic", `${Number(t.traffic_load_pct ?? 0).toFixed(1)}%`],
+      ["Calls", `${Number(t.network_active_calls ?? 0)}`],
+    ],
+    btsBackhaul: [
+      ["Backhaul", t.backhaul_status ?? "—"],
+      ["Latency", `${Number(t.latency_ms ?? 0).toFixed(1)} ms`],
+      ["Packet loss", `${Number(t.packet_loss_pct ?? 0).toFixed(2)}%`],
+      ["Upstream", t.upstream_reachable === true ? "REACHABLE" : "DOWN / UNKNOWN"],
+      ["Source", t.network_input_source ?? "—"],
+    ],
+    mainBackhaul: [
+      ["Backhaul", t.backhaul_status ?? "—"],
+      ["Main input", t.network_input_source ?? "—"],
+      ["Latency", `${Number(t.latency_ms ?? 0).toFixed(1)} ms`],
+      ["Packet loss", `${Number(t.packet_loss_pct ?? 0).toFixed(2)}%`],
+      ["Physical link", t.physical_link_up === true ? "UP" : "DOWN / UNKNOWN"],
+    ],
+    mainControl: [
+      ["ESP32 endpoint", ":4001"],
+      ["Telemetry", s.meta?.telemetryStatus ?? "—"],
+      ["Final mode", t.operating_mode ?? "—"],
+      ["Guardrails", t.guardrail_status ?? "—"],
+      ["Power source", t.active_power_source ?? "—"],
+    ],
+    aiPico: [
+      ["Laptop AI", ai?.fault_domain?.label ?? "WAITING"],
+      ["Confidence", ai?.fault_domain?.confidence == null ? "—" : `${(Number(ai.fault_domain.confidence) * 100).toFixed(1)}%`],
+      ["AI trust", ai?.trust?.decision ?? "—"],
+      ["Pico endpoint", ":4000"],
+      ["Pico domain", cmd.pico_ai_fault_domain ?? "WAITING"],
+      ["Dual AI", cmd.dual_ai_agreement ?? "WAITING"],
+      ["Pico mode", pico.mode_decision ?? "WAITING"],
+    ],
+    rectifier: [
+      ["Active source", t.active_power_source ?? "—"],
+      ["Grid", t.grid_available === true ? "AVAILABLE" : "FAILED / UNKNOWN"],
+      ["Generator", (t.generator_feedback_running ?? t.generator_running) ? "RUNNING" : "STOPPED"],
+      ["DC voltage", `${Number(t.dc_voltage_v ?? 0).toFixed(2)} V`],
+      ["Managed power", `${Number(t.managed_power_kw ?? 0).toFixed(3)} kW`],
+      ["Mode", t.operating_mode ?? "—"],
+    ],
+    siteLoad: [
+      ["Traffic", `${Number(t.traffic_load_pct ?? 0).toFixed(1)}%`],
+      ["Managed power", `${Number(t.managed_power_kw ?? 0).toFixed(3)} kW`],
+      ["Operating mode", t.operating_mode ?? "—"],
+      ["Active calls", `${Number(t.network_active_calls ?? 0)}`],
+    ],
+  };
+
+  return rows[component] ?? componentRows(component);
+}
+
+function twinStatus(name, state) {
+  const t = state?.telemetry ?? {};
+  const ai = state?.ai ?? {};
+  const cmd = ai?.runtime?.ai_command ?? {};
+  const pico = ai?.runtime?.pico_decision ?? {};
+  const backhaul = String(t.backhaul_status ?? "").toUpperCase();
+  const source = String(t.network_input_source ?? "").toUpperCase();
+  const telemetry = String(state?.meta?.telemetryStatus ?? "OFFLINE").toUpperCase();
+  const agreement = String(cmd.dual_ai_agreement ?? "").toUpperCase();
+
+  if (name === "radio") {
+    return t.radio_operational === true ? "good" : t.radio_operational === false ? "down" : "warn";
+  }
+
+  if (name === "backhaul") {
+    if (
+      t.physical_link_up === false ||
+      t.upstream_reachable === false ||
+      backhaul === "CRITICAL"
+    ) return "down";
+
+    if (
+      backhaul === "DEGRADED" ||
+      (source && source !== "BTS_BACKHAUL")
+    ) return "warn";
+
+    return source === "BTS_BACKHAUL" ? "good" : "warn";
+  }
+
+  if (name === "telemetry") {
+    if (telemetry === "LIVE") return "good";
+    if (telemetry === "STALE") return "warn";
+    return "down";
+  }
+
+  if (name === "ai") {
+    if (!state?.ai) return "down";
+    return state?.meta?.aiFresh === true ? "good" : "warn";
+  }
+
+  if (name === "dual") {
+    if (!cmd.pico_ai_fault_domain && !pico.mode_decision) return "down";
+    if (agreement === "AGREE") return "good";
+    if (agreement === "DISAGREE") return "warn";
+    return "warn";
+  }
+
+  if (name === "grid") {
+    return t.grid_available === true ? "good" : "down";
+  }
+
+  if (name === "generator") {
+    return (t.generator_feedback_running ?? t.generator_running) ? "good" : "idle";
+  }
+
+  if (name === "battery") {
+    const soc = Number(t.battery_soc_pct ?? 0);
+    if (soc <= 25) return "down";
+    if (soc <= 40) return "warn";
+    return "good";
+  }
+
+  if (name === "power") {
+    return String(t.active_power_source ?? "").toUpperCase() === "NO POWER" ? "down" : "good";
+  }
+
+  return "idle";
+}
+
+function twinColor(status, kind = "data") {
+  if (status === "down") return COLORS.red;
+  if (status === "warn") return 0xb58c4d;
+  if (status === "idle") return 0x62696d;
+  return kind === "power" ? COLORS.amberGlow : COLORS.tealGlow;
+}
+
+function setMaterialColor(material, color, emissive = true) {
+  if (!material) return;
+  material.color?.setHex(color);
+  if (material.emissive) {
+    material.emissive.setHex(emissive ? color : 0x000000);
+  }
+}
+
+function addTwinBeacon(group, position = [0, 1.7, 0]) {
+  const beacon = new THREE.Mesh(
+    new THREE.SphereGeometry(0.085, 14, 14),
+    mat(COLORS.green, {
+      emissive: COLORS.green,
+      emissiveIntensity: 0.9,
+      metalness: 0.05,
+      roughness: 0.28,
+    }),
+  );
+  beacon.position.set(...position);
+  group.add(beacon);
+  group.userData.beacon = beacon;
+  return beacon;
+}
+
+function setTwinBeacon(group, status) {
+  const beacon = group?.userData?.beacon;
+  if (!beacon) return;
+  const color = twinColor(status, "data");
+  setMaterialColor(beacon.material, color, true);
+  beacon.material.emissiveIntensity = status === "idle" ? 0.25 : 0.9;
+}
+
+function makeTwinLabel(text, width = 420) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = 74;
+
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgba(31,34,36,.88)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "rgba(255,255,255,.16)";
+  ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+  ctx.fillStyle = "#d7d7d7";
+  ctx.font = "500 25px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: true,
+    }),
+  );
+  sprite.scale.set(3.5, 0.62, 1);
+  return sprite;
+}
+
+function buildTwinPad(root, centerX, width, depth, label) {
+  const pad = new THREE.Group();
+  pad.position.set(centerX, 0, 0);
+  root.add(pad);
+
+  box(pad, [width, 0.30, depth], [0, -0.18, 0], 0x202427, {
+    roughness: 0.8,
+    metalness: 0.12,
+  });
+
+  box(pad, [width - 0.32, 0.11, depth - 0.32], [0, 0.02, 0], 0x30373b, {
+    roughness: 0.72,
+    metalness: 0.16,
+  });
+
+  const grid = new THREE.GridHelper(Math.max(width, depth), 14, 0x56646c, 0x3a444a);
+  grid.scale.x = width / Math.max(width, depth);
+  grid.scale.z = depth / Math.max(width, depth);
+  grid.position.y = 0.085;
+  grid.material.transparent = true;
+  grid.material.opacity = 0.32;
+  pad.add(grid);
+
+  const fence = new THREE.Group();
+  pad.add(fence);
+
+  function post(x, z) {
+    box(fence, [0.065, 0.92, 0.065], [x, 0.50, z], 0x515a60);
+  }
+
+  function rail(x1, z1, x2, z2, y) {
+    const dx = x2 - x1;
+    const dz = z2 - z1;
+    const len = Math.hypot(dx, dz);
+    const r = box(fence, [len, 0.035, 0.035], [(x1+x2)/2, y, (z1+z2)/2], 0x465056);
+    r.rotation.y = -Math.atan2(dz, dx);
+  }
+
+  const x0 = -width / 2 + 0.2;
+  const x1 = width / 2 - 0.2;
+  const z0 = -depth / 2 + 0.2;
+  const z1 = depth / 2 - 0.2;
+
+  for (let x = x0; x <= x1 + 0.01; x += 1.35) {
+    post(x, z0);
+    post(x, z1);
+  }
+
+  for (let z = z0; z <= z1 + 0.01; z += 1.35) {
+    post(x0, z);
+    post(x1, z);
+  }
+
+  rail(x0, z0, x1, z0, 0.42);
+  rail(x0, z0, x1, z0, 0.72);
+  rail(x0, z1, x1, z1, 0.42);
+  rail(x0, z1, x1, z1, 0.72);
+  rail(x0, z0, x0, z1, 0.42);
+  rail(x0, z0, x0, z1, 0.72);
+  rail(x1, z0, x1, z1, 0.42);
+  rail(x1, z0, x1, z1, 0.72);
+
+  const sign = makeTwinLabel(label);
+  sign.position.set(0, 2.55, -depth / 2 + 0.55);
+  pad.add(sign);
+
+  return pad;
+}
+
+function buildBtsRadioCabinet(root, pos) {
+  const g = new THREE.Group();
+  g.position.set(...pos);
+  g.userData.component = "btsRadio";
+  root.add(g);
+
+  box(g, [2.0, 0.16, 1.45], [0, 0.05, 0], 0x252a2d);
+  box(g, [1.55, 1.35, 1.05], [0, 0.78, 0], 0x343a3e);
+
+  for (let i = -5; i <= 5; i += 1) {
+    box(g, [0.035, 0.86, 1.08], [-0.55 + i * 0.11, 0.78, 0], 0x22272a);
+  }
+
+  box(g, [0.46, 0.28, 0.055], [0.46, 0.84, 0.56], COLORS.teal, {
+    emissive: COLORS.teal,
+    emissiveIntensity: 0.35,
+  });
+
+  const fan = new THREE.Mesh(
+    new THREE.TorusGeometry(0.23, 0.035, 8, 28),
+    mat(0x576168, { metalness: 0.55, roughness: 0.35 }),
+  );
+  fan.position.set(-0.47, 0.76, 0.57);
+  g.add(fan);
+
+  addTwinBeacon(g, [0.64, 1.58, 0.42]);
+  return g;
+}
+
+function buildBtsServiceCabinet(root, pos) {
+  const g = new THREE.Group();
+  g.position.set(...pos);
+  g.userData.component = "btsService";
+  root.add(g);
+
+  box(g, [1.9, 0.16, 1.4], [0, 0.05, 0], 0x252a2d);
+  box(g, [1.45, 1.5, 1.0], [0, 0.84, 0], 0x30363a);
+
+  for (let y = 0.35; y <= 1.32; y += 0.22) {
+    box(g, [0.92, 0.10, 0.045], [0, y, 0.52], 0x1f2427);
+    box(g, [0.42, 0.025, 0.055], [0.14, y, 0.56], COLORS.teal, {
+      emissive: COLORS.teal,
+      emissiveIntensity: 0.35,
+    });
+  }
+
+  addTwinBeacon(g, [0.56, 1.72, 0.38]);
+  return g;
+}
+
+function buildMicrowaveTerminal(root, pos, component, facing = 1) {
+  const g = new THREE.Group();
+  g.position.set(...pos);
+  g.userData.component = component;
+  root.add(g);
+
+  box(g, [1.6, 0.14, 1.25], [0, 0.05, 0], 0x252a2d);
+  cyl(g, 0.055, 1.55, [0, 0.84, 0], 0x5c646a);
+
+  const dish = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.62, 0.12, 0.17, 30),
+    mat(0x91836e, { metalness: 0.28, roughness: 0.58 }),
+  );
+  dish.position.set(0, 1.48, 0);
+  dish.rotation.z = Math.PI / 2;
+  dish.rotation.y = facing > 0 ? 0 : Math.PI;
+  g.add(dish);
+
+  box(g, [0.34, 0.22, 0.26], [0, 1.47, 0], 0x4c555a);
+  addTwinBeacon(g, [0.48, 1.78, 0.34]);
+  return g;
+}
+
+function buildMainControlCabinet(root, pos) {
+  const g = new THREE.Group();
+  g.position.set(...pos);
+  g.userData.component = "mainControl";
+  root.add(g);
+
+  box(g, [2.0, 0.16, 1.5], [0, 0.05, 0], 0x252a2d);
+  box(g, [1.55, 1.55, 1.05], [0, 0.88, 0], 0x343a3e);
+
+  box(g, [0.68, 0.34, 0.055], [0, 0.97, 0.56], 0x22343c);
+  box(g, [0.56, 0.19, 0.06], [0, 0.97, 0.59], COLORS.teal, {
+    emissive: COLORS.teal,
+    emissiveIntensity: 0.42,
+  });
+
+  for (const x of [-0.55, 0.55]) {
+    box(g, [0.05, 0.82, 1.08], [x, 0.80, 0], 0x23282b);
+  }
+
+  addTwinBeacon(g, [0.60, 1.80, 0.38]);
+  return g;
+}
+
+function buildAiPicoCabinet(root, pos) {
+  const g = new THREE.Group();
+  g.position.set(...pos);
+  g.userData.component = "aiPico";
+  root.add(g);
+
+  box(g, [2.0, 0.16, 1.5], [0, 0.05, 0], 0x252a2d);
+  box(g, [1.55, 1.7, 1.08], [0, 0.95, 0], 0x30363a);
+
+  const laptop = box(g, [1.05, 0.18, 0.62], [0, 1.18, 0.58], 0x232a2d);
+  laptop.rotation.x = -0.12;
+
+  box(g, [0.82, 0.06, 0.52], [0, 1.22, 0.68], COLORS.teal, {
+    emissive: COLORS.teal,
+    emissiveIntensity: 0.40,
+  });
+
+  box(g, [0.62, 0.16, 0.48], [0, 0.52, 0.58], 0x45525a);
+  box(g, [0.46, 0.035, 0.36], [0, 0.54, 0.68], 0x68a889, {
+    emissive: 0x68a889,
+    emissiveIntensity: 0.35,
+  });
+
+  addTwinBeacon(g, [0.58, 1.98, 0.38]);
+  return g;
+}
+
+function buildRectifierCabinet(root, pos) {
+  const g = new THREE.Group();
+  g.position.set(...pos);
+  g.userData.component = "rectifier";
+  root.add(g);
+
+  box(g, [2.2, 0.16, 1.55], [0, 0.05, 0], 0x252a2d);
+  box(g, [1.72, 1.55, 1.1], [0, 0.88, 0], 0x363c40);
+
+  for (let y = 0.38; y <= 1.32; y += 0.24) {
+    box(g, [1.15, 0.11, 0.055], [0, y, 0.58], 0x202629);
+    box(g, [0.52, 0.025, 0.06], [0.18, y, 0.62], COLORS.amber, {
+      emissive: COLORS.amber,
+      emissiveIntensity: 0.28,
+    });
+  }
+
+  addTwinBeacon(g, [0.65, 1.82, 0.38]);
+  return g;
+}
+
+function buildSiteLoadCabinet(root, pos) {
+  const g = new THREE.Group();
+  g.position.set(...pos);
+  g.userData.component = "siteLoad";
+  root.add(g);
+
+  box(g, [1.9, 0.16, 1.35], [0, 0.05, 0], 0x252a2d);
+  box(g, [1.45, 1.3, 0.98], [0, 0.75, 0], 0x30363a);
+
+  for (const y of [0.40, 0.66, 0.92, 1.18]) {
+    box(g, [0.92, 0.11, 0.045], [0, y, 0.52], 0x1f2427);
+  }
+
+  addTwinBeacon(g, [0.56, 1.52, 0.34]);
+  return g;
+}
+
+function curveSlice(curve, a, b, steps = 18) {
+  const pts = [];
+  for (let i = 0; i <= steps; i += 1) {
+    pts.push(curve.getPoint(a + (b - a) * (i / steps)));
+  }
+  return new THREE.CatmullRomCurve3(pts);
+}
+
+function buildLiveTwinLink(root, points, kind, statusKey, radius = 0.045) {
+  const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)));
+  const base = kind === "power" ? COLORS.amberGlow : COLORS.tealGlow;
+
+  const intervals = [[0, 0.42], [0.42, 0.58], [0.58, 1]];
+  const segments = intervals.map(([a, b]) => {
+    const mesh = new THREE.Mesh(
+      new THREE.TubeGeometry(curveSlice(curve, a, b), 22, radius, 8, false),
+      mat(base, {
+        emissive: base,
+        emissiveIntensity: 0.55,
+        metalness: 0.22,
+        roughness: 0.32,
+      }),
+    );
+    root.add(mesh);
+    return mesh;
+  });
+
+  const pulses = [];
+  for (let i = 0; i < 3; i += 1) {
+    const p = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * 1.55, 10, 10),
+      mat(base, {
+        emissive: base,
+        emissiveIntensity: 1.0,
+        metalness: 0,
+        roughness: 0.2,
+      }),
+    );
+    root.add(p);
+    pulses.push({
+      mesh: p,
+      curve,
+      offset: i / 3,
+      speed: kind === "power" ? 0.075 : 0.10,
+    });
+  }
+
+  return { kind, statusKey, curve, segments, pulses, status: "idle" };
+}
+
+function setLiveTwinLink(link, status) {
+  if (!link || link.status === status) return;
+  link.status = status;
+
+  const color = twinColor(status, link.kind);
+  const emissive = status !== "idle";
+
+  link.segments.forEach((mesh, index) => {
+    setMaterialColor(mesh.material, color, emissive);
+    mesh.material.emissiveIntensity = status === "good" ? 0.60 : status === "warn" ? 0.34 : 0.20;
+    mesh.visible = !(status === "down" && index === 1);
+  });
+
+  link.pulses.forEach((pulse) => {
+    setMaterialColor(pulse.mesh.material, color, status === "good");
+    pulse.mesh.visible = status === "good";
+  });
+}
+
+function updateTwinV7(live, state) {
+  const t = state?.telemetry ?? {};
+  const activeSource = String(t.active_power_source ?? "").toUpperCase();
+
+  for (const link of live.links) {
+    let status = "idle";
+
+    if (link.statusKey === "radio") status = twinStatus("radio", state);
+    if (link.statusKey === "backhaul") status = twinStatus("backhaul", state);
+    if (link.statusKey === "telemetry") status = twinStatus("telemetry", state);
+    if (link.statusKey === "ai") status = twinStatus("ai", state);
+    if (link.statusKey === "dual") status = twinStatus("dual", state);
+    if (link.statusKey === "load") status = twinStatus("power", state);
+
+    if (link.statusKey === "gridPower") {
+      status = t.grid_available === false
+        ? "down"
+        : activeSource === "GRID"
+          ? "good"
+          : "idle";
+    }
+
+    if (link.statusKey === "generatorPower") {
+      const running = Boolean(t.generator_feedback_running ?? t.generator_running);
+      status = running ? "good" : "idle";
+    }
+
+    if (link.statusKey === "batteryPower") {
+      const soc = Number(t.battery_soc_pct ?? 0);
+      status = soc <= 25
+        ? "down"
+        : activeSource === "BATTERY"
+          ? "good"
+          : soc <= 40
+            ? "warn"
+            : "idle";
+    }
+
+    setLiveTwinLink(link, status);
+  }
+
+  setTwinBeacon(live.groups.btsRadio, twinStatus("radio", state));
+  setTwinBeacon(live.groups.btsService, twinStatus("backhaul", state));
+  setTwinBeacon(live.groups.btsBackhaul, twinStatus("backhaul", state));
+  setTwinBeacon(live.groups.mainBackhaul, twinStatus("backhaul", state));
+  setTwinBeacon(live.groups.mainControl, twinStatus("telemetry", state));
+  setTwinBeacon(live.groups.aiPico, twinStatus("dual", state));
+  setTwinBeacon(live.groups.rectifier, twinStatus("power", state));
+  setTwinBeacon(live.groups.grid, twinStatus("grid", state));
+  setTwinBeacon(live.groups.generator, twinStatus("generator", state));
+  setTwinBeacon(live.groups.battery, twinStatus("battery", state));
+  setTwinBeacon(live.groups.siteLoad, twinStatus("power", state));
+}
+
 function buildSite(state) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x1b1e20);
-  scene.fog = new THREE.FogExp2(0x1b1e20, 0.032);
+  scene.background = new THREE.Color(0x9eafb6);
+  scene.fog = new THREE.FogExp2(0x9eafb6, 0.014);
 
-  scene.add(new THREE.HemisphereLight(0xc8d0d4, 0x16191b, 1.55));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x58646a, 2.55));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.70));
 
-  const key = new THREE.DirectionalLight(0xffd4a3, 2.1);
-  key.position.set(6, 10, 7);
-  scene.add(key);
+  const sun = new THREE.DirectionalLight(0xfff1d7, 3.45);
+  sun.position.set(9, 13, 8);
+  scene.add(sun);
 
-  const rim = new THREE.DirectionalLight(0x6da6b2, 1.55);
-  rim.position.set(-7, 5, -6);
-  scene.add(rim);
+  const fill = new THREE.DirectionalLight(0xe4f4ff, 1.55);
+  fill.position.set(-10, 7, 3);
+  scene.add(fill);
 
   const root = new THREE.Group();
   scene.add(root);
 
-  platform(root);
+  // Two actual physical zones.
+  buildTwinPad(root, -4.6, 7.1, 7.0, "BTS-001 STATION");
+  buildTwinPad(root, 4.6, 7.1, 7.0, "AUTONOMOUS BASE STATION");
 
-  buildGenerator(root, [-4.2, 0.1, 2.4], state);
-  buildBattery(root, [-4.1, 0.1, -1.8], state);
-  buildBackhaul(root, [-4.3, 0.1, -3.0], state);
-  buildTransformer(root, [-1.9, 0.1, -2.8], state);
-  buildPowerController(root, [0, 0.1, 0], state);
-  buildServerCabinet(root, [3.0, 0.1, -1.8]);
-  buildMast(root, [4.4, 0.1, 2.3], state);
+  // ------------------------------------------------------------------
+  // BTS-001
+  // Actual simulation roles represented as site equipment:
+  // BTS ESP32/RF plant + service node + radio mast + backhaul terminal.
+  // ------------------------------------------------------------------
+  const btsRadio = buildBtsRadioCabinet(root, [-5.1, 0.1, 0.3]);
 
-  const pulses = addRoutes(root);
+  const mast = buildMast(root, [-6.25, 0.1, 2.0], state);
+  mast.userData.component = "btsRadio";
+  addTwinBeacon(mast, [0.55, 4.7, 0.25]);
 
-  return { scene, root, pulses };
+  const btsService = buildBtsServiceCabinet(root, [-4.1, 0.1, -1.5]);
+  const btsBackhaul = buildMicrowaveTerminal(root, [-1.9, 0.1, -1.55], "btsBackhaul", 1);
+
+  // ------------------------------------------------------------------
+  // Main autonomous base station
+  // Main ESP32 + Laptop AI + Pico + power plant + managed load.
+  // ------------------------------------------------------------------
+  const mainBackhaul = buildMicrowaveTerminal(root, [1.9, 0.1, -1.55], "mainBackhaul", -1);
+  const mainControl = buildMainControlCabinet(root, [2.7, 0.1, 0.15]);
+  const aiPico = buildAiPicoCabinet(root, [4.65, 0.1, 0.15]);
+  const rectifier = buildRectifierCabinet(root, [4.05, 0.1, 2.1]);
+
+  const grid = buildTransformer(root, [6.45, 0.1, 2.0], state);
+  grid.userData.component = "grid";
+  addTwinBeacon(grid, [0.72, 2.62, 0.32]);
+
+  const generator = buildGenerator(root, [6.25, 0.1, -2.05], state);
+  generator.userData.component = "generator";
+  addTwinBeacon(generator, [0.90, 1.74, 0.32]);
+
+  const battery = buildBattery(root, [3.95, 0.1, -2.15], state);
+  battery.userData.component = "battery";
+  addTwinBeacon(battery, [0.90, 1.72, 0.32]);
+
+  const siteLoad = buildSiteLoadCabinet(root, [6.3, 0.1, 0.0]);
+
+  // ------------------------------------------------------------------
+  // Real operational connections.
+  // Each link is physically broken in the middle when DOWN.
+  // ------------------------------------------------------------------
+  const links = [
+    // BTS internal path.
+    buildLiveTwinLink(
+      root,
+      [[-6.0,0.55,1.55],[-5.8,0.55,0.9],[-5.1,0.55,0.3]],
+      "data",
+      "radio",
+    ),
+    buildLiveTwinLink(
+      root,
+      [[-5.1,0.55,0.3],[-4.7,0.55,-0.6],[-4.1,0.55,-1.5]],
+      "data",
+      "radio",
+    ),
+    buildLiveTwinLink(
+      root,
+      [[-4.1,0.55,-1.5],[-3.2,0.55,-1.55],[-1.9,0.55,-1.55]],
+      "data",
+      "backhaul",
+    ),
+
+    // Inter-station backhaul.
+    buildLiveTwinLink(
+      root,
+      [[-1.9,1.48,-1.55],[-0.7,1.55,-1.55],[0,1.58,-1.55],[0.7,1.55,-1.55],[1.9,1.48,-1.55]],
+      "data",
+      "backhaul",
+      0.032,
+    ),
+
+    // Main telemetry path.
+    buildLiveTwinLink(
+      root,
+      [[1.9,0.55,-1.55],[2.25,0.55,-0.65],[2.7,0.55,0.15]],
+      "data",
+      "telemetry",
+    ),
+    buildLiveTwinLink(
+      root,
+      [[2.7,0.72,0.15],[3.6,0.72,0.15],[4.65,0.72,0.15]],
+      "data",
+      "ai",
+    ),
+    buildLiveTwinLink(
+      root,
+      [[4.65,0.48,0.15],[4.0,0.40,-0.35],[3.15,0.40,-0.05],[2.7,0.40,0.15]],
+      "data",
+      "dual",
+      0.036,
+    ),
+
+    // Power plant.
+    buildLiveTwinLink(
+      root,
+      [[6.45,0.36,2.0],[5.25,0.36,2.0],[4.05,0.36,2.1]],
+      "power",
+      "gridPower",
+      0.055,
+    ),
+    buildLiveTwinLink(
+      root,
+      [[6.25,0.36,-2.05],[5.35,0.36,-1.2],[4.65,0.36,0.3],[4.05,0.36,2.1]],
+      "power",
+      "generatorPower",
+      0.055,
+    ),
+    buildLiveTwinLink(
+      root,
+      [[3.95,0.36,-2.15],[3.95,0.36,-0.6],[4.05,0.36,2.1]],
+      "power",
+      "batteryPower",
+      0.055,
+    ),
+    buildLiveTwinLink(
+      root,
+      [[4.05,0.36,2.1],[3.5,0.36,1.1],[2.7,0.36,0.15]],
+      "power",
+      "load",
+      0.055,
+    ),
+    buildLiveTwinLink(
+      root,
+      [[4.05,0.36,2.1],[5.1,0.36,1.1],[6.3,0.36,0.0]],
+      "power",
+      "load",
+      0.055,
+    ),
+  ];
+
+  const pulses = links.flatMap((link) => link.pulses);
+
+  const live = {
+    links,
+    groups: {
+      btsRadio,
+      btsService,
+      btsBackhaul,
+      mainBackhaul,
+      mainControl,
+      aiPico,
+      rectifier,
+      grid,
+      generator,
+      battery,
+      siteLoad,
+    },
+  };
+
+  updateTwinV7(live, state);
+
+  return { scene, root, pulses, live };
 }
 
 function disposeObject(object) {
@@ -457,6 +1225,98 @@ function destroy() {
   view = null;
 }
 
+
+const SITE_COMPONENT_INFO = {
+  battery: { title: "Battery Bank", type: "Energy storage", icon: "battery_charging_full", role: "DC backup and energy buffer" },
+  generator: { title: "Generator", type: "Backup power plant", icon: "offline_bolt", role: "Backup generation for the site" },
+  grid: { title: "Grid Transformer", type: "Primary power input", icon: "electrical_services", role: "Utility/grid feed into the managed power system" },
+  power: { title: "Managed Power Controller", type: "Site power control", icon: "speed", role: "Managed site power and final operating mode" },
+  server: { title: "Control + AI Cabinet", type: "Control and inference equipment", icon: "dns", role: "ESP32 control, laptop AI and site electronics" },
+  mast: { title: "Radio Mast", type: "Radio access plant", icon: "cell_tower", role: "Radio traffic and live BTS radio path" },
+  backhaul: { title: "Backhaul Dishes", type: "Transport link", icon: "router", role: "BTS backhaul connection into the autonomous site" },
+};
+
+function componentRows(component) {
+  const s = dashboardState();
+  const t = s.telemetry ?? {};
+  const ai = s.ai ?? {};
+  const cmd = ai?.runtime?.ai_command ?? {};
+  const pico = ai?.runtime?.pico_decision ?? {};
+
+  const rows = {
+    battery: [
+      ["State of charge", `${Number(t.battery_soc_pct ?? 0).toFixed(1)}%`],
+      ["Battery voltage", `${Number(t.battery_voltage_v ?? 0).toFixed(2)} V`],
+      ["SOC trend", `${Number(t.battery_soc_trend_pct_per_min ?? 0).toFixed(2)} %/min`],
+    ],
+    generator: [
+      ["State", (t.generator_feedback_running ?? t.generator_running) ? "RUNNING" : "STOPPED"],
+      ["Verification", t.generator_verification_state ?? "—"],
+      ["Pico action", pico.generator_action ?? "—"],
+    ],
+    grid: [
+      ["Grid", t.grid_available === true ? "AVAILABLE" : "FAILED / UNKNOWN"],
+      ["Active source", t.active_power_source ?? "—"],
+      ["DC bus", `${Number(t.dc_voltage_v ?? 0).toFixed(2)} V`],
+    ],
+    power: [
+      ["Managed power", `${Number(t.managed_power_kw ?? 0).toFixed(3)} kW`],
+      ["Final mode", t.operating_mode ?? "—"],
+      ["Guardrails", t.guardrail_status ?? "—"],
+      ["Power source", t.active_power_source ?? "—"],
+    ],
+    server: [
+      ["ESP32", ":4001"],
+      ["Laptop AI", ai?.fault_domain?.label ?? "WAITING"],
+      ["AI trust", ai?.trust?.decision ?? "—"],
+      ["Dual AI", cmd.dual_ai_agreement ?? "—"],
+    ],
+    mast: [
+      ["Traffic", `${Number(t.traffic_load_pct ?? 0).toFixed(1)}%`],
+      ["Radio", t.radio_operational === true ? "OPERATIONAL" : "FAULT / UNKNOWN"],
+      ["Active calls", `${Number(t.network_active_calls ?? 0)}`],
+      ["RSSI", `${Number(t.rssi_dbm ?? 0).toFixed(1)} dBm`],
+    ],
+    backhaul: [
+      ["Status", t.backhaul_status ?? "—"],
+      ["Latency", `${Number(t.latency_ms ?? 0).toFixed(1)} ms`],
+      ["Packet loss", `${Number(t.packet_loss_pct ?? 0).toFixed(2)}%`],
+      ["Input source", t.network_input_source ?? "—"],
+    ],
+  };
+
+  return rows[component] ?? [];
+}
+
+function renderComponentInfo(shell, component) {
+  const panel = shell.querySelector("[data-site3d-info]");
+  const def = SITE_COMPONENT_INFO[component];
+  if (!panel || !def) return;
+
+  panel.hidden = false;
+  shell.dataset.selectedComponent = component;
+
+  panel.querySelector("[data-site3d-info-title]").textContent = def.title;
+  panel.querySelector("[data-site3d-info-type]").textContent = def.type;
+  panel.querySelector("[data-site3d-info-icon]").textContent = def.icon;
+  panel.querySelector("[data-site3d-info-role]").textContent = def.role;
+
+  panel.querySelector("[data-site3d-info-body]").innerHTML = twinV7Rows(component)
+    .map(([label, value]) => `
+      <div class="site3d-info-row">
+        <span>${label}</span>
+        <strong>${value}</strong>
+      </div>
+    `)
+    .join("");
+}
+
+function hideComponentInfo(shell) {
+  const panel = shell.querySelector("[data-site3d-info]");
+  if (panel) panel.hidden = true;
+  delete shell.dataset.selectedComponent;
+}
+
 function updateHud(shell) {
   const state = dashboardState();
   const t = state.telemetry ?? {};
@@ -476,6 +1336,10 @@ function updateHud(shell) {
   for (const [key, value] of Object.entries(values)) {
     const el = shell.querySelector(`[data-site3d-value="${key}"]`);
     if (el) el.textContent = value;
+  }
+
+  if (shell.dataset.selectedComponent) {
+    renderComponentInfo(shell, shell.dataset.selectedComponent);
   }
 }
 
@@ -524,9 +1388,23 @@ function mount() {
           <div class="site3d-status-row"><span>AI / Dual AI</span><strong data-site3d-value="ai">—</strong></div>
         </div>
 
+        <div class="site3d-info" data-site3d-info hidden>
+          <div class="site3d-info-head">
+            <div class="site3d-info-icon material-symbols-rounded" data-site3d-info-icon>info</div>
+            <div>
+              <span data-site3d-info-type>Equipment</span>
+              <strong data-site3d-info-title>Selected component</strong>
+            </div>
+          </div>
+          <div class="site3d-info-role" data-site3d-info-role></div>
+          <div class="site3d-info-body" data-site3d-info-body></div>
+          <small>Tap empty space to close</small>
+        </div>
+
         <div class="site3d-legend">
           <span><i class="power"></i>Power path</span>
           <span><i class="data"></i>Telecom / backhaul</span>
+          <span>Tap equipment for live info</span>
         </div>
       </div>
     </div>
@@ -553,26 +1431,112 @@ function mount() {
   }
 
   const state = dashboardState();
-  const { scene, pulses } = buildSite(state);
+  const { scene, pulses, live } = buildSite(state);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  const start = new THREE.Vector3(11.6, 8.7, 12.8);
+  const start = new THREE.Vector3(16.8, 11.4, 17.6);
   camera.position.copy(start);
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.08;
+  renderer.toneMappingExposure = 1.34;
 
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.06;
   controls.enablePan = true;
-  controls.minDistance = 8;
-  controls.maxDistance = 24;
+  controls.minDistance = 10;
+  controls.maxDistance = 34;
   controls.target.set(0, 1.0, 0);
 
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  let pointerDown = null;
+  let selectionHelper = null;
+  let selectedGroup = null;
+
+  function componentGroupFromObject(object) {
+    let current = object;
+    while (current && current !== scene) {
+      if (current.userData?.component) return current;
+      current = current.parent;
+    }
+    return null;
+  }
+
+  function clearSelection() {
+    selectedGroup = null;
+
+    if (selectionHelper) {
+      scene.remove(selectionHelper);
+      selectionHelper.geometry?.dispose?.();
+      selectionHelper.material?.dispose?.();
+      selectionHelper = null;
+    }
+
+    hideComponentInfo(shell);
+  }
+
+  function selectGroup(group) {
+    if (!group?.userData?.component) {
+      clearSelection();
+      return;
+    }
+
+    selectedGroup = group;
+
+    if (selectionHelper) {
+      scene.remove(selectionHelper);
+      selectionHelper.geometry?.dispose?.();
+      selectionHelper.material?.dispose?.();
+    }
+
+    selectionHelper = new THREE.BoxHelper(group, 0x6f9eaa);
+    selectionHelper.material.transparent = true;
+    selectionHelper.material.opacity = 0.9;
+    scene.add(selectionHelper);
+
+    renderComponentInfo(shell, group.userData.component);
+  }
+
+  canvas.addEventListener("pointerdown", (event) => {
+    pointerDown = {
+      x: event.clientX,
+      y: event.clientY,
+      time: performance.now(),
+    };
+  });
+
+  canvas.addEventListener("pointerup", (event) => {
+    if (!pointerDown) return;
+
+    const move = Math.hypot(
+      event.clientX - pointerDown.x,
+      event.clientY - pointerDown.y,
+    );
+    const elapsed = performance.now() - pointerDown.time;
+    pointerDown = null;
+
+    if (move > 7 || elapsed > 700) return;
+
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(pointer, camera);
+
+    const hits = raycaster.intersectObjects(scene.children, true);
+    const group = hits
+      .map((hit) => componentGroupFromObject(hit.object))
+      .find(Boolean);
+
+    if (group) selectGroup(group);
+    else clearSelection();
+  });
+
   const clock = new THREE.Clock();
+  let nextTwinLiveRefresh = 0;
 
   function resize() {
     const rect = stage.getBoundingClientRect();
@@ -591,6 +1555,15 @@ function mount() {
       const pulse = pulses[i];
       const p = pulse.curve.getPointAt((t * pulse.speed + pulse.offset) % 1);
       pulse.mesh.position.copy(p);
+    }
+
+    if (t >= nextTwinLiveRefresh) {
+      updateTwinV7(live, dashboardState());
+      nextTwinLiveRefresh = t + 0.35;
+    }
+
+    if (selectionHelper && selectedGroup) {
+      selectionHelper.update();
     }
 
     controls.update();
