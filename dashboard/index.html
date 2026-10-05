@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,-50..200" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/telemetry-noc.css" />
+  <link rel="stylesheet" href="/site-ui.css" />
 </head>
 <body>
   <div id="app" class="health-shell">
@@ -88,7 +89,7 @@
           <span class="section-title">Operating state</span>
           <div class="inspector-primary">
             <span>Fault domain</span>
-            <strong id="railFault">—</strong>
+            <strong id="railFault">â€”</strong>
             <span id="railHealthTag" class="rail-health-tag">Waiting for telemetry</span>
           </div>
           <div class="health-spectrum">
@@ -96,17 +97,17 @@
             <span class="health-spectrum-marker" id="railSpectrumMarker"></span>
           </div>
           <div class="property-list">
-            <div><span>Final mode</span><strong id="railMode">—</strong></div>
-            <div><span>Power source</span><strong id="railSource">—</strong></div>
+            <div><span>Final mode</span><strong id="railMode">â€”</strong></div>
+            <div><span>Power source</span><strong id="railSource">â€”</strong></div>
           </div>
         </section>
 
         <section class="inspector-section">
           <span class="section-title">Site measurements</span>
           <div class="property-list">
-            <div><span>Battery</span><strong id="railBattery">—</strong></div>
-            <div><span>Traffic</span><strong id="railTraffic">—</strong></div>
-            <div><span>Generator</span><strong id="railGenerator">—</strong></div>
+            <div><span>Battery</span><strong id="railBattery">â€”</strong></div>
+            <div><span>Traffic</span><strong id="railTraffic">â€”</strong></div>
+            <div><span>Generator</span><strong id="railGenerator">â€”</strong></div>
           </div>
         </section>
 
@@ -150,7 +151,41 @@
   <script src="/app.js"></script>
   <script src="/healthcare-ui.js"></script>
   <script type="module" src="/three-ui.js"></script>
+  <script type="module" src="/site-ui.js"></script>
   <script src="/shell-actions.js"></script>
   <script src="/telemetry-noc.js"></script>
+
+<script id="ABS_MOVE_HEADER_TOOLS">
+(() => {
+  function moveHeaderTools() {
+    const tabBar = document.querySelector(".workspace-tabs-bar");
+    const scene  = document.querySelector(".scene-file");
+    const header = document.querySelector(".health-header");
+    const tools  = header?.querySelector(".header-context");
+
+    if (!tabBar || !tools) return;
+
+    tools.classList.remove("header-context");
+    tools.classList.add("workspace-context");
+
+    if (scene && scene.parentElement === tabBar) {
+      tabBar.insertBefore(tools, scene);
+    } else {
+      tabBar.appendChild(tools);
+    }
+
+    if (header) {
+      header.remove();
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", moveHeaderTools);
+  } else {
+    moveHeaderTools();
+  }
+})();
+</script>
+
 </body>
 </html>

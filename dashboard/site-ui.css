@@ -1,0 +1,192 @@
+
+/* ==========================================================================
+   ABS OVERVIEW — INTERCONNECTED 3D BASE STATION
+   ========================================================================== */
+
+.site3d-shell {
+  position: relative;
+  min-height: 620px;
+  overflow: hidden;
+  border: 1px solid #33383b;
+  background: #1b1e20;
+}
+
+.site3d-toolbar {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 9px;
+  border-bottom: 1px solid #141414;
+  background: #292929;
+}
+
+.site3d-toolbar strong {
+  color: #d8d8d8;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.site3d-toolbar span {
+  color: #7d858a;
+  font-size: 8px;
+}
+
+.site3d-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.site3d-toolbar button {
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid #414548;
+  border-radius: 2px;
+  color: #aaa;
+  background: #303234;
+  font-size: 8px;
+}
+
+.site3d-toolbar button:hover {
+  color: #eee;
+  background: #3a3d3f;
+}
+
+.site3d-stage {
+  position: relative;
+  min-height: 540px;
+  height: min(68vh, 720px);
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px),
+    #1b1e20;
+  background-size: 24px 24px;
+}
+
+.site3d-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.site3d-stage canvas:active {
+  cursor: grabbing;
+}
+
+.site3d-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.site3d-status {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 230px;
+  display: grid;
+  gap: 1px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(28,30,32,.86);
+  backdrop-filter: blur(4px);
+}
+
+.site3d-status-row {
+  min-height: 28px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.site3d-status-row:last-child {
+  border-bottom: 0;
+}
+
+.site3d-status-row span {
+  color: #838b90;
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.site3d-status-row strong {
+  color: #d5d7d8;
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.site3d-legend {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 12px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255,255,255,.07);
+  background: rgba(28,30,32,.80);
+  color: #8d9498;
+  font-size: 7px;
+}
+
+.site3d-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.site3d-legend i {
+  width: 15px;
+  height: 2px;
+  display: inline-block;
+  background: #7b8083;
+}
+
+.site3d-legend i.power { background: #b97831; }
+.site3d-legend i.data { background: #4a8995; }
+
+.site3d-fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
+  background:
+    center / cover no-repeat
+    url("/assets/base-station-compound-reference.png");
+}
+
+.site3d-shell.webgl-failed .site3d-fallback {
+  display: block;
+}
+
+.site3d-shell.webgl-failed canvas {
+  display: none;
+}
+
+/* The six separate mini-3D stat cards are replaced by one complete site. */
+body.site3d-overview-active .stats-grid {
+  display: none !important;
+}
+
+body.site3d-overview-active .hero-grid {
+  display: none !important;
+}
+
+body.site3d-overview-active .page-stack {
+  gap: 10px !important;
+}
+
+@media (max-width: 900px) {
+  .site3d-stage {
+    min-height: 480px;
+    height: 62vh;
+  }
+
+  .site3d-status {
+    width: 190px;
+  }
+}

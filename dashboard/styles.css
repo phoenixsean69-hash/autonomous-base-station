@@ -766,3 +766,271 @@ button.context-item:hover {
     height: auto;
   }
 }
+
+/* ==========================================================================
+   ABS FLAT STATUS LANGUAGE V1
+   Status is information, not a button/card.
+   ========================================================================== */
+
+/* Global status pills */
+.pill,
+.status-left .pill,
+.noc-header-status .pill,
+.be-selection-status,
+.abs-inspector-status,
+.rail-health-tag {
+  min-height: 0 !important;
+  width: fit-content !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Neutral text — status colour belongs primarily to the dot */
+.pill,
+.pill.good,
+.pill.warn,
+.pill.bad,
+.be-selection-status,
+.abs-inspector-status,
+.rail-health-tag {
+  color: #a9a9a9 !important;
+  font-weight: 500 !important;
+}
+
+/* Small engineering-status dots */
+.pill i,
+.abs-inspector-status i {
+  width: 6px !important;
+  height: 6px !important;
+  flex: 0 0 6px !important;
+  border-radius: 50% !important;
+}
+
+/* Keep existing semantic dot colours */
+.pill.good i,
+.abs-inspector-status.good i {
+  background: var(--safe, #69ad8d) !important;
+}
+
+.pill.warn i,
+.abs-inspector-status.warn i {
+  background: var(--orange, #c59a5b) !important;
+}
+
+.pill.bad i,
+.abs-inspector-status.bad i {
+  background: var(--danger, #bf6256) !important;
+}
+
+/* Footer becomes a desktop-app status line */
+.status-left {
+  gap: 16px !important;
+}
+
+.status-left .pill {
+  font-size: 9px !important;
+}
+
+/* Rows of statuses should read like text, not grouped chips */
+.pill-row {
+  gap: 14px !important;
+  align-items: center !important;
+}
+
+/* System-inspector state tag: no fake button */
+.rail-health-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  margin-top: 4px !important;
+  font-size: 8px !important;
+}
+
+.rail-health-tag::before {
+  content: "" !important;
+  width: 6px !important;
+  height: 6px !important;
+  flex: 0 0 6px !important;
+  border-radius: 50% !important;
+  background: #7f878c !important;
+}
+
+/* Blender inspector status also stays completely flat */
+.be-selection-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 7px !important;
+}
+
+/* Existing top workspace indicator was already flat;
+   keep it consistent with the rest of the app. */
+.status-indicator {
+  gap: 6px !important;
+  color: #aaa !important;
+}
+
+.status-indicator i {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+/* Do NOT flatten actual buttons/navigation controls */
+.context-item,
+.shell-menu-btn,
+.tab,
+.be-tool,
+.abs-inspector-tab,
+.be-tab,
+.abs-inspector-actions button {
+  /* intentionally untouched */
+}
+
+
+/* ============================================================
+   ABS STATUS LANGUAGE V2 — REMOVE DECORATIVE STATUS DOTS
+   ============================================================ */
+
+/* Global pill/status dots */
+.pill i,
+.status-indicator i,
+.abs-inspector-status i {
+  display: none !important;
+}
+
+/* Inspector health tag generated dot */
+.rail-health-tag::before {
+  display: none !important;
+}
+
+/* Blender Properties selected-node status dot */
+.be-selection-status .be-dot {
+  display: none !important;
+}
+
+/* Close the gap left behind by the removed dots */
+.pill,
+.status-indicator,
+.abs-inspector-status,
+.be-selection-status,
+.rail-health-tag {
+  gap: 0 !important;
+}
+
+
+/* ============================================================
+   OVERVIEW HEADER FINAL CLEANUP
+   Hide left title block, retain right-side tools
+   ============================================================ */
+
+.health-header > div:first-child:not(.header-context) {
+  display: none !important;
+}
+
+.health-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  padding: 5px 10px !important;
+}
+
+.health-header .header-context {
+  display: flex !important;
+  margin-left: auto !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+}
+
+
+/* ============================================================
+   MOVE OLD HEADER TOOLS INTO WORKSPACE STRIP
+   ============================================================ */
+
+.health-header {
+  display: none !important;
+}
+
+.health-main-pane {
+  grid-template-rows: minmax(0, 1fr) !important;
+}
+
+.workspace-context {
+  margin-left: auto !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+}
+
+.workspace-context .context-item {
+  height: 31px !important;
+  min-height: 31px !important;
+  padding: 0 9px !important;
+
+  border: 0 !important;
+  border-radius: 0 !important;
+
+  background: transparent !important;
+  color: #9a9a9a !important;
+
+  font-size: 9px !important;
+}
+
+.workspace-context .context-item:hover {
+  background: #343434 !important;
+  color: #eeeeee !important;
+}
+
+.workspace-context .context-item .material-symbols-rounded {
+  color: #929da4 !important;
+  font-size: 14px !important;
+}
+
+.workspace-context + .scene-file {
+  margin-left: 12px !important;
+}
+
+
+/* ============================================================
+   TOP WORKSPACE STRIP CLEANUP
+   ============================================================ */
+
+.workspace-tabs .tab {
+  height: 31px !important;
+  padding: 0 14px !important;
+
+  border: 0 !important;
+  border-radius: 0 !important;
+
+  background: transparent !important;
+  color: #9d9d9d !important;
+
+  font-size: 10px !important;
+}
+
+.workspace-tabs .tab:hover {
+  color: #e2e2e2 !important;
+  background: #303030 !important;
+}
+
+/* Flatter selected state — desktop app, not SaaS pill */
+.workspace-tabs .tab.active {
+  color: #f0f0f0 !important;
+  background: #363636 !important;
+  box-shadow: inset 0 -2px 0 #707f88 !important;
+}
+
+/* Slightly smaller secondary endpoint text */
+.scene-file {
+  color: #777f84 !important;
+  font-size: 9px !important;
+}
+
+/* Keep toolbar tools compact */
+.workspace-context .context-item {
+  font-size: 9px !important;
+}
+

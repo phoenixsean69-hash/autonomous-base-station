@@ -2515,3 +2515,196 @@ body.telemetry-noc .health-content {
   margin-top: 0 !important;
 }
 
+
+/* ============================================================
+   TELEMETRY V6 — WIDER NODE EDITOR / NARROW PROPERTIES PANEL
+   ============================================================ */
+
+.be-workspace {
+  grid-template-columns: minmax(0, 7fr) minmax(320px, 3fr) !important;
+}
+
+/* Let the node editor use all the extra width */
+.be-editor,
+.be-viewport {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+/* Properties stays locked to the right side */
+.be-inspector {
+  min-width: 320px !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Make property contents consume the whole inspector width */
+.be-selection,
+.be-inspector-body {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.be-section {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.be-row {
+  grid-template-columns: minmax(90px, 0.75fr) minmax(0, 1.25fr) !important;
+}
+
+
+/* ==========================================================================
+   ABS FLAT STATUS LANGUAGE V1
+   Status is information, not a button/card.
+   ========================================================================== */
+
+/* Global status pills */
+.pill,
+.status-left .pill,
+.noc-header-status .pill,
+.be-selection-status,
+.abs-inspector-status,
+.rail-health-tag {
+  min-height: 0 !important;
+  width: fit-content !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Neutral text — status colour belongs primarily to the dot */
+.pill,
+.pill.good,
+.pill.warn,
+.pill.bad,
+.be-selection-status,
+.abs-inspector-status,
+.rail-health-tag {
+  color: #a9a9a9 !important;
+  font-weight: 500 !important;
+}
+
+/* Small engineering-status dots */
+.pill i,
+.abs-inspector-status i {
+  width: 6px !important;
+  height: 6px !important;
+  flex: 0 0 6px !important;
+  border-radius: 50% !important;
+}
+
+/* Keep existing semantic dot colours */
+.pill.good i,
+.abs-inspector-status.good i {
+  background: var(--safe, #69ad8d) !important;
+}
+
+.pill.warn i,
+.abs-inspector-status.warn i {
+  background: var(--orange, #c59a5b) !important;
+}
+
+.pill.bad i,
+.abs-inspector-status.bad i {
+  background: var(--danger, #bf6256) !important;
+}
+
+/* Footer becomes a desktop-app status line */
+.status-left {
+  gap: 16px !important;
+}
+
+.status-left .pill {
+  font-size: 9px !important;
+}
+
+/* Rows of statuses should read like text, not grouped chips */
+.pill-row {
+  gap: 14px !important;
+  align-items: center !important;
+}
+
+/* System-inspector state tag: no fake button */
+.rail-health-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  margin-top: 4px !important;
+  font-size: 8px !important;
+}
+
+.rail-health-tag::before {
+  content: "" !important;
+  width: 6px !important;
+  height: 6px !important;
+  flex: 0 0 6px !important;
+  border-radius: 50% !important;
+  background: #7f878c !important;
+}
+
+/* Blender inspector status also stays completely flat */
+.be-selection-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 7px !important;
+}
+
+/* Existing top workspace indicator was already flat;
+   keep it consistent with the rest of the app. */
+.status-indicator {
+  gap: 6px !important;
+  color: #aaa !important;
+}
+
+.status-indicator i {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+/* Do NOT flatten actual buttons/navigation controls */
+.context-item,
+.shell-menu-btn,
+.tab,
+.be-tool,
+.abs-inspector-tab,
+.be-tab,
+.abs-inspector-actions button {
+  /* intentionally untouched */
+}
+
+
+/* ============================================================
+   ABS STATUS LANGUAGE V2 — REMOVE DECORATIVE STATUS DOTS
+   ============================================================ */
+
+/* Global pill/status dots */
+.pill i,
+.status-indicator i,
+.abs-inspector-status i {
+  display: none !important;
+}
+
+/* Inspector health tag generated dot */
+.rail-health-tag::before {
+  display: none !important;
+}
+
+/* Blender Properties selected-node status dot */
+.be-selection-status .be-dot {
+  display: none !important;
+}
+
+/* Close the gap left behind by the removed dots */
+.pill,
+.status-indicator,
+.abs-inspector-status,
+.be-selection-status,
+.rail-health-tag {
+  gap: 0 !important;
+}
+
