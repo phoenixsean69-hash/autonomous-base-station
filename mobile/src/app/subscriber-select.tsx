@@ -2,6 +2,10 @@ import {
   router,
 } from "expo-router";
 import {
+  useEffect,
+  useState,
+} from "react";
+import {
   ArrowRight,
   RadioTower,
   ShieldCheck,
@@ -23,10 +27,23 @@ import {
   useDialer,
 } from "../context/DialerContext";
 import {
+  getBtsHttpUrl,
+} from "../config/network";
+import {
   colors,
   fonts,
   radius,
 } from "../theme";
+
+// ABS SUBSCRIBER NUMBER LOCK V1
+function normalizeSubscriberNumber(
+  value: string,
+) {
+  return value.replace(
+    /\D/g,
+    "",
+  );
+}
 
 export default function SubscriberSelectScreen() {
   const insets =
@@ -35,6 +52,96 @@ export default function SubscriberSelectScreen() {
   const {
     selectSubscriber,
   } = useDialer();
+
+  const [
+    takenNumbers,
+    setTakenNumbers,
+  ] =
+    useState<Set<string>>(
+      new Set(),
+    );
+
+  useEffect(() => {
+    let disposed = false;
+
+    const refresh =
+      async () => {
+        try {
+          const response =
+            await fetch(
+              `${getBtsHttpUrl()}/state`,
+            );
+
+          if (!response.ok) {
+            return;
+          }
+
+          const state =
+            await response.json();
+
+          if (disposed) {
+            return;
+          }
+
+          const next =
+            new Set<string>();
+
+          if (
+            Array.isArray(
+              state?.subscribers,
+            )
+          ) {
+            for (
+              const item of
+              state.subscribers
+            ) {
+              const raw =
+                typeof item ===
+                "string"
+                  ? item
+                  : String(
+                      item?.number ??
+                        "",
+                    );
+
+              const normalized =
+                normalizeSubscriberNumber(
+                  raw,
+                );
+
+              if (normalized) {
+                next.add(
+                  normalized,
+                );
+              }
+            }
+          }
+
+          setTakenNumbers(
+            next,
+          );
+        }
+        catch {
+          // Keep the selector usable if BTS state
+          // cannot be refreshed momentarily.
+        }
+      };
+
+    void refresh();
+
+    const timer =
+      setInterval(
+        () => {
+          void refresh();
+        },
+        1500,
+      );
+
+    return () => {
+      disposed = true;
+      clearInterval(timer);
+    };
+  }, []);
 
   return (
     <ScrollView
@@ -83,15 +190,31 @@ export default function SubscriberSelectScreen() {
           (
             subscriber,
             index,
-          ) => (
+          ) => {
+            const taken =
+              takenNumbers.has(
+                normalizeSubscriberNumber(
+                  subscriber.number,
+                ),
+              );
+
+            return (
             <Pressable
               key={subscriber.id}
+              disabled={taken}
               style={({ pressed }) => [
                 styles.card,
+                taken &&
+                  styles.cardTaken,
                 pressed &&
+                  !taken &&
                   styles.cardPressed,
               ]}
               onPress={() => {
+                if (taken) {
+                  return;
+                }
+
                 selectSubscriber(
                   subscriber,
                 );
@@ -124,17 +247,24 @@ export default function SubscriberSelectScreen() {
                   />
 
                   <Text style={styles.badgeText}>
-                    Demo mobile number
+                    {taken
+                      ? "Number already in use"
+                      : "Available demo number"}
                   </Text>
                 </View>
               </View>
 
               <ArrowRight
                 size={20}
-                color={colors.charcoal}
+                color={
+                  taken
+                    ? colors.softMuted
+                    : colors.charcoal
+                }
               />
             </Pressable>
-          ),
+            );
+          },
         )}
       </View>
 
@@ -219,6 +349,9 @@ const styles =
     cardPressed: {
       backgroundColor:
         colors.surfaceSoft,
+    },
+    cardTaken: {
+      opacity: 0.46,
     },
     avatar: {
       width: 50,

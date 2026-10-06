@@ -1,4 +1,4 @@
-// ABS WEBRTC VOICE PAIR1 V1
+// ABS WEBRTC VOICE ALL SIX V4
 import {
   mediaDevices,
   RTCPeerConnection,
@@ -28,22 +28,26 @@ type VoiceCallbacks = {
   onError: (message: string) => void;
 };
 
-const PAIR_ONE = new Set([
+const DEMO_SUBSCRIBERS = new Set([
   "0712000001",
   "0712000002",
+  "0712000003",
+  "0712000004",
+  "0712000005",
+  "0712000006",
 ]);
 
 function normalizeNumber(value: string) {
   return String(value ?? "").replace(/\D/g, "");
 }
 
-function isPairOneCall(call: VoiceCall) {
+function isSupportedCall(call: VoiceCall) {
   const caller = normalizeNumber(call.caller);
   const callee = normalizeNumber(call.callee);
 
   return (
-    PAIR_ONE.has(caller) &&
-    PAIR_ONE.has(callee) &&
+    DEMO_SUBSCRIBERS.has(caller) &&
+    DEMO_SUBSCRIBERS.has(callee) &&
     caller !== callee
   );
 }
@@ -79,7 +83,7 @@ export class VoiceMediaController {
   ) {}
 
   supports(call: VoiceCall) {
-    return isPairOneCall(call);
+    return isSupportedCall(call);
   }
 
   stop(nextState: VoiceMediaState = "idle") {

@@ -43,5 +43,29 @@ export function getBtsUrl() {
   return `ws://127.0.0.1:${DEFAULT_PORT}`;
 }
 
+// ABS SUBSCRIBER NUMBER LOCK V1
+export function getBtsHttpUrl() {
+  const base =
+    getBtsUrl();
+
+  if (
+    base.startsWith(
+      "wss://",
+    )
+  ) {
+    return `https://${base.slice(6)}`;
+  }
+
+  if (
+    base.startsWith(
+      "ws://",
+    )
+  ) {
+    return `http://${base.slice(5)}`;
+  }
+
+  return base;
+}
+
 export const getNetworkSimulatorUrl =
   getBtsUrl;

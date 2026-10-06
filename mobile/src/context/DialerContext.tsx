@@ -594,6 +594,36 @@ export function DialerProvider({
 
         if (
           type ===
+          "registration.failed" &&
+          String(
+            message?.reason ??
+            "",
+          ) ===
+            "NUMBER_TAKEN"
+        ) {
+          setConnectionStatus(
+            "offline",
+          );
+          setPeerOnline(false);
+
+          Alert.alert(
+            "Number already in use",
+            "Another phone already owns this demo number. Choose a different number.",
+          );
+
+          setActiveSubscriber(
+            null,
+          );
+
+          router.replace(
+            "/subscriber-select" as any,
+          );
+
+          return;
+        }
+
+        if (
+          type ===
           "registered"
         ) {
           setConnectionStatus(
@@ -965,6 +995,24 @@ export function DialerProvider({
         );
         setPeerOnline(false);
         voiceController.stop();
+
+        if (
+          event.code === 4409
+        ) {
+          setConnectionStatus(
+            "offline",
+          );
+          setPeerOnline(false);
+          setActiveSubscriber(
+            null,
+          );
+
+          router.replace(
+            "/subscriber-select" as any,
+          );
+
+          return;
+        }
 
         if (
           event.code === 1012
