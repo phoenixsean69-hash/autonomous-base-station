@@ -7,9 +7,6 @@ import {
   Volume2,
 } from "lucide-react-native";
 import {
-  useState,
-} from "react";
-import {
   Pressable,
   StyleSheet,
   Text,
@@ -80,20 +77,11 @@ export default function ActiveCallScreen() {
     activeSubscriber,
     activeCall,
     metrics,
+    voiceMediaState,
+    muted,
+    toggleMute,
     endCall,
   } = useDialer();
-
-  const [
-    muted,
-    setMuted,
-  ] =
-    useState(false);
-
-  const [
-    speaker,
-    setSpeaker,
-  ] =
-    useState(false);
 
   const own =
     activeSubscriber?.number
@@ -209,6 +197,20 @@ export default function ActiveCallScreen() {
             Connection
           </Text>
 
+          <Text style={styles.mediaState}>
+            Voice media •{" "}
+            {voiceMediaState ===
+            "connected"
+              ? "LIVE"
+              : voiceMediaState ===
+                "starting"
+                ? "STARTING"
+                : voiceMediaState ===
+                  "failed"
+                  ? "FAILED"
+                  : "IDLE"}
+          </Text>
+
           <Text style={styles.noticeText}>
             {callQuality ===
             "Good"
@@ -229,11 +231,7 @@ export default function ActiveCallScreen() {
               muted &&
                 styles.controlActive,
             ]}
-            onPress={() =>
-              setMuted(
-                (value) => !value,
-              )
-            }
+            onPress={toggleMute}
           >
             {muted ? (
               <MicOff
@@ -274,32 +272,16 @@ export default function ActiveCallScreen() {
           <Pressable
             style={[
               styles.control,
-              speaker &&
-                styles.controlActive,
+              styles.controlDisabled,
             ]}
-            onPress={() =>
-              setSpeaker(
-                (value) =>
-                  !value,
-              )
-            }
+            disabled
           >
             <Volume2
               size={22}
-              color={
-                speaker
-                  ? colors.white
-                  : colors.charcoal
-              }
+              color={colors.charcoal}
             />
 
-            <Text
-              style={[
-                styles.controlText,
-                speaker &&
-                  styles.controlTextActive,
-              ]}
-            >
+            <Text style={styles.controlText}>
               Speaker
             </Text>
           </Pressable>
@@ -425,6 +407,13 @@ const styles =
       color: colors.text,
       fontSize: 10,
     },
+    mediaState: {
+      marginTop: 6,
+      fontFamily: fonts.bold,
+      color: colors.charcoalSoft,
+      fontSize: 8,
+      letterSpacing: 0.7,
+    },
     noticeText: {
       marginTop: 4,
       fontFamily: fonts.regular,
@@ -455,6 +444,9 @@ const styles =
         colors.charcoal,
       borderColor:
         colors.charcoal,
+    },
+    controlDisabled: {
+      opacity: 0.42,
     },
     controlText: {
       fontFamily: fonts.bold,

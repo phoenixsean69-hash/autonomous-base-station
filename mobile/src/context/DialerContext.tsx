@@ -16,6 +16,11 @@ import {
 } from "react";
 
 import {
+  VoiceMediaController,
+  type VoiceMediaState,
+} from "../voice/VoiceMediaController";
+
+import {
   getBtsUrl,
 } from "../config/network";
 
@@ -75,6 +80,7 @@ export type SmsMessage = {
 };
 
 // ABS SIX SUBSCRIBERS V1
+// ABS WEBRTC VOICE PAIR1 V1
 export const SUBSCRIBERS: Subscriber[] = [
   { id: "A", name: "Subscriber A", number: "0712 000 001", initials: "A" },
   { id: "B", name: "Subscriber B", number: "0712 000 002", initials: "B" },
@@ -107,6 +113,9 @@ type DialerContextValue = {
   metrics: NetworkMetrics | null;
   recentCalls: RecentCall[];
   messages: SmsMessage[];
+  voiceMediaState: VoiceMediaState;
+  muted: boolean;
+  toggleMute: () => void;
   selectSubscriber:
     (subscriber: Subscriber) => void;
   resetSubscriber: () => void;
@@ -236,7 +245,7 @@ export function DialerProvider({
 
   const [
     activeCall,
-    setActiveCall,
+    setActiveCallState,
   ] =
     useState<CallInfo | null>(
       null,
@@ -266,6 +275,20 @@ export function DialerProvider({
       [],
     );
 
+  const [
+    voiceMediaState,
+    setVoiceMediaState,
+  ] =
+    useState<VoiceMediaState>(
+      "idle",
+    );
+
+  const [
+    muted,
+    setVoiceMuted,
+  ] =
+    useState(false);
+
   const socketRef =
     useRef<WebSocket | null>(
       null,
@@ -276,10 +299,50 @@ export function DialerProvider({
       null,
     );
 
+  const activeCallRef =
+    useRef<CallInfo | null>(
+      null,
+    );
+
   useEffect(() => {
     activeSubscriberRef.current =
       activeSubscriber;
   }, [activeSubscriber]);
+
+  const setCurrentCall =
+    useCallback(
+      (call: CallInfo | null) => {
+        activeCallRef.current =
+          call;
+        setActiveCallState(
+          call,
+        );
+      },
+      [],
+    );
+
+  const voiceController =
+    useMemo(
+      () =>
+        new VoiceMediaController({
+          onState:
+            setVoiceMediaState,
+          onMuted:
+            setVoiceMuted,
+          onError:
+            (message) =>
+              Alert.alert(
+                "Voice unavailable",
+                message,
+              ),
+        }),
+      [],
+    );
+
+  const toggleMute =
+    useCallback(() => {
+      voiceController.toggleMute();
+    }, [voiceController]);
 
   const peerSubscriber =
     useMemo(() => {
@@ -415,7 +478,8 @@ export function DialerProvider({
         "offline",
       );
       setPeerOnline(false);
-      setActiveCall(null);
+      voiceController.stop();
+      setCurrentCall(null);
       setMetrics(null);
       return;
     }
@@ -452,6 +516,27 @@ export function DialerProvider({
       socketRef.current =
         socket;
 
+      const sendVoiceSignal =
+        (
+          payload:
+            Record<string, unknown>,
+        ) => {
+          if (
+            socket.readyState !==
+            WebSocket.OPEN
+          ) {
+            return false;
+          }
+
+          socket.send(
+            JSON.stringify(
+              payload,
+            ),
+          );
+
+          return true;
+        };
+
       socket.onopen = () => {
         if (!disposed) {
           setConnectionStatus(
@@ -486,6 +571,26 @@ export function DialerProvider({
             message?.type ??
             "",
           );
+
+        if (
+          type ===
+            "webrtc.offer" ||
+          type ===
+            "webrtc.answer" ||
+          type ===
+            "webrtc.ice"
+        ) {
+          void voiceController
+            .handleSignal(
+              message,
+              activeCallRef.current,
+              normalizeNumber(
+                activeSubscriber.number,
+              ),
+              sendVoiceSignal,
+            );
+          return;
+        }
 
         if (
           type ===
@@ -628,7 +733,7 @@ export function DialerProvider({
             message.call as
               CallInfo;
 
-          setActiveCall(call);
+          setCurrentCall(call);
           setMetrics(
             call.metrics,
           );
@@ -655,7 +760,7 @@ export function DialerProvider({
             message.call as
               CallInfo;
 
-          setActiveCall(call);
+          setCurrentCall(call);
           setMetrics(
             call.metrics,
           );
@@ -682,7 +787,7 @@ export function DialerProvider({
             message.call as
               CallInfo;
 
-          setActiveCall(call);
+          setCurrentCall(call);
           setMetrics(
             call.metrics,
           );
@@ -697,6 +802,12 @@ export function DialerProvider({
             call.caller === own
               ? call.callee
               : call.caller;
+
+          void voiceController.start(
+            call,
+            own,
+            sendVoiceSignal,
+          );
 
           router.replace({
             pathname:
@@ -720,7 +831,7 @@ export function DialerProvider({
             message.call as
               CallInfo;
 
-          setActiveCall(call);
+          setCurrentCall(call);
           setMetrics(
             call.metrics,
           );
@@ -740,7 +851,9 @@ export function DialerProvider({
             "rejected",
           );
 
-          setActiveCall(null);
+          voiceController.stop();
+
+          setCurrentCall(null);
           setMetrics(null);
 
           Alert.alert(
@@ -777,7 +890,9 @@ export function DialerProvider({
               : "ended",
           );
 
-          setActiveCall(null);
+          voiceController.stop();
+
+          setCurrentCall(null);
           setMetrics(null);
 
           if (
@@ -811,7 +926,9 @@ export function DialerProvider({
             ),
           );
 
-          setActiveCall(null);
+          voiceController.stop();
+
+          setCurrentCall(null);
           setMetrics(null);
 
           router.replace(
@@ -847,6 +964,7 @@ export function DialerProvider({
           "offline",
         );
         setPeerOnline(false);
+        voiceController.stop();
 
         if (
           event.code === 1012
@@ -877,6 +995,8 @@ export function DialerProvider({
         );
       }
 
+      voiceController.stop();
+
       const socket =
         socketRef.current;
 
@@ -899,6 +1019,8 @@ export function DialerProvider({
     activeSubscriber,
     addRecentCall,
     upsertMessage,
+    setCurrentCall,
+    voiceController,
   ]);
 
   const send =
@@ -1025,6 +1147,8 @@ export function DialerProvider({
         return;
       }
 
+      voiceController.stop();
+
       const sent =
         send({
           type: "call.end",
@@ -1033,7 +1157,8 @@ export function DialerProvider({
         });
 
       if (!sent) {
-        setActiveCall(null);
+        voiceController.stop();
+        setCurrentCall(null);
         setMetrics(null);
 
         router.replace(
@@ -1049,7 +1174,8 @@ export function DialerProvider({
     useCallback(() => {
       socketRef.current?.close();
       socketRef.current = null;
-      setActiveCall(null);
+      voiceController.stop();
+      setCurrentCall(null);
       setMetrics(null);
       setPeerOnline(false);
       setMessages([]);
@@ -1067,6 +1193,9 @@ export function DialerProvider({
         metrics,
         recentCalls,
         messages,
+        voiceMediaState,
+        muted,
+        toggleMute,
         selectSubscriber:
           (
             subscriber:
@@ -1091,6 +1220,9 @@ export function DialerProvider({
         metrics,
         recentCalls,
         messages,
+        voiceMediaState,
+        muted,
+        toggleMute,
         resetSubscriber,
         startCall,
         sendSms,
