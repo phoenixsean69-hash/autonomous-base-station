@@ -18,6 +18,31 @@ const COLORS = {
 
 let view = null;
 
+// ABS SITE 3D MOBILE PRESENCE V1
+const DEMO_MOBILE_SUBSCRIBERS = [
+  "0712000001",
+  "0712000002",
+  "0712000003",
+  "0712000004",
+  "0712000005",
+  "0712000006",
+];
+
+function normalizeMobileNumber(value) {
+  return String(value ?? "").replace(/\D/g, "");
+}
+
+function formatMobileNumber(value) {
+  const n = normalizeMobileNumber(value);
+  if (n.length !== 10) return n || "—";
+  return `${n.slice(0,4)} ${n.slice(4,7)} ${n.slice(7)}`;
+}
+
+function shortMobileNumber(value) {
+  const n = normalizeMobileNumber(value);
+  return n.length >= 3 ? n.slice(-3) : n || "—";
+}
+
 function dashboardState() {
   return window.ABSDashboardGetState?.() ?? {};
 }
@@ -1435,6 +1460,45 @@ function updateHud(shell) {
     if (el) el.textContent = value;
   }
 
+  const bts = state.bts ?? {};
+  const online = new Set(
+    Array.isArray(bts.subscriber_numbers)
+      ? bts.subscriber_numbers.map(normalizeMobileNumber).filter(Boolean)
+      : [],
+  );
+  const calls = Array.isArray(bts.active_call_pairs)
+    ? bts.active_call_pairs.filter((call) => {
+        const x = String(call?.state ?? "").toUpperCase();
+        return x === "RINGING" || x === "CONNECTED";
+      })
+    : [];
+  const inCall = new Set();
+  for (const call of calls) {
+    const a = normalizeMobileNumber(call?.caller);
+    const b = normalizeMobileNumber(call?.callee);
+    if (a) inCall.add(a);
+    if (b) inCall.add(b);
+  }
+
+  const mobileRows = shell.querySelector("[data-site3d-mobile-subscribers]");
+  if (mobileRows) {
+    mobileRows.innerHTML = DEMO_MOBILE_SUBSCRIBERS.map((number) => {
+      const status = inCall.has(number) ? "call" : online.has(number) ? "online" : "free";
+      const label = status === "call" ? "IN CALL" : status === "online" ? "ONLINE" : "FREE";
+      return `<div class="site3d-mobile-row ${status}"><span class="site3d-mobile-dot"></span><strong>${formatMobileNumber(number)}</strong><small>${label}</small></div>`;
+    }).join("");
+  }
+
+  const onlineNode = shell.querySelector("[data-site3d-mobile-online]");
+  if (onlineNode) onlineNode.textContent = `${online.size} / 6 online`;
+
+  const callNode = shell.querySelector("[data-site3d-mobile-calls]");
+  if (callNode) {
+    callNode.innerHTML = calls.length
+      ? calls.map((call) => `<div class="site3d-mobile-call"><span>${shortMobileNumber(call?.caller)}</span><i>↔</i><span>${shortMobileNumber(call?.callee)}</span><small>${String(call?.state ?? "ACTIVE").toUpperCase()}</small></div>`).join("")
+      : `<div class="site3d-mobile-call empty"><span>No active calls</span></div>`;
+  }
+
   if (shell.dataset.selectedComponent) {
     renderComponentInfo(shell, shell.dataset.selectedComponent);
   }
@@ -1483,6 +1547,17 @@ function mount() {
           <div class="site3d-status-row"><span>Backhaul</span><strong data-site3d-value="backhaul">—</strong></div>
           <div class="site3d-status-row"><span>Managed power</span><strong data-site3d-value="power">—</strong></div>
           <div class="site3d-status-row"><span>AI / Dual AI</span><strong data-site3d-value="ai">—</strong></div>
+        </div>
+
+        <div class="site3d-mobile-panel">
+          <div class="site3d-mobile-head">
+            <span><i class="material-symbols-rounded">smartphone</i>Mobile subscribers</span>
+            <strong data-site3d-mobile-online>0 / 6 online</strong>
+          </div>
+          <div class="site3d-mobile-subscribers" data-site3d-mobile-subscribers></div>
+          <div class="site3d-mobile-calls" data-site3d-mobile-calls>
+            <div class="site3d-mobile-call empty"><span>No active calls</span></div>
+          </div>
         </div>
 
         <div class="site3d-info" data-site3d-info hidden>
@@ -1707,3 +1782,95 @@ window.setInterval(() => {
 }, 1500);
 
 requestAnimationFrame(mount);
+
+
+// ABS FLOATING MODAL COLLAPSE V6
+function absAttachCollapseControl(panel, title, hideSelectors) {
+  if (!panel || panel.dataset.absCollapseV6 === "1") return;
+
+  panel.dataset.absCollapseV6 = "1";
+  panel.classList.add("abs-floating-panel-v6");
+
+  let header = null;
+
+  if (panel.classList.contains("site3d-status")) {
+    header = document.createElement("div");
+    header.className = "abs-floating-panel-head-v6";
+
+    const label = document.createElement("span");
+    label.textContent = title;
+    header.appendChild(label);
+    panel.prepend(header);
+  }
+  else if (panel.classList.contains("site3d-mobile-panel")) {
+    header = panel.querySelector(".site3d-mobile-head");
+  }
+  else if (panel.classList.contains("site3d-info")) {
+    header = panel.querySelector(".site3d-info-head");
+  }
+
+  if (!header) return;
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "abs-floating-collapse-v6 material-symbols-rounded";
+  button.textContent = "expand_less";
+  button.title = `Collapse ${title}`;
+  button.setAttribute("aria-label", button.title);
+  button.setAttribute("aria-expanded", "true");
+  header.appendChild(button);
+
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const collapsed = panel.classList.toggle("abs-collapsed-v6");
+
+    button.textContent = collapsed ? "expand_more" : "expand_less";
+    button.title = `${collapsed ? "Expand" : "Collapse"} ${title}`;
+    button.setAttribute("aria-label", button.title);
+    button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+
+    for (const selector of hideSelectors) {
+      for (const node of panel.querySelectorAll(selector)) {
+        node.hidden = collapsed;
+      }
+    }
+  });
+}
+
+function absEnsureFloatingModalCollapseV6() {
+  absAttachCollapseControl(
+    document.querySelector(".site3d-mobile-panel"),
+    "Mobile subscribers",
+    [
+      ".site3d-mobile-subscribers",
+      ".site3d-mobile-calls",
+    ],
+  );
+
+  absAttachCollapseControl(
+    document.querySelector(".site3d-status"),
+    "Site status",
+    [
+      ".site3d-status-row",
+    ],
+  );
+
+  absAttachCollapseControl(
+    document.querySelector(".site3d-info"),
+    "Equipment details",
+    [
+      ".site3d-info-role",
+      ".site3d-info-body",
+      ":scope > small",
+    ],
+  );
+}
+
+window.addEventListener("abs-dashboard-rendered", () => {
+  requestAnimationFrame(absEnsureFloatingModalCollapseV6);
+});
+
+window.setInterval(absEnsureFloatingModalCollapseV6, 1000);
+requestAnimationFrame(absEnsureFloatingModalCollapseV6);

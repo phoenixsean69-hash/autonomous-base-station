@@ -14,6 +14,29 @@ const telemetryFile = path.join(runtimeDir, "latest_telemetry.json");
 const aiFile = path.join(runtimeDir, "latest_ai_result.json");
 const port = Number(process.env.DASHBOARD_PORT || 5173);
 const AI_FRESH_MS = 30000;
+
+// ABS DASHBOARD MOBILE PRESENCE V1
+const BTS_SERVICE_URL =
+  process.env.DASHBOARD_BTS_SERVICE_URL ||
+  "http://[::1]:8100";
+
+let btsPresence = null;
+let btsPresenceUpdatedMs = null;
+
+async function pollBtsPresence() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1000);
+  try {
+    const response = await fetch(`${BTS_SERVICE_URL}/telemetry`, { signal: controller.signal });
+    if (!response.ok) return;
+    btsPresence = await response.json();
+    btsPresenceUpdatedMs = Date.now();
+  } catch {
+    // Keep the last known snapshot.
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 const TELEMETRY_LIVE_MS = Number(
   process.env.DASHBOARD_TELEMETRY_LIVE_MS || 30000,
 );
@@ -79,6 +102,7 @@ async function snapshot() {
     serverTimeMs: nowMs,
     telemetry: telemetry.data,
     ai: liveAi,
+    bts: btsPresence,
     meta: {
       telemetryUpdatedMs: telemetry.updatedMs,
       telemetryStatus,
@@ -95,6 +119,8 @@ async function snapshot() {
           ? aiAgeMs
           : null,
       aiFreshWindowMs: AI_FRESH_MS,
+      btsPresenceUpdatedMs,
+      btsPresenceAvailable: Boolean(btsPresence),
       readOnly: true,
     },
   };
@@ -168,6 +194,9 @@ wss.on("connection", async (socket) => {
   socket.send(JSON.stringify(await snapshot()));
 });
 
+void pollBtsPresence();
+setInterval(pollBtsPresence, 750);
+
 let lastSignature = "";
 
 setInterval(async () => {
@@ -178,6 +207,12 @@ setInterval(async () => {
     state.ai?.runtime?.source_timestamp_ms ?? "no-ai",
     state.meta.telemetryUpdatedMs ?? "no-t-file",
     state.meta.aiUpdatedMs ?? "no-ai-file",
+    JSON.stringify(state.bts?.subscriber_numbers ?? []),
+    JSON.stringify((state.bts?.active_call_pairs ?? []).map((call) => [
+      call?.caller ?? "",
+      call?.callee ?? "",
+      call?.state ?? "",
+    ])),
   ].join(":");
 
   if (signature !== lastSignature) {
