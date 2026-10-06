@@ -203,9 +203,18 @@
 
     const upper = fault.toUpperCase();
 
-    if (upper === "NORMAL" || upper === "—") {
-      tag.textContent =
-        upper === "NORMAL" ? "System Healthy" : "Waiting for telemetry";
+    // ABS COMPETITION TRUTH STATE V12
+    // WAITING is the expected AI warmup state, not a system fault.
+    if (
+      upper === "WAITING" ||
+      upper === "—"
+    ) {
+      tag.textContent = "AI warming up";
+      tag.style.color = "#9f7b3a";
+      tag.style.background = "#f1e3bf";
+      marker.style.left = "46%";
+    } else if (upper === "NORMAL") {
+      tag.textContent = "System Healthy";
       tag.style.color = "#3e6750";
       tag.style.background = "#dff7e7";
       marker.style.left = "28%";

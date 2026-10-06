@@ -616,12 +616,16 @@ function twinStatus(name, state) {
   }
 
   if (name === "ai") {
-    if (!state?.ai) return "down";
+    // ABS COMPETITION TRUTH STATE V12
+    // Warmup is WAITING when telemetry is live, not a failed AI path.
+    if (!state?.ai) return telemetry === "LIVE" ? "warn" : "down";
     return state?.meta?.aiFresh === true ? "good" : "warn";
   }
 
   if (name === "dual") {
-    if (!cmd.pico_ai_fault_domain && !pico.mode_decision) return "down";
+    if (!cmd.pico_ai_fault_domain && !pico.mode_decision) {
+      return telemetry === "LIVE" ? "warn" : "down";
+    }
     if (agreement === "AGREE") return "good";
     if (agreement === "DISAGREE") return "warn";
     return "warn";
@@ -1740,7 +1744,8 @@ function updateHud(shell) {
     traffic: `${Number(t.traffic_load_pct ?? 0).toFixed(1)}%`,
     backhaul: t.backhaul_status ?? "—",
     power: `${Number(t.managed_power_kw ?? 0).toFixed(3)} kW`,
-    ai: `${ai.fault_domain?.label ?? "—"} / ${cmd.dual_ai_agreement ?? "—"}`,
+    // ABS COMPETITION TRUTH STATE V12
+    ai: `${ai.fault_domain?.label ?? "WAITING"} / ${cmd.dual_ai_agreement ?? "WAITING"}`,
   };
 
   for (const [key, value] of Object.entries(values)) {

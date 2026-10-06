@@ -328,6 +328,22 @@ function renderOverview() {
   const anomaly = ai?.anomaly ?? {};
   const trust = ai?.trust ?? {};
 
+  // ABS COMPETITION TRUTH STATE V12
+  // During the 24-frame warmup, do not present the rule/source-reference
+  // fault label as though it were a completed Laptop AI inference.
+  const aiInferenceReady =
+    Boolean(
+      state.ai?.fault_domain?.label,
+    );
+
+  const displayedAiFaultDomain =
+    aiInferenceReady
+      ? (
+          fault.label ??
+          "WAITING"
+        )
+      : "WAITING";
+
   const battery = Number(t.battery_soc_pct ?? 0);
   const traffic = Number(t.traffic_load_pct ?? 0);
 
@@ -376,7 +392,7 @@ function renderOverview() {
         <div class="panel current-state">
           <div class="eyebrow">CURRENT OPERATING STATE</div>
           <div class="state-big">
-            <div><span>Fault domain</span><strong>${esc(fault.label ?? t.fault_label ?? "—")}</strong></div>
+            <div><span>AI fault domain</span><strong>${esc(displayedAiFaultDomain)}</strong></div>
             <div><span>Final mode</span><strong>${esc(t.operating_mode ?? "—")}</strong></div>
           </div>
           <div class="state-age">

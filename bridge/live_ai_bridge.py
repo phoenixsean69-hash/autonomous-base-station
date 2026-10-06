@@ -52,6 +52,12 @@ NETWORK_COMMAND_PREFIX = "ABS_NET_CMD|"
 NETWORK_ACK_PREFIX = "ABS_NET_ACK|"
 DEFAULT_BTS_SERVICE = "http://127.0.0.1:8100"
 
+# ABS BTS HTTP TIMEOUT STABILITY V1
+# 350 ms was too aggressive for the local FastAPI service under the full
+# competition stack. Keep the poll cadence at 1 s, but allow a normal local
+# request up to 1.0 s before declaring the BTS feed unavailable.
+BTS_HTTP_TIMEOUT_SECONDS = 1.0
+
 SCHEMA = "abs.v1"
 DEFAULT_URL = "rfc2217://localhost:4001"
 DEFAULT_PICO_URL = "rfc2217://localhost:4000"
@@ -1536,7 +1542,7 @@ def fetch_network_snapshot(
         try:
             with urllib.request.urlopen(
                 request,
-                timeout=0.35,
+                timeout=BTS_HTTP_TIMEOUT_SECONDS,
             ) as response:
                 return json.loads(
                     response.read().decode(
@@ -2722,4 +2728,3 @@ if __name__ == "__main__":
     raise SystemExit(
         main()
     )
-
