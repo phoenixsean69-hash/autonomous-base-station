@@ -458,7 +458,7 @@ const TWIN_V7_INFO = {
   },
 };
 
-Object.assign(SITE_COMPONENT_INFO, TWIN_V7_INFO);
+// V7.2 TDZ FIX: do not access SITE_COMPONENT_INFO before its const declaration.
 
 function twinV7Rows(component) {
   const s = dashboardState();
@@ -1025,10 +1025,101 @@ function updateTwinV7(live, state) {
   setTwinBeacon(live.groups.siteLoad, twinStatus("power", state));
 }
 
+
+/* ==========================================================================
+   ABS SITE 3D — TWO-STATION SPACING V9
+   Increases physical separation between the mountain BTS and main site.
+   ========================================================================== */
+
+const ABS_BTS_SITE_SHIFT_X = -3.2;
+
+/* ==========================================================================
+   ABS SITE 3D — BTS MOUNTAIN SITE V8
+   Elevates BTS-001 onto a realistic telecom hilltop / mountain platform.
+   ========================================================================== */
+
+function buildBtsMountain(root, centerX, summitY) {
+  const mountain = new THREE.Group();
+  mountain.position.set(centerX, 0, 0);
+  root.add(mountain);
+
+  const rockMaterial = new THREE.MeshStandardMaterial({
+    color: 0x667078,
+    roughness: 0.96,
+    metalness: 0.02,
+    flatShading: true,
+  });
+
+  const lowerRockMaterial = new THREE.MeshStandardMaterial({
+    color: 0x566168,
+    roughness: 0.98,
+    metalness: 0.01,
+    flatShading: true,
+  });
+
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(4.05, 7.5, summitY + 0.25, 14, 4, false),
+    rockMaterial,
+  );
+  base.position.y = (summitY + 0.25) / 2 - 0.12;
+  base.rotation.y = 0.18;
+  mountain.add(base);
+
+  const shoulder = new THREE.Mesh(
+    new THREE.CylinderGeometry(3.72, 5.15, 1.05, 13, 2, false),
+    lowerRockMaterial,
+  );
+  shoulder.position.set(-0.15, summitY - 0.34, 0.08);
+  shoulder.rotation.y = -0.11;
+  mountain.add(shoulder);
+
+  const outcrops = [
+    [-4.55, 0.68, -1.15, 1.55, 0.82, 1.28],
+    [4.35, 0.58, 0.95, 1.42, 0.74, 1.16],
+    [-2.65, 0.42, 4.05, 1.18, 0.62, 1.04],
+    [2.85, 0.48, -4.15, 1.28, 0.68, 1.12],
+  ];
+
+  for (const [x, y, z, sx, sy, sz] of outcrops) {
+    const rock = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(1, 0),
+      lowerRockMaterial.clone(),
+    );
+    rock.position.set(x, y, z);
+    rock.scale.set(sx, sy, sz);
+    rock.rotation.set(0.12 * z, 0.18 * x, 0.08 * x);
+    mountain.add(rock);
+  }
+
+  box(
+    mountain,
+    [7.55, 0.24, 7.35],
+    [0, summitY - 0.11, 0],
+    0x394247,
+    { roughness: 0.88, metalness: 0.08 },
+  );
+
+  const track = new THREE.Mesh(
+    new THREE.BoxGeometry(1.0, 0.05, 5.3),
+    new THREE.MeshStandardMaterial({
+      color: 0x8b806e,
+      roughness: 1,
+      metalness: 0,
+    }),
+  );
+  track.position.set(-3.25, summitY * 0.42, 3.65);
+  track.rotation.x = -0.43;
+  track.rotation.y = 0.14;
+  mountain.add(track);
+
+  return mountain;
+}
+
+// ABS SITE 3D — DARK BACKGROUND V10: dark world, bright readable equipment.
 function buildSite(state) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x9eafb6);
-  scene.fog = new THREE.FogExp2(0x9eafb6, 0.014);
+  scene.background = new THREE.Color(0x16191b);
+  scene.fog = new THREE.FogExp2(0x16191b, 0.014);
 
   scene.add(new THREE.HemisphereLight(0xffffff, 0x58646a, 2.55));
   scene.add(new THREE.AmbientLight(0xffffff, 0.70));
@@ -1045,7 +1136,13 @@ function buildSite(state) {
   scene.add(root);
 
   // Two actual physical zones.
-  buildTwinPad(root, -4.6, 7.1, 7.0, "BTS-001 STATION");
+  // BTS-001 is a remote elevated telecom site on a mountain summit.
+  const BTS_Y = 3.25;
+  buildBtsMountain(root, -4.6 + ABS_BTS_SITE_SHIFT_X, BTS_Y);
+
+  const btsPad = buildTwinPad(root, -4.6 + ABS_BTS_SITE_SHIFT_X, 7.1, 7.0, "BTS-001 STATION");
+  btsPad.position.y = BTS_Y;
+
   buildTwinPad(root, 4.6, 7.1, 7.0, "AUTONOMOUS BASE STATION");
 
   // ------------------------------------------------------------------
@@ -1053,14 +1150,14 @@ function buildSite(state) {
   // Actual simulation roles represented as site equipment:
   // BTS ESP32/RF plant + service node + radio mast + backhaul terminal.
   // ------------------------------------------------------------------
-  const btsRadio = buildBtsRadioCabinet(root, [-5.1, 0.1, 0.3]);
+  const btsRadio = buildBtsRadioCabinet(root, [-5.1 + ABS_BTS_SITE_SHIFT_X, BTS_Y + 0.1, 0.3]);
 
-  const mast = buildMast(root, [-6.25, 0.1, 2.0], state);
+  const mast = buildMast(root, [-6.25 + ABS_BTS_SITE_SHIFT_X, BTS_Y + 0.1, 2.0], state);
   mast.userData.component = "btsRadio";
   addTwinBeacon(mast, [0.55, 4.7, 0.25]);
 
-  const btsService = buildBtsServiceCabinet(root, [-4.1, 0.1, -1.5]);
-  const btsBackhaul = buildMicrowaveTerminal(root, [-1.9, 0.1, -1.55], "btsBackhaul", 1);
+  const btsService = buildBtsServiceCabinet(root, [-4.1 + ABS_BTS_SITE_SHIFT_X, BTS_Y + 0.1, -1.5]);
+  const btsBackhaul = buildMicrowaveTerminal(root, [-1.9 + ABS_BTS_SITE_SHIFT_X, BTS_Y + 0.1, -1.55], "btsBackhaul", 1);
 
   // ------------------------------------------------------------------
   // Main autonomous base station
@@ -1093,19 +1190,19 @@ function buildSite(state) {
     // BTS internal path.
     buildLiveTwinLink(
       root,
-      [[-6.0,0.55,1.55],[-5.8,0.55,0.9],[-5.1,0.55,0.3]],
+      [[-6.0 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 0.55,1.55],[-5.8 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 0.55,0.9],[-5.1 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 0.55,0.3]],
       "data",
       "radio",
     ),
     buildLiveTwinLink(
       root,
-      [[-5.1,0.55,0.3],[-4.7,0.55,-0.6],[-4.1,0.55,-1.5]],
+      [[-5.1 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 0.55,0.3],[-4.7 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 0.55,-0.6],[-4.1 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 0.55,-1.5]],
       "data",
       "radio",
     ),
     buildLiveTwinLink(
       root,
-      [[-4.1,0.55,-1.5],[-3.2,0.55,-1.55],[-1.9,0.55,-1.55]],
+      [[-4.1 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 0.55,-1.5],[-3.2 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 0.55,-1.55],[-1.9 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 0.55,-1.55]],
       "data",
       "backhaul",
     ),
@@ -1113,7 +1210,7 @@ function buildSite(state) {
     // Inter-station backhaul.
     buildLiveTwinLink(
       root,
-      [[-1.9,1.48,-1.55],[-0.7,1.55,-1.55],[0,1.58,-1.55],[0.7,1.55,-1.55],[1.9,1.48,-1.55]],
+      [[-1.9 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 1.48,-1.55],[-0.85 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 1.05,-1.55],[-2.2,BTS_Y * 0.55 + 1.55,-1.55],[0.2,2.0,-1.55],[1.9,1.48,-1.55]],
       "data",
       "backhaul",
       0.032,
@@ -1290,7 +1387,7 @@ function componentRows(component) {
 
 function renderComponentInfo(shell, component) {
   const panel = shell.querySelector("[data-site3d-info]");
-  const def = SITE_COMPONENT_INFO[component];
+  const def = TWIN_V7_INFO[component] ?? SITE_COMPONENT_INFO[component];
   if (!panel || !def) return;
 
   panel.hidden = false;
@@ -1434,7 +1531,7 @@ function mount() {
   const { scene, pulses, live } = buildSite(state);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  const start = new THREE.Vector3(16.8, 11.4, 17.6);
+  const start = new THREE.Vector3(20.6, 14.4, 22.6);
   camera.position.copy(start);
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
@@ -1448,7 +1545,7 @@ function mount() {
   controls.enablePan = true;
   controls.minDistance = 10;
   controls.maxDistance = 34;
-  controls.target.set(0, 1.0, 0);
+  controls.target.set(-0.8, 2.2, 0);
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();

@@ -20,7 +20,7 @@ import {
 } from "../config/network";
 
 export type Subscriber = {
-  id: "A" | "B";
+  id: "A" | "B" | "C" | "D" | "E" | "F";
   name: string;
   number: string;
   initials: string;
@@ -74,20 +74,29 @@ export type SmsMessage = {
     | "outgoing";
 };
 
+// ABS SIX SUBSCRIBERS V1
 export const SUBSCRIBERS: Subscriber[] = [
-  {
-    id: "A",
-    name: "Subscriber A",
-    number: "0712 000 001",
-    initials: "A",
-  },
-  {
-    id: "B",
-    name: "Subscriber B",
-    number: "0712 000 002",
-    initials: "B",
-  },
+  { id: "A", name: "Subscriber A", number: "0712 000 001", initials: "A" },
+  { id: "B", name: "Subscriber B", number: "0712 000 002", initials: "B" },
+  { id: "C", name: "Subscriber C", number: "0712 000 003", initials: "C" },
+  { id: "D", name: "Subscriber D", number: "0712 000 004", initials: "D" },
+  { id: "E", name: "Subscriber E", number: "0712 000 005", initials: "E" },
+  { id: "F", name: "Subscriber F", number: "0712 000 006", initials: "F" },
 ];
+
+const DEFAULT_PAIR_BY_ID: Record<Subscriber["id"], Subscriber["id"]> = {
+  A: "B",
+  B: "A",
+  C: "D",
+  D: "C",
+  E: "F",
+  F: "E",
+};
+
+function pairedSubscriberFor(subscriber: Subscriber) {
+  const peerId = DEFAULT_PAIR_BY_ID[subscriber.id];
+  return SUBSCRIBERS.find((candidate) => candidate.id === peerId) ?? null;
+}
 
 type DialerContextValue = {
   activeSubscriber: Subscriber | null;
@@ -278,13 +287,7 @@ export function DialerProvider({
         return null;
       }
 
-      return (
-        SUBSCRIBERS.find(
-          (subscriber) =>
-            subscriber.id !==
-            activeSubscriber.id,
-        ) ?? null
-      );
+      return pairedSubscriberFor(activeSubscriber);
     }, [activeSubscriber]);
 
   const upsertMessage =
@@ -500,12 +503,7 @@ export function DialerProvider({
         ) {
           const peerNumber =
             normalizeNumber(
-              SUBSCRIBERS.find(
-                (subscriber) =>
-                  subscriber.id !==
-                  activeSubscriber.id,
-              )?.number ??
-              "",
+              pairedSubscriberFor(activeSubscriber)?.number ?? "",
             );
 
           const status =

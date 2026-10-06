@@ -9,6 +9,7 @@ import {
 } from "lucide-react-native";
 import {
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -36,9 +37,10 @@ export default function SubscriberSelectScreen() {
   } = useDialer();
 
   return (
-    <View
-      style={[
-        styles.root,
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[
+        styles.content,
         {
           paddingTop:
             Math.max(
@@ -52,6 +54,7 @@ export default function SubscriberSelectScreen() {
             ),
         },
       ]}
+      showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
         <View style={styles.logo}>
@@ -70,8 +73,8 @@ export default function SubscriberSelectScreen() {
         </Text>
 
         <Text style={styles.subtitle}>
-          Use the other number on a second phone
-          or emulator to make and receive calls.
+          Choose one of six demo numbers. Use a
+          different number on each phone or emulator.
         </Text>
       </View>
 
@@ -141,12 +144,12 @@ export default function SubscriberSelectScreen() {
         </Text>
 
         <Text style={styles.noteText}>
-          Each device should use a different
-          number. After selection, the phone
-          connects automatically.
+          Default quick pairs: 001 ↔ 002,
+          003 ↔ 004, and 005 ↔ 006. You can
+          still dial any of the six numbers.
         </Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -154,11 +157,12 @@ const styles =
   StyleSheet.create({
     root: {
       flex: 1,
-      paddingHorizontal: 20,
       backgroundColor:
         colors.canvas,
-      justifyContent:
-        "space-between",
+    },
+    content: {
+      paddingHorizontal: 20,
+      gap: 18,
     },
     header: {
       paddingTop: 28,
@@ -198,11 +202,11 @@ const styles =
       textAlign: "center",
     },
     cards: {
-      gap: 12,
+      gap: 10,
     },
     card: {
-      minHeight: 118,
-      padding: 16,
+      minHeight: 94,
+      padding: 14,
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: radius.large,

@@ -752,3 +752,24 @@ body.site3d-overview-active .page-stack {
     width: 205px !important;
   }
 }
+
+/* ==========================================================================
+   ABS SITE 3D — DARK BACKGROUND V10
+   Dark environment while preserving bright/readable equipment lighting.
+   ========================================================================== */
+
+.site3d-stage {
+  background:
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+    #16191b !important;
+  background-size: 24px 24px !important;
+}
+
+.site3d-shell {
+  background: #16191b !important;
+}
+
+.site3d-fallback {
+  background-color: #16191b !important;
+}
