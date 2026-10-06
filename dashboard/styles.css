@@ -788,7 +788,7 @@ button.context-item:hover {
   box-shadow: none !important;
 }
 
-/* Neutral text — status colour belongs primarily to the dot */
+/* Neutral text ï¿½ status colour belongs primarily to the dot */
 .pill,
 .pill.good,
 .pill.warn,
@@ -891,7 +891,7 @@ button.context-item:hover {
 
 
 /* ============================================================
-   ABS STATUS LANGUAGE V2 — REMOVE DECORATIVE STATUS DOTS
+   ABS STATUS LANGUAGE V2 ï¿½ REMOVE DECORATIVE STATUS DOTS
    ============================================================ */
 
 /* Global pill/status dots */
@@ -1016,7 +1016,7 @@ button.context-item:hover {
   background: #303030 !important;
 }
 
-/* Flatter selected state — desktop app, not SaaS pill */
+/* Flatter selected state ï¿½ desktop app, not SaaS pill */
 .workspace-tabs .tab.active {
   color: #f0f0f0 !important;
   background: #363636 !important;
@@ -1034,3 +1034,314 @@ button.context-item:hover {
   font-size: 9px !important;
 }
 
+
+
+
+/* ABS OVERVIEW FULLHEIGHT + INSPECTOR TABS V11 */
+
+body.site3d-overview-active .workspace-grid {
+  position: relative;
+  grid-template-columns: 42px minmax(0, 1fr) 74px !important;
+  overflow: hidden !important;
+}
+
+body.site3d-overview-active .health-main-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden !important;
+}
+
+body.site3d-overview-active .health-content {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+body.site3d-overview-active .health-content > .page-stack {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: block !important;
+}
+
+body.site3d-overview-active .site3d-shell {
+  width: 100%;
+  height: 100% !important;
+  min-height: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+}
+
+body.site3d-overview-active .site3d-stage {
+  height: calc(100% - 32px) !important;
+  min-height: 0 !important;
+}
+
+body.site3d-overview-active .health-content .page-stack > .panel,
+body.site3d-overview-active .health-content .page-stack > .two-col {
+  display: none !important;
+}
+
+.overview-inspector-tabs,
+.overview-inspector-drawer {
+  display: none;
+}
+
+body.site3d-overview-active .health-insight-rail.overview-inspector-mode {
+  position: relative;
+  z-index: 80;
+  display: grid !important;
+  grid-template-rows: 30px minmax(0, 1fr);
+  overflow: visible !important;
+  border-left: 1px solid #171717;
+  background: #272727;
+}
+
+body.site3d-overview-active .health-insight-rail.overview-inspector-mode > .editor-header {
+  width: 74px;
+  height: 30px;
+  padding: 0;
+  justify-content: center;
+}
+
+body.site3d-overview-active .health-insight-rail.overview-inspector-mode > .editor-header > span {
+  max-width: 52px;
+  overflow: hidden;
+  color: #8f969a;
+  font-size: 7px;
+  letter-spacing: .05em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+body.site3d-overview-active .health-insight-rail.overview-inspector-mode > .editor-header .inspector-action {
+  display: none;
+}
+
+body.site3d-overview-active .overview-inspector-tabs {
+  min-height: 0;
+  display: grid;
+  grid-auto-rows: 62px;
+  align-content: start;
+  border-top: 1px solid #171717;
+}
+
+.overview-inspector-tab {
+  width: 74px;
+  min-height: 62px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #202020;
+  border-radius: 0;
+  background: transparent;
+  color: #7f878b;
+  cursor: pointer;
+}
+
+.overview-inspector-tab:hover {
+  color: #d6dadc;
+  background: #303030;
+}
+
+.overview-inspector-tab.active {
+  color: #edf0f1;
+  background: #363636;
+  box-shadow: inset -2px 0 0 #707f88;
+}
+
+.overview-inspector-tab .material-symbols-rounded {
+  font-size: 18px;
+}
+
+.overview-inspector-tab small {
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+body.site3d-overview-active .overview-inspector-drawer {
+  position: absolute;
+  z-index: 95;
+  top: 0;
+  right: 74px;
+  bottom: 0;
+  width: min(390px, 34vw);
+  min-width: 330px;
+  display: none;
+  overflow: hidden;
+  border-left: 1px solid #171717;
+  border-right: 1px solid #171717;
+  background: rgba(45,45,45,.98);
+  box-shadow: -14px 0 28px rgba(0,0,0,.28);
+}
+
+body.site3d-overview-active .overview-inspector-drawer-open .overview-inspector-drawer {
+  display: grid;
+  grid-template-rows: 44px minmax(0,1fr);
+}
+
+.overview-inspector-drawer-head {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid #1b1b1b;
+  background: #292929;
+}
+
+.overview-inspector-drawer-head span,
+.overview-inspector-drawer-head strong {
+  display: block;
+}
+
+.overview-inspector-drawer-head span {
+  color: #777f84;
+  font-size: 7px;
+  letter-spacing: .08em;
+}
+
+.overview-inspector-drawer-head strong {
+  margin-top: 2px;
+  color: #d8dbdc;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.overview-inspector-close {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: #858d91;
+  font-size: 17px;
+}
+
+.overview-inspector-close:hover {
+  color: #ededed;
+  background: #353535;
+}
+
+.overview-inspector-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px;
+}
+
+.overview-inspector-panel[hidden] {
+  display: none !important;
+}
+
+body.site3d-overview-active .overview-inspector-panel .inspector-section {
+  padding: 10px;
+  border: 1px solid #3d3d3d;
+  border-radius: 2px;
+  margin-bottom: 7px;
+  background: #303030;
+}
+
+body.site3d-overview-active .overview-inspector-panel .inspector-section:last-child {
+  margin-bottom: 0;
+}
+
+body.site3d-overview-active .overview-inspector-panel .section-title {
+  margin-bottom: 8px;
+  font-size: 8px;
+}
+
+body.site3d-overview-active .overview-inspector-panel > .panel {
+  padding: 9px;
+  border-radius: 2px;
+}
+
+body.site3d-overview-active .overview-inspector-panel .panel-head {
+  margin-bottom: 8px;
+}
+
+body.site3d-overview-active .overview-inspector-panel .panel-head h2 {
+  font-size: 11px;
+}
+
+body.site3d-overview-active .overview-inspector-panel .pipeline {
+  grid-template-columns: minmax(0,1fr) !important;
+  gap: 5px;
+}
+
+body.site3d-overview-active .overview-inspector-panel .pipeline-node {
+  min-height: 62px;
+}
+
+body.site3d-overview-active .overview-inspector-panel > .two-col {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) !important;
+  gap: 7px;
+}
+
+body.site3d-overview-active .overview-inspector-panel > .two-col > .panel {
+  padding: 9px;
+}
+
+body.site3d-overview-active .overview-inspector-panel .ai-grid {
+  grid-template-columns: minmax(0,1fr) 92px;
+  gap: 8px;
+}
+
+body.site3d-overview-active .overview-inspector-panel .gauge-ring {
+  width: 82px;
+}
+
+body.site3d-overview-active .overview-inspector-panel .gauge-ring::after {
+  width: 64px;
+  height: 64px;
+}
+
+body.site3d-overview-active .overview-inspector-panel .domain-big strong {
+  font-size: 18px;
+}
+
+body.site3d-overview-active .overview-inspector-panel .micro-grid {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+}
+
+body.site3d-overview-active .overview-inspector-panel .spark-grid {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 6px;
+}
+
+body.site3d-overview-active .overview-inspector-panel .spark-card svg {
+  height: 66px;
+}
+
+body:not(.site3d-overview-active) .overview-inspector-tabs,
+body:not(.site3d-overview-active) .overview-inspector-drawer {
+  display: none !important;
+}
+
+@media (max-width: 1050px) {
+  body.site3d-overview-active .workspace-grid {
+    grid-template-columns: 42px minmax(0,1fr) 66px !important;
+  }
+
+  body.site3d-overview-active .overview-inspector-tab,
+  body.site3d-overview-active .health-insight-rail.overview-inspector-mode > .editor-header {
+    width: 66px;
+  }
+
+  body.site3d-overview-active .overview-inspector-drawer {
+    right: 66px;
+    width: min(360px, 42vw);
+    min-width: 300px;
+  }
+}

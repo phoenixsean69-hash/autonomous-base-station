@@ -195,17 +195,29 @@
 .site3d-legend i.power { background: #b97831; }
 .site3d-legend i.data { background: #4a8995; }
 
+/* ABS WEBGL CONTEXT OWNERSHIP FIX V8
+   The Three.js canvas is the only digital-twin visual source.
+   Never substitute the old static compound PNG if WebGL fails. */
 .site3d-fallback {
   position: absolute;
   inset: 0;
   display: none;
-  background:
-    center / cover no-repeat
-    url("/assets/base-station-compound-reference.png");
+  place-items: center;
+  padding: 24px;
+  background: #16191b;
+  color: #aeb5b8;
+  font-size: 11px;
+  text-align: center;
+}
+
+.site3d-fallback::after {
+  content: "3D renderer unavailable — WebGL failed to start. Check the browser console.";
+  max-width: 420px;
+  line-height: 1.5;
 }
 
 .site3d-shell.webgl-failed .site3d-fallback {
-  display: block;
+  display: grid;
 }
 
 .site3d-shell.webgl-failed canvas {
@@ -892,4 +904,320 @@ body.site3d-overview-active .page-stack {
 .site3d-info.abs-hud-collapsed {
   height: auto !important;
   min-height: 0 !important;
+}
+
+/* ==========================================================================
+   ABS SITE 3D — NOC VIEWPORT NAVIGATION V9
+   ========================================================================== */
+
+.site3d-nav-toolbar {
+  flex-wrap: nowrap;
+}
+
+.site3d-nav-toolbar .site3d-nav-mode {
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 7px;
+  border: 1px solid #3d4245;
+  border-radius: 2px;
+  color: #899296;
+  background: #222527;
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: .08em;
+}
+
+.site3d-nav-toolbar .site3d-nav-mode i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #58a7b5;
+  box-shadow: 0 0 7px rgba(88,167,181,.72);
+}
+
+.site3d-nav-toolbar [data-site3d-nav] {
+  min-width: 32px;
+  font-size: 7px;
+  letter-spacing: .05em;
+}
+
+.site3d-nav-hud {
+  position: absolute;
+  right: 10px;
+  bottom: 36px;
+  width: 254px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 2px;
+  color: #c9ced0;
+  background: rgba(19,22,24,.88);
+  backdrop-filter: blur(5px);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.site3d-nav-hud-head,
+.site3d-nav-readout {
+  min-height: 25px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border-bottom: 1px solid rgba(255,255,255,.055);
+}
+
+.site3d-nav-hud-head span,
+.site3d-nav-readout span {
+  color: #747e83;
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: .07em;
+}
+
+.site3d-nav-hud-head strong {
+  color: #83b8c2;
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: .06em;
+}
+
+.site3d-nav-readout strong {
+  color: #cbd0d2;
+  font-size: 7px;
+  font-weight: 500;
+}
+
+.site3d-nav-compass {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  margin: 8px auto 6px;
+  border: 1px solid rgba(88,167,181,.35);
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 49%,
+      rgba(88,167,181,.16) 50%,
+      transparent 51%
+    ),
+    linear-gradient(
+      transparent 49%,
+      rgba(88,167,181,.16) 50%,
+      transparent 51%
+    );
+}
+
+.site3d-nav-compass span {
+  position: absolute;
+  color: #7f8b90;
+  font-size: 6px;
+  font-weight: 600;
+}
+
+.site3d-nav-compass span:nth-child(1) {
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #86bac4;
+}
+
+.site3d-nav-compass span:nth-child(2) {
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.site3d-nav-compass span:nth-child(3) {
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.site3d-nav-compass span:nth-child(4) {
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.site3d-nav-compass i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 21px;
+  transform-origin: 50% 88%;
+  background: #58a7b5;
+  box-shadow: 0 0 7px rgba(88,167,181,.7);
+}
+
+.site3d-nav-compass i::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-bottom: 5px solid #58a7b5;
+}
+
+.site3d-nav-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: 6px 8px 7px;
+  border-top: 1px solid rgba(255,255,255,.05);
+  color: #687277;
+  font-size: 6px;
+  line-height: 1.4;
+}
+
+.site3d-stage canvas {
+  outline: none;
+}
+
+.site3d-stage canvas:focus {
+  box-shadow:
+    inset 0 0 0 1px rgba(88,167,181,.18);
+}
+
+@media (max-width: 980px) {
+  .site3d-nav-toolbar .site3d-nav-mode {
+    display: none;
+  }
+
+  .site3d-nav-hud {
+    width: 220px;
+  }
+}
+
+/* ==========================================================================
+   ABS SITE 3D — REACTIVE BACKHAUL LINK V10
+   ========================================================================== */
+
+.site3d-info[data-link-selected="true"] {
+  border-color: rgba(88,167,181,.34) !important;
+  box-shadow:
+    0 0 0 1px rgba(88,167,181,.08),
+    0 12px 28px rgba(0,0,0,.28) !important;
+}
+
+.site3d-info[data-link-selected="true"]
+  .site3d-info-icon {
+  color: #6fb4c0 !important;
+}
+
+.site3d-info[data-link-selected="true"]
+  .site3d-info-role {
+  color: #91a0a6 !important;
+}
+
+/* ABS NOC NAV TAB STYLING V10.1 */
+
+.site3d-nav-toolbar {
+  height: 100%;
+  align-items: stretch !important;
+  gap: 0 !important;
+}
+
+.site3d-nav-toolbar .site3d-nav-mode {
+  height: 31px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 0 12px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #8f979b !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  letter-spacing: .06em !important;
+}
+
+.site3d-nav-toolbar .site3d-nav-mode i {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #6f8e98 !important;
+  box-shadow: none !important;
+}
+
+.site3d-nav-toolbar [data-site3d-nav],
+.site3d-nav-toolbar [data-site3d-action="reset"] {
+  height: 31px !important;
+  min-width: 58px !important;
+  padding: 0 14px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #9d9d9d !important;
+  font-size: 10px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  box-shadow: none !important;
+}
+
+.site3d-nav-toolbar [data-site3d-nav]:hover,
+.site3d-nav-toolbar [data-site3d-action="reset"]:hover {
+  color: #e2e2e2 !important;
+  background: #303030 !important;
+}
+
+.site3d-nav-toolbar [data-site3d-nav].active {
+  color: #f0f0f0 !important;
+  background: #363636 !important;
+  box-shadow: inset 0 -2px 0 #707f88 !important;
+}
+
+.site3d-nav-toolbar [data-site3d-action="reset"]:active {
+  color: #f0f0f0 !important;
+  background: #363636 !important;
+}
+
+/* ABS OVERVIEW CLEAN VIEWPORT V11.1 */
+
+body.site3d-overview-active .site3d-status.abs-hud-collapsed {
+  width: 210px !important;
+  min-width: 210px !important;
+}
+
+body.site3d-overview-active .site3d-status.abs-hud-collapsed .abs-site-status-head {
+  border-bottom: 0 !important;
+}
+
+body.site3d-overview-active .site3d-nav-mode {
+  cursor: pointer;
+  user-select: none;
+}
+
+body.site3d-overview-active .site3d-nav-mode.active {
+  color: #d8dcde !important;
+  background: #303030 !important;
+}
+
+body.site3d-overview-active .site3d-nav-hud {
+  pointer-events: auto !important;
+  transition: opacity .14s ease, transform .14s ease;
+}
+
+body.site3d-overview-active .site3d-nav-hud.abs-noc-hud-collapsed {
+  opacity: 0 !important;
+  transform: translateY(8px);
+  pointer-events: none !important;
+}
+
+body.site3d-overview-active .site3d-legend {
+  opacity: .62;
+  transition: opacity .14s ease;
+}
+
+body.site3d-overview-active .site3d-legend:hover {
+  opacity: 1;
 }

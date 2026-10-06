@@ -457,6 +457,12 @@ const TWIN_V7_INFO = {
     icon: "settings_input_antenna",
     role: "Receives BTS traffic and telemetry at the main autonomous base station",
   },
+  backhaulLink: {
+    title: "BTS ↔ ABS Backhaul Link",
+    type: "Live transport path",
+    icon: "settings_ethernet",
+    role: "Interactive inter-station transport link. Visual state follows physical reachability, latency, packet loss, input source and AI upstream-fault evidence.",
+  },
   mainControl: {
     title: "Main ESP32 Control Cabinet",
     type: "Main station controller",
@@ -523,6 +529,22 @@ function twinV7Rows(component) {
       ["Packet loss", `${Number(t.packet_loss_pct ?? 0).toFixed(2)}%`],
       ["Physical link", t.physical_link_up === true ? "UP" : "DOWN / UNKNOWN"],
     ],
+    backhaulLink: (() => {
+      const health = backhaulLinkCondition(s);
+      return [
+        ["Visual state", health.status.toUpperCase()],
+        ["Condition", health.reason],
+        ["Backhaul", health.backhaul],
+        ["Physical link", health.physicalUp === true ? "UP" : health.physicalUp === false ? "DOWN" : "UNKNOWN"],
+        ["Upstream", health.upstreamReachable === true ? "REACHABLE" : health.upstreamReachable === false ? "DOWN" : "UNKNOWN"],
+        ["Input source", health.source || "—"],
+        ["Latency", Number.isFinite(health.latencyMs) ? `${health.latencyMs.toFixed(1)} ms` : "—"],
+        ["Packet loss", Number.isFinite(health.packetLossPct) ? `${health.packetLossPct.toFixed(2)}%` : "—"],
+        ["Traffic", `${Number(t.traffic_load_pct ?? 0).toFixed(1)}%`],
+        ["AI fault domain", health.faultDomain],
+        ["Upstream cause", health.upstreamCause ? health.upstreamCause.replaceAll("_", " ") : "NOT APPLICABLE"],
+      ];
+    })(),
     mainControl: [
       ["ESP32 endpoint", ":4001"],
       ["Telemetry", s.meta?.telemetryStatus ?? "—"],
@@ -625,6 +647,82 @@ function twinStatus(name, state) {
   }
 
   return "idle";
+}
+
+function backhaulLinkCondition(state) {
+  // Visualization-only health synthesis. This does NOT change the control loop,
+  // AI result, Pico decision or ESP32 guardrails.
+  const t = state?.telemetry ?? {};
+  const ai = state?.ai ?? {};
+
+  const backhaul = String(t.backhaul_status ?? "UNKNOWN").toUpperCase();
+  const source = String(t.network_input_source ?? "").toUpperCase();
+  const faultDomain = String(ai?.fault_domain?.label ?? "WAITING").toUpperCase();
+  const upstreamCause = String(ai?.root_cause?.upstream?.label ?? "").toUpperCase();
+
+  const latencyMs = Number(t.latency_ms);
+  const packetLossPct = Number(t.packet_loss_pct);
+  const physicalUp = t.physical_link_up;
+  const upstreamReachable = t.upstream_reachable;
+
+  let status = twinStatus("backhaul", state);
+  let reason = "LINK HEALTHY";
+
+  if (physicalUp === false) {
+    status = "down";
+    reason = "PHYSICAL LINK DOWN";
+  }
+  else if (upstreamReachable === false) {
+    status = "down";
+    reason = "UPSTREAM UNREACHABLE";
+  }
+  else if (backhaul === "CRITICAL") {
+    status = "down";
+    reason = "BACKHAUL CRITICAL";
+  }
+  else if (Number.isFinite(packetLossPct) && packetLossPct >= 8) {
+    status = "down";
+    reason = `SEVERE PACKET LOSS ${packetLossPct.toFixed(1)}%`;
+  }
+  else if (Number.isFinite(latencyMs) && latencyMs >= 180) {
+    status = "down";
+    reason = `SEVERE LATENCY ${latencyMs.toFixed(0)} ms`;
+  }
+  else if (backhaul === "DEGRADED") {
+    status = "warn";
+    reason = "BACKHAUL DEGRADED";
+  }
+  else if (Number.isFinite(packetLossPct) && packetLossPct >= 2) {
+    status = "warn";
+    reason = `ELEVATED PACKET LOSS ${packetLossPct.toFixed(1)}%`;
+  }
+  else if (Number.isFinite(latencyMs) && latencyMs >= 80) {
+    status = "warn";
+    reason = `HIGH LATENCY ${latencyMs.toFixed(0)} ms`;
+  }
+  else if (faultDomain === "UPSTREAM" || faultDomain === "MIXED") {
+    status = "warn";
+    reason = upstreamCause
+      ? `AI ${faultDomain}: ${upstreamCause.replaceAll("_", " ")}`
+      : `AI ${faultDomain} FAULT DOMAIN`;
+  }
+  else if (source && source !== "BTS_BACKHAUL") {
+    status = "warn";
+    reason = `INPUT SOURCE ${source}`;
+  }
+
+  return {
+    status,
+    reason,
+    backhaul,
+    source,
+    faultDomain,
+    upstreamCause,
+    latencyMs,
+    packetLossPct,
+    physicalUp,
+    upstreamReachable,
+  };
 }
 
 function twinColor(status, kind = "data") {
@@ -935,14 +1033,30 @@ function curveSlice(curve, a, b, steps = 18) {
   return new THREE.CatmullRomCurve3(pts);
 }
 
-function buildLiveTwinLink(root, points, kind, statusKey, radius = 0.045) {
-  const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)));
+// ABS SITE 3D — REACTIVE BACKHAUL LINK V10
+function buildLiveTwinLink(
+  root,
+  points,
+  kind,
+  statusKey,
+  radius = 0.045,
+  component = null,
+) {
+  const curve = new THREE.CatmullRomCurve3(
+    points.map((p) => new THREE.Vector3(...p)),
+  );
   const base = kind === "power" ? COLORS.amberGlow : COLORS.tealGlow;
+
+  const group = new THREE.Group();
+  group.userData.linkKind = kind;
+  group.userData.statusKey = statusKey;
+  if (component) group.userData.component = component;
+  root.add(group);
 
   const intervals = [[0, 0.42], [0.42, 0.58], [0.58, 1]];
   const segments = intervals.map(([a, b]) => {
     const mesh = new THREE.Mesh(
-      new THREE.TubeGeometry(curveSlice(curve, a, b), 22, radius, 8, false),
+      new THREE.TubeGeometry(curveSlice(curve, a, b), 28, radius, 9, false),
       mat(base, {
         emissive: base,
         emissiveIntensity: 0.55,
@@ -950,14 +1064,36 @@ function buildLiveTwinLink(root, points, kind, statusKey, radius = 0.045) {
         roughness: 0.32,
       }),
     );
-    root.add(mesh);
+    mesh.material.transparent = true;
+    mesh.material.opacity = 1;
+    group.add(mesh);
     return mesh;
   });
+
+  // Wide, transparent raycast target so the backhaul link behaves like a real
+  // selectable NOC object instead of requiring pixel-perfect clicking.
+  const hitMesh = new THREE.Mesh(
+    new THREE.TubeGeometry(
+      curve,
+      42,
+      Math.max(radius * 5.0, 0.17),
+      7,
+      false,
+    ),
+    new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.001,
+      depthWrite: false,
+    }),
+  );
+  if (component) hitMesh.userData.component = component;
+  group.add(hitMesh);
 
   const pulses = [];
   for (let i = 0; i < 3; i += 1) {
     const p = new THREE.Mesh(
-      new THREE.SphereGeometry(radius * 1.55, 10, 10),
+      new THREE.SphereGeometry(radius * 1.75, 11, 11),
       mat(base, {
         emissive: base,
         emissiveIntensity: 1.0,
@@ -965,7 +1101,7 @@ function buildLiveTwinLink(root, points, kind, statusKey, radius = 0.045) {
         roughness: 0.2,
       }),
     );
-    root.add(p);
+    group.add(p);
     pulses.push({
       mesh: p,
       curve,
@@ -974,37 +1110,176 @@ function buildLiveTwinLink(root, points, kind, statusKey, radius = 0.045) {
     });
   }
 
-  return { kind, statusKey, curve, segments, pulses, status: "idle" };
+  let statusLabel = null;
+
+  if (component === "backhaulLink") {
+    const canvas = document.createElement("canvas");
+    canvas.width = 720;
+    canvas.height = 110;
+
+    const ctx = canvas.getContext("2d");
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: true,
+        depthWrite: false,
+      }),
+    );
+
+    const midpoint = curve.getPointAt(0.50);
+    sprite.position.copy(midpoint);
+    sprite.position.y += 0.95;
+    sprite.scale.set(6.2, 0.95, 1);
+    sprite.userData.component = component;
+    group.add(sprite);
+
+    statusLabel = {
+      canvas,
+      ctx,
+      texture,
+      sprite,
+      lastText: "",
+      lastStatus: "",
+    };
+  }
+
+  return {
+    kind,
+    statusKey,
+    curve,
+    segments,
+    pulses,
+    group,
+    hitMesh,
+    component,
+    statusLabel,
+    status: "idle",
+  };
 }
 
-function setLiveTwinLink(link, status) {
-  if (!link || link.status === status) return;
+function updateBackhaulLinkLabel(link, health) {
+  const label = link?.statusLabel;
+  if (!label) return;
+
+  const latency = Number.isFinite(health.latencyMs)
+    ? `${health.latencyMs.toFixed(1)} ms`
+    : "— ms";
+  const loss = Number.isFinite(health.packetLossPct)
+    ? `${health.packetLossPct.toFixed(2)}% loss`
+    : "— loss";
+
+  const text = `BACKHAUL · ${health.status.toUpperCase()} · ${latency} · ${loss}`;
+  if (label.lastText === text && label.lastStatus === health.status) return;
+
+  label.lastText = text;
+  label.lastStatus = health.status;
+
+  const statusColor = health.status === "down"
+    ? "#d86b5f"
+    : health.status === "warn"
+      ? "#d3a35b"
+      : "#73b7c2";
+
+  const { canvas, ctx, texture } = label;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgba(19,22,24,.92)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = statusColor;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+
+  ctx.fillStyle = statusColor;
+  ctx.beginPath();
+  ctx.arc(34, canvas.height / 2, 9, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#d9dddf";
+  ctx.font = "600 24px Arial, sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, 58, canvas.height / 2 - 12);
+
+  ctx.fillStyle = "#8b969b";
+  ctx.font = "500 18px Arial, sans-serif";
+  ctx.fillText(health.reason, 58, canvas.height / 2 + 20);
+
+  texture.needsUpdate = true;
+}
+
+function setLiveTwinLink(link, status, state = null) {
+  if (!link) return;
+
   link.status = status;
 
   const color = twinColor(status, link.kind);
   const emissive = status !== "idle";
+  const hovered = Boolean(link.group?.userData?.hovered);
 
   link.segments.forEach((mesh, index) => {
     setMaterialColor(mesh.material, color, emissive);
-    mesh.material.emissiveIntensity = status === "good" ? 0.60 : status === "warn" ? 0.34 : 0.20;
+    mesh.material.emissiveIntensity =
+      (status === "good" ? 0.68 : status === "warn" ? 0.46 : 0.28) +
+      (hovered ? 0.28 : 0);
+    mesh.material.opacity = status === "good"
+      ? 1
+      : status === "warn"
+        ? 0.82
+        : status === "down"
+          ? 0.78
+          : 0.48;
     mesh.visible = !(status === "down" && index === 1);
   });
 
-  link.pulses.forEach((pulse) => {
-    setMaterialColor(pulse.mesh.material, color, status === "good");
-    pulse.mesh.visible = status === "good";
+  const t = state?.telemetry ?? {};
+  const traffic = THREE.MathUtils.clamp(
+    Number(t.traffic_load_pct ?? 0) / 100,
+    0,
+    1,
+  );
+
+  const loss = Math.max(0, Number(t.packet_loss_pct ?? 0));
+  let pulseSpeed = 0.055 + traffic * 0.17;
+  if (status === "warn") pulseSpeed *= 0.62;
+  if (status === "down" || status === "idle") pulseSpeed = 0;
+
+  const visibleWarnPulses = loss >= 5 ? 1 : loss >= 2 ? 2 : 3;
+
+  link.pulses.forEach((pulse, index) => {
+    setMaterialColor(
+      pulse.mesh.material,
+      color,
+      status === "good" || status === "warn",
+    );
+    pulse.mesh.material.emissiveIntensity = hovered ? 1.35 : 1.0;
+    pulse.speed = pulseSpeed * (1 + index * 0.035);
+    pulse.mesh.visible =
+      status === "good" ||
+      (status === "warn" && index < visibleWarnPulses);
   });
+
+  if (link.component === "backhaulLink") {
+    updateBackhaulLinkLabel(link, backhaulLinkCondition(state));
+  }
 }
 
 function updateTwinV7(live, state) {
   const t = state?.telemetry ?? {};
   const activeSource = String(t.active_power_source ?? "").toUpperCase();
+  const backhaulHealth = backhaulLinkCondition(state);
 
   for (const link of live.links) {
     let status = "idle";
 
     if (link.statusKey === "radio") status = twinStatus("radio", state);
-    if (link.statusKey === "backhaul") status = twinStatus("backhaul", state);
+    if (link.statusKey === "backhaul") {
+      status = link.component === "backhaulLink"
+        ? backhaulHealth.status
+        : twinStatus("backhaul", state);
+    }
     if (link.statusKey === "telemetry") status = twinStatus("telemetry", state);
     if (link.statusKey === "ai") status = twinStatus("ai", state);
     if (link.statusKey === "dual") status = twinStatus("dual", state);
@@ -1034,7 +1309,7 @@ function updateTwinV7(live, state) {
             : "idle";
     }
 
-    setLiveTwinLink(link, status);
+    setLiveTwinLink(link, status, state);
   }
 
   setTwinBeacon(live.groups.btsRadio, twinStatus("radio", state));
@@ -1056,7 +1331,7 @@ function updateTwinV7(live, state) {
    Increases physical separation between the mountain BTS and main site.
    ========================================================================== */
 
-const ABS_BTS_SITE_SHIFT_X = -3.2;
+const ABS_BTS_SITE_SHIFT_X = -6.0;
 
 /* ==========================================================================
    ABS SITE 3D — BTS MOUNTAIN SITE V8
@@ -1238,7 +1513,8 @@ function buildSite(state) {
       [[-1.9 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 1.48,-1.55],[-0.85 + ABS_BTS_SITE_SHIFT_X,BTS_Y + 1.05,-1.55],[-2.2,BTS_Y * 0.55 + 1.55,-1.55],[0.2,2.0,-1.55],[1.9,1.48,-1.55]],
       "data",
       "backhaul",
-      0.032,
+      0.052,
+      "backhaulLink",
     ),
 
     // Main telemetry path.
@@ -1342,6 +1618,14 @@ function destroy() {
   view.renderer?.dispose();
   view.renderer?.forceContextLoss?.();
 
+  for (const cleanup of view.cleanupFns ?? []) {
+    try {
+      cleanup();
+    } catch {
+      // Best-effort viewport input cleanup.
+    }
+  }
+
   view.shell?.remove();
   document.body.classList.remove("site3d-overview-active");
   view = null;
@@ -1417,6 +1701,7 @@ function renderComponentInfo(shell, component) {
 
   panel.hidden = false;
   shell.dataset.selectedComponent = component;
+  panel.dataset.linkSelected = component === "backhaulLink" ? "true" : "false";
 
   panel.querySelector("[data-site3d-info-title]").textContent = def.title;
   panel.querySelector("[data-site3d-info-type]").textContent = def.type;
@@ -1435,7 +1720,10 @@ function renderComponentInfo(shell, component) {
 
 function hideComponentInfo(shell) {
   const panel = shell.querySelector("[data-site3d-info]");
-  if (panel) panel.hidden = true;
+  if (panel) {
+    panel.hidden = true;
+    delete panel.dataset.linkSelected;
+  }
   delete shell.dataset.selectedComponent;
 }
 
@@ -1529,8 +1817,17 @@ function mount() {
         <strong>Complete Base Station · 3D Site</strong>
         <span>interconnected power + telecom plant</span>
       </div>
-      <div class="site3d-toolbar-actions">
-        <button type="button" data-site3d-action="reset">Reset View</button>
+      <div class="site3d-toolbar-actions site3d-nav-toolbar">
+        <span class="site3d-nav-mode">
+          <i></i>
+          NOC NAV
+        </span>
+        <button type="button" data-site3d-nav="all" title="Full site · shortcut 0">ALL</button>
+        <button type="button" data-site3d-nav="bts" title="BTS-001 · shortcut 1">BTS</button>
+        <button type="button" data-site3d-nav="main" title="Autonomous base station · shortcut 2">ABS</button>
+        <button type="button" data-site3d-nav="link" title="Backhaul corridor · shortcut 3">LINK</button>
+        <button type="button" data-site3d-nav="top" title="Top engineering view · shortcut T">TOP</button>
+        <button type="button" data-site3d-action="reset" title="Reset full-site view">RESET</button>
       </div>
     </div>
 
@@ -1573,6 +1870,39 @@ function mount() {
           <small>Tap empty space to close</small>
         </div>
 
+        <div class="site3d-nav-hud" data-site3d-nav-hud>
+          <div class="site3d-nav-hud-head">
+            <span>VIEWPORT / NOC-3D</span>
+            <strong data-site3d-nav-focus>ALL SITE</strong>
+          </div>
+          <div class="site3d-nav-readout">
+            <span>CAM</span>
+            <strong data-site3d-nav-camera>X 0.0 · Y 0.0 · Z 0.0</strong>
+          </div>
+          <div class="site3d-nav-readout">
+            <span>TGT</span>
+            <strong data-site3d-nav-target>X 0.0 · Y 0.0 · Z 0.0</strong>
+          </div>
+          <div class="site3d-nav-readout">
+            <span>AZ / RNG</span>
+            <strong data-site3d-nav-range>000° · 0.0 m</strong>
+          </div>
+          <div class="site3d-nav-compass">
+            <span>N</span>
+            <span>E</span>
+            <span>S</span>
+            <span>W</span>
+            <i data-site3d-nav-needle></i>
+          </div>
+          <div class="site3d-nav-keys">
+            <span>WASD translate</span>
+            <span>Q/E elevation</span>
+            <span>Shift boost</span>
+            <span>F focus selected</span>
+            <span>LMB orbit · RMB pan · wheel dolly</span>
+          </div>
+        </div>
+
         <div class="site3d-legend">
           <span><i class="power"></i>Power path</span>
           <span><i class="data"></i>Telecom / backhaul</span>
@@ -1597,7 +1927,13 @@ function mount() {
       powerPreference: "high-performance",
     });
   } catch (error) {
+    console.error(
+      "[ABS SITE 3D] WebGLRenderer creation failed",
+      error,
+    );
     shell.classList.add("webgl-failed");
+    shell.dataset.webglError =
+      String(error?.message ?? error ?? "unknown");
     updateHud(shell);
     return;
   }
@@ -1606,7 +1942,7 @@ function mount() {
   const { scene, pulses, live } = buildSite(state);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  const start = new THREE.Vector3(20.6, 14.4, 22.6);
+  const start = new THREE.Vector3(24.5, 15.8, 27.0);
   camera.position.copy(start);
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
@@ -1618,9 +1954,492 @@ function mount() {
   controls.enableDamping = true;
   controls.dampingFactor = 0.06;
   controls.enablePan = true;
-  controls.minDistance = 10;
-  controls.maxDistance = 34;
-  controls.target.set(-0.8, 2.2, 0);
+  controls.enableRotate = true;
+  controls.enableZoom = true;
+  controls.rotateSpeed = 0.62;
+  controls.zoomSpeed = 0.85;
+  controls.panSpeed = 0.72;
+  controls.minDistance = 4.5;
+  controls.maxDistance = 44;
+  controls.target.set(-3.0, 2.2, 0);
+
+  // ABS SITE 3D — NOC VIEWPORT NAVIGATION V9
+  // Network-operations-style viewport navigation without adding dependencies.
+  // Existing OrbitControls remains authoritative for mouse navigation.
+  const navCleanupFns = [];
+  const navKeys = new Set();
+  const navTmpForward = new THREE.Vector3();
+  const navTmpRight = new THREE.Vector3();
+  const navTmpMove = new THREE.Vector3();
+  const navWorldUp = new THREE.Vector3(0, 1, 0);
+
+  let navFocusLabel = "ALL SITE";
+  let navLastFrameMs = performance.now();
+  let navTween = null;
+
+  canvas.tabIndex = 0;
+  canvas.setAttribute(
+    "aria-label",
+    "Interactive network base station 3D viewport. Click viewport then use WASD, Q/E, Shift, 0-3, T and F.",
+  );
+
+  const navPresets = {
+    all: {
+      label: "ALL SITE",
+      position: new THREE.Vector3(24.5, 15.8, 27.0),
+      target: new THREE.Vector3(-3.0, 2.2, 0),
+    },
+    bts: {
+      label: "BTS-001",
+      position: new THREE.Vector3(-0.2, 11.2, 15.8),
+      target: new THREE.Vector3(-10.6, 4.25, 0),
+    },
+    main: {
+      label: "AUTONOMOUS BS",
+      position: new THREE.Vector3(14.8, 8.3, 12.4),
+      target: new THREE.Vector3(4.6, 1.45, 0),
+    },
+    link: {
+      label: "BACKHAUL LINK",
+      position: new THREE.Vector3(10.4, 10.8, 19.0),
+      target: new THREE.Vector3(-3.0, 2.75, -1.55),
+    },
+    top: {
+      label: "TOP PLAN",
+      position: new THREE.Vector3(-3.0, 32.0, 0.01),
+      target: new THREE.Vector3(-3.0, 1.7, 0),
+    },
+  };
+
+  function navSmoothStep(value) {
+    const x = Math.max(0, Math.min(1, value));
+    return x * x * (3 - 2 * x);
+  }
+
+  function navFlyTo(position, target, label, durationMs = 620) {
+    navFocusLabel = label;
+    navTween = {
+      startedMs: performance.now(),
+      durationMs,
+      fromPosition: camera.position.clone(),
+      fromTarget: controls.target.clone(),
+      toPosition: position.clone(),
+      toTarget: target.clone(),
+    };
+  }
+
+  // ABS NOC NAV TAB STYLING V10.1
+  function navSetActivePreset(name) {
+    for (
+      const button of
+      shell.querySelectorAll(
+        "[data-site3d-nav]",
+      )
+    ) {
+      button.classList.toggle(
+        "active",
+        button.dataset.site3dNav === name,
+      );
+    }
+  }
+
+  function navGoPreset(name) {
+    const preset = navPresets[name];
+    if (!preset) return;
+
+    navSetActivePreset(name);
+
+    navFlyTo(
+      preset.position,
+      preset.target,
+      preset.label,
+    );
+  }
+
+  function navFocusSelected() {
+    if (!selectedGroup) return;
+
+    const bounds =
+      new THREE.Box3().setFromObject(selectedGroup);
+
+    if (bounds.isEmpty()) return;
+
+    const center =
+      bounds.getCenter(new THREE.Vector3());
+
+    const size =
+      bounds.getSize(new THREE.Vector3());
+
+    const radius =
+      Math.max(
+        1.8,
+        size.length() * 0.62,
+      );
+
+    const currentDirection =
+      camera.position
+        .clone()
+        .sub(controls.target)
+        .normalize();
+
+    const position =
+      center
+        .clone()
+        .addScaledVector(
+          currentDirection,
+          Math.max(5.5, radius * 2.5),
+        );
+
+    position.y =
+      Math.max(
+        center.y + 2.0,
+        position.y,
+      );
+
+    navFlyTo(
+      position,
+      center,
+      String(
+        selectedGroup.userData?.component ??
+        "SELECTED",
+      )
+        .replaceAll("_", " ")
+        .toUpperCase(),
+      520,
+    );
+  }
+
+  function navApplyKeyboard(dt) {
+    if (!navKeys.size || navTween) {
+      return;
+    }
+
+    camera.getWorldDirection(navTmpForward);
+    navTmpForward.y = 0;
+
+    if (navTmpForward.lengthSq() < 0.0001) {
+      navTmpForward.set(0, 0, -1);
+    } else {
+      navTmpForward.normalize();
+    }
+
+    navTmpRight
+      .crossVectors(
+        navTmpForward,
+        navWorldUp,
+      )
+      .normalize();
+
+    navTmpMove.set(0, 0, 0);
+
+    if (navKeys.has("KeyW")) {
+      navTmpMove.add(navTmpForward);
+    }
+
+    if (navKeys.has("KeyS")) {
+      navTmpMove.sub(navTmpForward);
+    }
+
+    if (navKeys.has("KeyD")) {
+      navTmpMove.add(navTmpRight);
+    }
+
+    if (navKeys.has("KeyA")) {
+      navTmpMove.sub(navTmpRight);
+    }
+
+    if (navKeys.has("KeyE")) {
+      navTmpMove.y += 1;
+    }
+
+    if (navKeys.has("KeyQ")) {
+      navTmpMove.y -= 1;
+    }
+
+    if (navTmpMove.lengthSq() <= 0) {
+      return;
+    }
+
+    navTmpMove.normalize();
+
+    const range =
+      camera.position.distanceTo(
+        controls.target,
+      );
+
+    const normalSpeed =
+      THREE.MathUtils.clamp(
+        range * 0.32,
+        2.4,
+        8.0,
+      );
+
+    const boosted =
+      navKeys.has("ShiftLeft") ||
+      navKeys.has("ShiftRight");
+
+    const speed =
+      normalSpeed *
+      (boosted ? 3.0 : 1.0);
+
+    navTmpMove.multiplyScalar(
+      speed * dt,
+    );
+
+    camera.position.add(navTmpMove);
+    controls.target.add(navTmpMove);
+
+    navFocusLabel =
+      boosted
+        ? "FREE NAV · BOOST"
+        : "FREE NAV";
+
+    navSetActivePreset(null);
+  }
+
+  function navUpdateTween(nowMs) {
+    if (!navTween) return;
+
+    const elapsed =
+      nowMs - navTween.startedMs;
+
+    const alpha =
+      navSmoothStep(
+        elapsed /
+        navTween.durationMs,
+      );
+
+    camera.position.lerpVectors(
+      navTween.fromPosition,
+      navTween.toPosition,
+      alpha,
+    );
+
+    controls.target.lerpVectors(
+      navTween.fromTarget,
+      navTween.toTarget,
+      alpha,
+    );
+
+    if (alpha >= 1) {
+      navTween = null;
+    }
+  }
+
+  function navUpdateHud() {
+    const cam =
+      shell.querySelector(
+        "[data-site3d-nav-camera]",
+      );
+
+    const tgt =
+      shell.querySelector(
+        "[data-site3d-nav-target]",
+      );
+
+    const range =
+      shell.querySelector(
+        "[data-site3d-nav-range]",
+      );
+
+    const focus =
+      shell.querySelector(
+        "[data-site3d-nav-focus]",
+      );
+
+    const needle =
+      shell.querySelector(
+        "[data-site3d-nav-needle]",
+      );
+
+    if (cam) {
+      cam.textContent =
+        `X ${camera.position.x.toFixed(1)} · ` +
+        `Y ${camera.position.y.toFixed(1)} · ` +
+        `Z ${camera.position.z.toFixed(1)}`;
+    }
+
+    if (tgt) {
+      tgt.textContent =
+        `X ${controls.target.x.toFixed(1)} · ` +
+        `Y ${controls.target.y.toFixed(1)} · ` +
+        `Z ${controls.target.z.toFixed(1)}`;
+    }
+
+    const dx =
+      controls.target.x -
+      camera.position.x;
+
+    const dz =
+      controls.target.z -
+      camera.position.z;
+
+    const azimuth =
+      (
+        THREE.MathUtils.radToDeg(
+          Math.atan2(dx, -dz),
+        ) +
+        360
+      ) % 360;
+
+    if (range) {
+      range.textContent =
+        `${String(Math.round(azimuth)).padStart(3, "0")}° · ` +
+        `${camera.position.distanceTo(controls.target).toFixed(1)} m`;
+    }
+
+    if (focus) {
+      focus.textContent =
+        navFocusLabel;
+    }
+
+    if (needle) {
+      needle.style.transform =
+        `translate(-50%, -88%) rotate(${azimuth}deg)`;
+    }
+  }
+
+  function navOnKeyDown(event) {
+    const navigationCodes = new Set([
+      "KeyW",
+      "KeyA",
+      "KeyS",
+      "KeyD",
+      "KeyQ",
+      "KeyE",
+      "ShiftLeft",
+      "ShiftRight",
+    ]);
+
+    if (navigationCodes.has(event.code)) {
+      navKeys.add(event.code);
+      event.preventDefault();
+      return;
+    }
+
+    if (event.repeat) return;
+
+    if (event.code === "Digit0") {
+      navGoPreset("all");
+      event.preventDefault();
+    }
+    else if (event.code === "Digit1") {
+      navGoPreset("bts");
+      event.preventDefault();
+    }
+    else if (event.code === "Digit2") {
+      navGoPreset("main");
+      event.preventDefault();
+    }
+    else if (event.code === "Digit3") {
+      navGoPreset("link");
+      event.preventDefault();
+    }
+    else if (event.code === "KeyT") {
+      navGoPreset("top");
+      event.preventDefault();
+    }
+    else if (event.code === "KeyF") {
+      navFocusSelected();
+      event.preventDefault();
+    }
+    else if (event.code === "Escape") {
+      clearSelection();
+      navFocusLabel = "ALL SITE";
+    }
+  }
+
+  function navOnKeyUp(event) {
+    navKeys.delete(event.code);
+  }
+
+  function navOnBlur() {
+    navKeys.clear();
+  }
+
+  function navOnCanvasPointerDown() {
+    canvas.focus({
+      preventScroll: true,
+    });
+  }
+
+  function navOnContextMenu(event) {
+    event.preventDefault();
+  }
+
+  canvas.addEventListener(
+    "keydown",
+    navOnKeyDown,
+  );
+  canvas.addEventListener(
+    "keyup",
+    navOnKeyUp,
+  );
+  canvas.addEventListener(
+    "blur",
+    navOnBlur,
+  );
+  canvas.addEventListener(
+    "pointerdown",
+    navOnCanvasPointerDown,
+  );
+  canvas.addEventListener(
+    "contextmenu",
+    navOnContextMenu,
+  );
+
+  navCleanupFns.push(
+    () => canvas.removeEventListener(
+      "keydown",
+      navOnKeyDown,
+    ),
+    () => canvas.removeEventListener(
+      "keyup",
+      navOnKeyUp,
+    ),
+    () => canvas.removeEventListener(
+      "blur",
+      navOnBlur,
+    ),
+    () => canvas.removeEventListener(
+      "pointerdown",
+      navOnCanvasPointerDown,
+    ),
+    () => canvas.removeEventListener(
+      "contextmenu",
+      navOnContextMenu,
+    ),
+  );
+
+  navSetActivePreset("all");
+
+  for (
+    const button of
+    shell.querySelectorAll(
+      "[data-site3d-nav]",
+    )
+  ) {
+    const handler = () => {
+      navGoPreset(
+        button.dataset.site3dNav,
+      );
+      canvas.focus({
+        preventScroll: true,
+      });
+    };
+
+    button.addEventListener(
+      "click",
+      handler,
+    );
+
+    navCleanupFns.push(
+      () => button.removeEventListener(
+        "click",
+        handler,
+      ),
+    );
+  }
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -1636,6 +2455,41 @@ function mount() {
     }
     return null;
   }
+
+  const interactiveBackhaulLink = live.links.find(
+    (link) => link.component === "backhaulLink",
+  );
+
+  function setBackhaulHover(hovered) {
+    if (!interactiveBackhaulLink?.group) return;
+    interactiveBackhaulLink.group.userData.hovered = hovered;
+    setLiveTwinLink(
+      interactiveBackhaulLink,
+      interactiveBackhaulLink.status,
+      dashboardState(),
+    );
+  }
+
+  canvas.addEventListener("pointermove", (event) => {
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(scene.children, true);
+    const group = hits
+      .map((hit) => componentGroupFromObject(hit.object))
+      .find(Boolean);
+
+    const overLink = group?.userData?.component === "backhaulLink";
+    canvas.style.cursor = overLink ? "crosshair" : "default";
+    setBackhaulHover(overLink);
+  });
+
+  canvas.addEventListener("pointerleave", () => {
+    canvas.style.cursor = "default";
+    setBackhaulHover(false);
+  });
 
   function clearSelection() {
     selectedGroup = null;
@@ -1670,6 +2524,10 @@ function mount() {
     scene.add(selectionHelper);
 
     renderComponentInfo(shell, group.userData.component);
+    navFocusLabel =
+      `SELECTED · ${String(group.userData.component)
+        .replaceAll("_", " ")
+        .toUpperCase()}`;
   }
 
   canvas.addEventListener("pointerdown", (event) => {
@@ -1722,6 +2580,18 @@ function mount() {
 
   function animate() {
     const t = clock.getElapsedTime();
+    const navNowMs = performance.now();
+    const navDt = Math.min(
+      0.05,
+      Math.max(
+        0,
+        (navNowMs - navLastFrameMs) / 1000,
+      ),
+    );
+    navLastFrameMs = navNowMs;
+
+    navUpdateTween(navNowMs);
+    navApplyKeyboard(navDt);
 
     for (let i = 0; i < pulses.length; i += 1) {
       const pulse = pulses[i];
@@ -1739,6 +2609,7 @@ function mount() {
     }
 
     controls.update();
+    navUpdateHud();
     renderer.render(scene, camera);
     view.raf = requestAnimationFrame(animate);
   }
@@ -1747,9 +2618,10 @@ function mount() {
   ro.observe(stage);
 
   shell.querySelector('[data-site3d-action="reset"]')?.addEventListener("click", () => {
-    camera.position.copy(start);
-    controls.target.set(0, 1.0, 0);
-    controls.update();
+    navGoPreset("all");
+    canvas.focus({
+      preventScroll: true,
+    });
   });
 
   view = {
@@ -1758,6 +2630,7 @@ function mount() {
     renderer,
     controls,
     resizeObserver: ro,
+    cleanupFns: navCleanupFns,
     raf: 0,
   };
 
@@ -1863,4 +2736,65 @@ requestAnimationFrame(mount);
 
   window.setInterval(install, 800);
   requestAnimationFrame(install);
+})();
+
+// ABS OVERVIEW CLEAN VIEWPORT V11.1
+(() => {
+  function setCollapseButtonState(panel, collapsed) {
+    const button = panel?.querySelector("[data-abs-collapse-button]");
+    if (!button) return;
+
+    button.textContent = collapsed ? "expand_more" : "expand_less";
+    button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  }
+
+  function defaultCollapseSiteStatus() {
+    const panel = document.querySelector(".site3d-status");
+    if (!panel || panel.dataset.absDefaultCollapsed === "1") return;
+
+    panel.dataset.absDefaultCollapsed = "1";
+    panel.classList.add("abs-hud-collapsed");
+    setCollapseButtonState(panel, true);
+  }
+
+  function ensureNocHudToggle() {
+    const hud = document.querySelector(".site3d-nav-hud");
+    const trigger = document.querySelector(".site3d-nav-mode");
+
+    if (!hud || !trigger || hud.dataset.absCompactReady === "1") return;
+
+    hud.dataset.absCompactReady = "1";
+    hud.classList.add("abs-noc-hud-collapsed");
+
+    trigger.setAttribute("role", "button");
+    trigger.setAttribute("tabindex", "0");
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.title = "Show / hide NOC viewport telemetry";
+
+    function toggleHud() {
+      const collapsed = hud.classList.toggle("abs-noc-hud-collapsed");
+      trigger.classList.toggle("active", !collapsed);
+      trigger.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    }
+
+    trigger.addEventListener("click", toggleHud);
+    trigger.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleHud();
+      }
+    });
+  }
+
+  function cleanViewport() {
+    defaultCollapseSiteStatus();
+    ensureNocHudToggle();
+  }
+
+  window.addEventListener("abs-dashboard-rendered", () => {
+    requestAnimationFrame(cleanViewport);
+  });
+
+  window.setInterval(cleanViewport, 1000);
+  requestAnimationFrame(cleanViewport);
 })();

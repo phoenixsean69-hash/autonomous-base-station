@@ -250,3 +250,185 @@
 
   schedule();
 })();
+
+
+
+// ABS OVERVIEW FULLHEIGHT + INSPECTOR TABS V11
+(() => {
+  const TAB_DEFS = [
+    { id: "state", icon: "tune", label: "State", title: "Operating state" },
+    { id: "loop", icon: "account_tree", label: "Loop", title: "Closed-loop architecture" },
+    { id: "ai", icon: "neurology", label: "AI", title: "AI + Pico validation" },
+    { id: "history", icon: "monitoring", label: "History", title: "Recent movement" },
+  ];
+
+  let selectedTab = "state";
+  let drawerOpen = false;
+
+  function activeOverview() {
+    return window.ABSDashboardGetActiveTab?.() === "overview";
+  }
+
+  function panelByTitle(root, title) {
+    return [...root.querySelectorAll(".panel")].find(
+      (panel) => panel.querySelector("h2")?.textContent?.trim() === title,
+    ) ?? null;
+  }
+
+  function twoColByTitles(root, titles) {
+    return [...root.querySelectorAll(".two-col")].find((section) => {
+      const headings = [...section.querySelectorAll("h2")].map(
+        (node) => node.textContent?.trim() ?? "",
+      );
+      return titles.every((title) => headings.includes(title));
+    }) ?? null;
+  }
+
+  function applyTabState() {
+    const rail = document.querySelector(".health-insight-rail");
+    if (!rail) return;
+
+    const overview = activeOverview();
+
+    rail.classList.toggle("overview-inspector-mode", overview);
+    rail.classList.toggle(
+      "overview-inspector-drawer-open",
+      overview && drawerOpen,
+    );
+
+    for (const button of rail.querySelectorAll("[data-inspector-tab]")) {
+      const active = button.dataset.inspectorTab === selectedTab;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", active ? "true" : "false");
+    }
+
+    for (const panel of rail.querySelectorAll("[data-overview-inspector-panel]")) {
+      panel.hidden = panel.dataset.overviewInspectorPanel !== selectedTab;
+    }
+
+    const def = TAB_DEFS.find((item) => item.id === selectedTab) ?? TAB_DEFS[0];
+    const title = rail.querySelector("[data-overview-inspector-title]");
+    if (title) title.textContent = def.title;
+
+    if (!overview) drawerOpen = false;
+  }
+
+  function ensureInspectorShell() {
+    const rail = document.querySelector(".health-insight-rail");
+    if (!rail) return null;
+    if (rail.dataset.absOverviewTabsReady === "1") return rail;
+
+    const header = rail.querySelector(".editor-header");
+    const existingSections = [
+      ...rail.querySelectorAll(":scope > .inspector-section"),
+    ];
+
+    const tabs = document.createElement("div");
+    tabs.className = "overview-inspector-tabs";
+    tabs.setAttribute("role", "tablist");
+    tabs.setAttribute("aria-label", "System Inspector views");
+
+    for (const def of TAB_DEFS) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "overview-inspector-tab";
+      button.dataset.inspectorTab = def.id;
+      button.setAttribute("role", "tab");
+      button.setAttribute("aria-label", def.title);
+      button.title = def.title;
+      button.innerHTML = `
+        <span class="material-symbols-rounded">${def.icon}</span>
+        <small>${def.label}</small>
+      `;
+      tabs.appendChild(button);
+    }
+
+    const drawer = document.createElement("div");
+    drawer.className = "overview-inspector-drawer";
+    drawer.innerHTML = `
+      <div class="overview-inspector-drawer-head">
+        <div>
+          <span>SYSTEM INSPECTOR</span>
+          <strong data-overview-inspector-title>Operating state</strong>
+        </div>
+        <button type="button" class="overview-inspector-close material-symbols-rounded"
+          aria-label="Close inspector drawer" title="Close inspector drawer">close</button>
+      </div>
+      <div class="overview-inspector-panel" data-overview-inspector-panel="state"></div>
+      <div class="overview-inspector-panel" data-overview-inspector-panel="loop" hidden></div>
+      <div class="overview-inspector-panel" data-overview-inspector-panel="ai" hidden></div>
+      <div class="overview-inspector-panel" data-overview-inspector-panel="history" hidden></div>
+    `;
+
+    const statePanel = drawer.querySelector('[data-overview-inspector-panel="state"]');
+    for (const section of existingSections) statePanel?.appendChild(section);
+
+    header?.insertAdjacentElement("afterend", tabs);
+    rail.appendChild(drawer);
+
+    drawer.querySelector(".overview-inspector-close")?.addEventListener("click", () => {
+      drawerOpen = false;
+      applyTabState();
+    });
+
+    for (const button of tabs.querySelectorAll("[data-inspector-tab]")) {
+      button.addEventListener("click", () => {
+        const next = button.dataset.inspectorTab ?? "state";
+        if (next === selectedTab && drawerOpen) {
+          drawerOpen = false;
+        } else {
+          selectedTab = next;
+          drawerOpen = true;
+        }
+        applyTabState();
+      });
+    }
+
+    rail.dataset.absOverviewTabsReady = "1";
+    applyTabState();
+    return rail;
+  }
+
+  function moveOverviewSections() {
+    const rail = ensureInspectorShell();
+    const content = document.getElementById("content");
+
+    if (!rail || !content || !activeOverview()) {
+      applyTabState();
+      return;
+    }
+
+    const loopPanel = rail.querySelector('[data-overview-inspector-panel="loop"]');
+    const aiPanel = rail.querySelector('[data-overview-inspector-panel="ai"]');
+    const historyPanel = rail.querySelector('[data-overview-inspector-panel="history"]');
+
+    const loop = panelByTitle(content, "Closed-loop architecture");
+    const ai = twoColByTitles(content, ["Fault-domain inference", "Decision validation"]);
+    const history = panelByTitle(content, "Recent movement");
+
+    if (loopPanel) {
+      loopPanel.replaceChildren();
+      if (loop) loopPanel.appendChild(loop);
+    }
+
+    if (aiPanel) {
+      aiPanel.replaceChildren();
+      if (ai) aiPanel.appendChild(ai);
+    }
+
+    if (historyPanel) {
+      historyPanel.replaceChildren();
+      if (history) historyPanel.appendChild(history);
+    }
+
+    applyTabState();
+  }
+
+  function schedule() {
+    requestAnimationFrame(moveOverviewSections);
+  }
+
+  window.addEventListener("abs-dashboard-rendered", schedule);
+  ensureInspectorShell();
+  schedule();
+})();
