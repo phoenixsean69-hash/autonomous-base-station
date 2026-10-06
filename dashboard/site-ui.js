@@ -1784,93 +1784,83 @@ window.setInterval(() => {
 requestAnimationFrame(mount);
 
 
-// ABS FLOATING MODAL COLLAPSE V6
-function absAttachCollapseControl(panel, title, hideSelectors) {
-  if (!panel || panel.dataset.absCollapseV6 === "1") return;
 
-  panel.dataset.absCollapseV6 = "1";
-  panel.classList.add("abs-floating-panel-v6");
+// ABS EXACT IMAGE3 RESTORE + COLLAPSIBLE HUD V7
+(() => {
+  function addCollapseButton(panel, header, label) {
+    if (!panel || !header) return;
+    if (header.querySelector('[data-abs-collapse-button]')) return;
 
-  let header = null;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'abs-hud-collapse-button material-symbols-rounded';
+    button.dataset.absCollapseButton = '1';
+    button.setAttribute('aria-expanded', 'true');
+    button.setAttribute('aria-label', `Collapse ${label}`);
+    button.title = `Collapse ${label}`;
+    button.textContent = 'expand_less';
 
-  if (panel.classList.contains("site3d-status")) {
-    header = document.createElement("div");
-    header.className = "abs-floating-panel-head-v6";
+    button.addEventListener('pointerdown', (event) => {
+      event.stopPropagation();
+    });
 
-    const label = document.createElement("span");
-    label.textContent = title;
-    header.appendChild(label);
-    panel.prepend(header);
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const collapsed = panel.classList.toggle('abs-hud-collapsed');
+      button.textContent = collapsed ? 'expand_more' : 'expand_less';
+      button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      button.setAttribute(
+        'aria-label',
+        `${collapsed ? 'Expand' : 'Collapse'} ${label}`,
+      );
+      button.title = `${collapsed ? 'Expand' : 'Collapse'} ${label}`;
+    });
+
+    header.appendChild(button);
   }
-  else if (panel.classList.contains("site3d-mobile-panel")) {
-    header = panel.querySelector(".site3d-mobile-head");
-  }
-  else if (panel.classList.contains("site3d-info")) {
-    header = panel.querySelector(".site3d-info-head");
-  }
 
-  if (!header) return;
+  function ensureSiteStatusCollapse() {
+    const panel = document.querySelector('.site3d-status');
+    if (!panel) return;
 
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "abs-floating-collapse-v6 material-symbols-rounded";
-  button.textContent = "expand_less";
-  button.title = `Collapse ${title}`;
-  button.setAttribute("aria-label", button.title);
-  button.setAttribute("aria-expanded", "true");
-  header.appendChild(button);
+    let header = panel.querySelector('.abs-site-status-head');
+    if (!header) {
+      header = document.createElement('div');
+      header.className = 'abs-site-status-head';
 
-  button.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const collapsed = panel.classList.toggle("abs-collapsed-v6");
-
-    button.textContent = collapsed ? "expand_more" : "expand_less";
-    button.title = `${collapsed ? "Expand" : "Collapse"} ${title}`;
-    button.setAttribute("aria-label", button.title);
-    button.setAttribute("aria-expanded", collapsed ? "false" : "true");
-
-    for (const selector of hideSelectors) {
-      for (const node of panel.querySelectorAll(selector)) {
-        node.hidden = collapsed;
-      }
+      const title = document.createElement('span');
+      title.textContent = 'Site status';
+      header.appendChild(title);
+      panel.prepend(header);
     }
+
+    addCollapseButton(panel, header, 'Site status');
+  }
+
+  function ensureMobileCollapse() {
+    const panel = document.querySelector('.site3d-mobile-panel');
+    const header = panel?.querySelector('.site3d-mobile-head');
+    addCollapseButton(panel, header, 'Mobile subscribers');
+  }
+
+  function ensureEquipmentCollapse() {
+    const panel = document.querySelector('.site3d-info');
+    const header = panel?.querySelector('.site3d-info-head');
+    addCollapseButton(panel, header, 'Equipment details');
+  }
+
+  function install() {
+    ensureSiteStatusCollapse();
+    ensureMobileCollapse();
+    ensureEquipmentCollapse();
+  }
+
+  window.addEventListener('abs-dashboard-rendered', () => {
+    requestAnimationFrame(install);
   });
-}
 
-function absEnsureFloatingModalCollapseV6() {
-  absAttachCollapseControl(
-    document.querySelector(".site3d-mobile-panel"),
-    "Mobile subscribers",
-    [
-      ".site3d-mobile-subscribers",
-      ".site3d-mobile-calls",
-    ],
-  );
-
-  absAttachCollapseControl(
-    document.querySelector(".site3d-status"),
-    "Site status",
-    [
-      ".site3d-status-row",
-    ],
-  );
-
-  absAttachCollapseControl(
-    document.querySelector(".site3d-info"),
-    "Equipment details",
-    [
-      ".site3d-info-role",
-      ".site3d-info-body",
-      ":scope > small",
-    ],
-  );
-}
-
-window.addEventListener("abs-dashboard-rendered", () => {
-  requestAnimationFrame(absEnsureFloatingModalCollapseV6);
-});
-
-window.setInterval(absEnsureFloatingModalCollapseV6, 1000);
-requestAnimationFrame(absEnsureFloatingModalCollapseV6);
+  window.setInterval(install, 800);
+  requestAnimationFrame(install);
+})();

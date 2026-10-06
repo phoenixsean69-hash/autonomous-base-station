@@ -820,81 +820,76 @@ body.site3d-overview-active .page-stack {
 }
 
 
-/* ABS FLOATING MODAL COLLAPSE V6 */
+
+/* ABS EXACT IMAGE3 RESTORE + COLLAPSIBLE HUD V7 */
+
+/* Do not touch the Three.js scene. Only HUD interaction lives below. */
 .site3d-status,
 .site3d-mobile-panel,
 .site3d-info {
   pointer-events: auto !important;
 }
 
-.abs-floating-panel-head-v6 {
+.abs-site-status-head {
   min-height: 31px;
   display: grid;
-  grid-template-columns: minmax(0,1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: 0 8px;
   border-bottom: 1px solid rgba(255,255,255,.07);
 }
 
-.abs-floating-panel-head-v6 > span {
-  color: #9aa2a6;
+.abs-site-status-head > span {
+  color: #969da1;
   font-size: 8px;
   font-weight: 600;
-  letter-spacing: .06em;
+  letter-spacing: .07em;
   text-transform: uppercase;
 }
 
 .site3d-mobile-head {
-  grid-template-columns: minmax(0,1fr) auto auto !important;
+  grid-template-columns: minmax(0, 1fr) auto 24px !important;
 }
 
 .site3d-info-head {
-  grid-template-columns: 30px minmax(0,1fr) auto !important;
+  grid-template-columns: 30px minmax(0, 1fr) 24px !important;
 }
 
-.abs-floating-collapse-v6 {
-  width: 24px;
-  height: 24px;
+.abs-hud-collapse-button {
+  width: 23px;
+  height: 23px;
   display: grid;
   place-items: center;
   justify-self: end;
+  align-self: center;
   padding: 0;
   border: 0;
   border-radius: 2px;
-  background: rgba(255,255,255,.045);
-  color: #9aa2a6;
+  background: rgba(255,255,255,.035);
+  color: #90989c;
   font-size: 17px;
   cursor: pointer;
+  pointer-events: auto;
 }
 
-.abs-floating-collapse-v6:hover {
-  background: rgba(255,255,255,.085);
-  color: #e1e4e5;
+.abs-hud-collapse-button:hover {
+  color: #eef0f1;
+  background: rgba(255,255,255,.075);
 }
 
-.site3d-info .abs-floating-collapse-v6 {
-  color: #59686f;
-  background: rgba(30,40,45,.06);
+.site3d-mobile-panel.abs-hud-collapsed .site3d-mobile-subscribers,
+.site3d-mobile-panel.abs-hud-collapsed .site3d-mobile-calls,
+.site3d-status.abs-hud-collapsed .site3d-status-row,
+.site3d-info.abs-hud-collapsed .site3d-info-role,
+.site3d-info.abs-hud-collapsed .site3d-info-body,
+.site3d-info.abs-hud-collapsed > small {
+  display: none !important;
 }
 
-.site3d-info .abs-floating-collapse-v6:hover {
-  color: #20292d;
-  background: rgba(30,40,45,.12);
-}
-
-.site3d-status.abs-collapsed-v6,
-.site3d-mobile-panel.abs-collapsed-v6 {
-  width: auto !important;
-  min-width: 180px;
-}
-
-.site3d-info.abs-collapsed-v6 {
-  width: min(310px, calc(100% - 20px)) !important;
-}
-
-.site3d-status.abs-collapsed-v6 .abs-floating-panel-head-v6,
-.site3d-mobile-panel.abs-collapsed-v6 .site3d-mobile-head,
-.site3d-info.abs-collapsed-v6 .site3d-info-head {
-  border-bottom: 0 !important;
+.site3d-mobile-panel.abs-hud-collapsed,
+.site3d-status.abs-hud-collapsed,
+.site3d-info.abs-hud-collapsed {
+  height: auto !important;
+  min-height: 0 !important;
 }
