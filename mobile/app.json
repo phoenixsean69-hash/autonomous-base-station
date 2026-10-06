@@ -1,38 +1,47 @@
-{
-  "expo": {
-    "name": "ABS Connect",
-    "slug": "abs-connect-mobile",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "scheme": "absconnect",
-    "userInterfaceStyle": "light",
-    "plugins": [
-      "expo-router",
-      "expo-font",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#FFFFFF",
-          "image": "./assets/abs-icon.png",
-          "imageWidth": 200
-        }
-      ]
-    ],
-    "experiments": {
-      "typedRoutes": true
-    },
-    "android": {
-      "predictiveBackGestureEnabled": false,
-      "package": "com.phoenix69.absconnectmobile"
-    },
-    "web": {
-      "output": "static"
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "10ca652d-864f-41fb-a887-b6c8e32e1223"
-      }
-    }
-  }
+﻿{
+    "expo":  {
+                 "name":  "ABS Connect",
+                 "slug":  "abs-connect-mobile",
+                 "version":  "1.0.0",
+                 "orientation":  "portrait",
+                 "scheme":  "absconnect",
+                 "userInterfaceStyle":  "light",
+                 "plugins":  [
+                                 "expo-router",
+                                 "expo-font",
+                                 [
+                                     "expo-splash-screen",
+                                     {
+                                         "backgroundColor":  "#FFFFFF",
+                                         "image":  "./assets/abs-icon.png",
+                                         "imageWidth":  200
+                                     }
+                                 ]
+                             ],
+                 "experiments":  {
+                                     "typedRoutes":  true
+                                 },
+                 "android":  {
+                                 "predictiveBackGestureEnabled":  false,
+                                 "package":  "com.phoenix69.absconnectmobile",
+                                 "permissions":  [
+                                                     "android.permission.RECORD_AUDIO",
+                                                     "android.permission.MODIFY_AUDIO_SETTINGS",
+                                                     "android.permission.ACCESS_NETWORK_STATE",
+                                                     "android.permission.CHANGE_NETWORK_STATE",
+                                                     "android.permission.INTERNET"
+                                                 ]
+                             },
+                 "web":  {
+                             "output":  "static"
+                         },
+                 "extra":  {
+                               "router":  {
+
+                                          },
+                               "eas":  {
+                                           "projectId":  "10ca652d-864f-41fb-a887-b6c8e32e1223"
+                                       }
+                           }
+             }
 }
