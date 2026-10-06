@@ -12,7 +12,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFFFFF"
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/abs-icon.png",
+          "imageWidth": 200
         }
       ]
     ],
@@ -20,10 +22,17 @@
       "typedRoutes": true
     },
     "android": {
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.phoenix69.absconnectmobile"
     },
     "web": {
       "output": "static"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "10ca652d-864f-41fb-a887-b6c8e32e1223"
+      }
     }
   }
 }
