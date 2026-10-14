@@ -1,0 +1,12 @@
+{
+  "project": "BTS-001",
+  "version": "0.1.0",
+  "port": 8100,
+  "files": [
+    "app.py",
+    "requirements.txt",
+    "setup.ps1",
+    "run.ps1",
+    "README.md"
+  ]
+}

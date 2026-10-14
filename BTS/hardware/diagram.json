@@ -1,0 +1,725 @@
+{
+  "version": 1,
+  "author": "BTS-001",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp32",
+      "top": 430,
+      "left": 640,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd2004",
+      "id": "lcd",
+      "top": 40,
+      "left": 565,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x27",
+        "background": "blue",
+        "color": "white"
+      }
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "cabinetEnv",
+      "top": 160,
+      "left": 70,
+      "attrs": {
+        "temperature": "28",
+        "humidity": "45"
+      }
+    },
+    {
+      "type": "wokwi-ds18b20",
+      "id": "paTemp",
+      "top": 310,
+      "left": 70,
+      "attrs": {
+        "temperature": "42"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "dsPullup",
+      "top": 325,
+      "left": 190,
+      "attrs": {
+        "value": "4700"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "rssiControl",
+      "top": 150,
+      "left": 1040,
+      "attrs": {
+        "value": "680"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "trafficControl",
+      "top": 150,
+      "left": 1180,
+      "attrs": {
+        "value": "180"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "rfForwardControl",
+      "top": 310,
+      "left": 1040,
+      "attrs": {
+        "value": "650"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "rfReflectedControl",
+      "top": 310,
+      "left": 1180,
+      "attrs": {
+        "value": "60"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "latencyControl",
+      "top": 470,
+      "left": 1040,
+      "attrs": {
+        "value": "65"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "packetLossControl",
+      "top": 470,
+      "left": 1180,
+      "attrs": {
+        "value": "25"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "radioEnable",
+      "top": 610,
+      "left": 80,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "backhaulEnable",
+      "top": 610,
+      "left": 230,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "fanEnable",
+      "top": 610,
+      "left": 390,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "interferenceFault",
+      "top": 760,
+      "left": 130,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "radioFault",
+      "top": 760,
+      "left": 310,
+      "attrs": {
+        "value": "0",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "radioLed",
+      "top": 640,
+      "left": 760,
+      "attrs": {
+        "color": "green",
+        "label": "RADIO"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "radioLedR",
+      "top": 650,
+      "left": 690,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "backhaulLed",
+      "top": 720,
+      "left": 760,
+      "attrs": {
+        "color": "limegreen",
+        "label": "BACKHAUL"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "backhaulLedR",
+      "top": 730,
+      "left": 690,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "alarmLed",
+      "top": 800,
+      "left": 760,
+      "attrs": {
+        "color": "red",
+        "label": "ALARM"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "alarmLedR",
+      "top": 810,
+      "left": 690,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "txLed",
+      "top": 880,
+      "left": 760,
+      "attrs": {
+        "color": "blue",
+        "label": "TX"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "txLedR",
+      "top": 890,
+      "left": 690,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "upstreamSwitch",
+      "top": 550.0,
+      "left": 1320.0,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_rssiControl",
+      "top": 122.0,
+      "left": 1040.0,
+      "attrs": {
+        "text": "RSSI"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_trafficControl",
+      "top": 122.0,
+      "left": 1180.0,
+      "attrs": {
+        "text": "TRAFFIC"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_rfForwardControl",
+      "top": 282.0,
+      "left": 1040.0,
+      "attrs": {
+        "text": "RF FORWARD"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_rfReflectedControl",
+      "top": 282.0,
+      "left": 1180.0,
+      "attrs": {
+        "text": "RF REFLECTED"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_radioEnable",
+      "top": 582.0,
+      "left": 80.0,
+      "attrs": {
+        "text": "RADIO ON/OFF"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_backhaulEnable",
+      "top": 582.0,
+      "left": 230.0,
+      "attrs": {
+        "text": "BACKHAUL LINK"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_fanEnable",
+      "top": 582.0,
+      "left": 390.0,
+      "attrs": {
+        "text": "COOLING FAN"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_interferenceFault",
+      "top": 732.0,
+      "left": 130.0,
+      "attrs": {
+        "text": "INTERFERENCE"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_radioFault",
+      "top": 732.0,
+      "left": 310.0,
+      "attrs": {
+        "text": "RADIO FAULT"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_upstreamSwitch",
+      "top": 522.0,
+      "left": 1320.0,
+      "attrs": {
+        "text": "UPSTREAM NETWORK"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_latencyControl",
+      "top": 442.0,
+      "left": 1040.0,
+      "attrs": {
+        "text": "LATENCY"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "absLabel_packetLossControl",
+      "top": 442.0,
+      "left": 1180.0,
+      "attrs": {
+        "text": "PACKET LOSS"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "cabinetEnv:VCC",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "cabinetEnv:GND",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "cabinetEnv:SDA",
+      "esp32:D15",
+      "green",
+      []
+    ],
+    [
+      "paTemp:VCC",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "paTemp:GND",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "paTemp:DQ",
+      "esp32:D4",
+      "green",
+      []
+    ],
+    [
+      "dsPullup:1",
+      "paTemp:DQ",
+      "orange",
+      []
+    ],
+    [
+      "dsPullup:2",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "lcd:VCC",
+      "esp32:VIN",
+      "red",
+      []
+    ],
+    [
+      "lcd:GND",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "lcd:SDA",
+      "esp32:D21",
+      "green",
+      []
+    ],
+    [
+      "lcd:SCL",
+      "esp32:D22",
+      "blue",
+      []
+    ],
+    [
+      "rssiControl:VCC",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "rssiControl:GND",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "rssiControl:SIG",
+      "esp32:D34",
+      "purple",
+      []
+    ],
+    [
+      "trafficControl:VCC",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "trafficControl:GND",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "trafficControl:SIG",
+      "esp32:D35",
+      "purple",
+      []
+    ],
+    [
+      "rfForwardControl:VCC",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "rfForwardControl:GND",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "rfForwardControl:SIG",
+      "esp32:D32",
+      "orange",
+      []
+    ],
+    [
+      "rfReflectedControl:VCC",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "rfReflectedControl:GND",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "rfReflectedControl:SIG",
+      "esp32:D33",
+      "orange",
+      []
+    ],
+    [
+      "latencyControl:VCC",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "latencyControl:GND",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "latencyControl:SIG",
+      "esp32:VP",
+      "cyan",
+      []
+    ],
+    [
+      "packetLossControl:VCC",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "packetLossControl:GND",
+      "esp32:GND.1",
+      "black",
+      []
+    ],
+    [
+      "packetLossControl:SIG",
+      "esp32:VN",
+      "cyan",
+      []
+    ],
+    [
+      "radioEnable:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "radioEnable:2",
+      "esp32:D5",
+      "green",
+      []
+    ],
+    [
+      "radioEnable:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "backhaulEnable:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "backhaulEnable:2",
+      "esp32:D27",
+      "green",
+      []
+    ],
+    [
+      "backhaulEnable:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "fanEnable:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "fanEnable:2",
+      "esp32:D18",
+      "green",
+      []
+    ],
+    [
+      "fanEnable:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "interferenceFault:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "interferenceFault:2",
+      "esp32:D19",
+      "yellow",
+      []
+    ],
+    [
+      "interferenceFault:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "radioFault:1",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "radioFault:2",
+      "esp32:D23",
+      "yellow",
+      []
+    ],
+    [
+      "radioFault:3",
+      "esp32:3V3",
+      "red",
+      []
+    ],
+    [
+      "esp32:D25",
+      "radioLedR:1",
+      "green",
+      []
+    ],
+    [
+      "radioLedR:2",
+      "radioLed:A",
+      "green",
+      []
+    ],
+    [
+      "radioLed:C",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp32:D26",
+      "backhaulLedR:1",
+      "green",
+      []
+    ],
+    [
+      "backhaulLedR:2",
+      "backhaulLed:A",
+      "green",
+      []
+    ],
+    [
+      "backhaulLed:C",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp32:D2",
+      "alarmLedR:1",
+      "red",
+      []
+    ],
+    [
+      "alarmLedR:2",
+      "alarmLed:A",
+      "red",
+      []
+    ],
+    [
+      "alarmLed:C",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp32:D14",
+      "txLedR:1",
+      "blue",
+      []
+    ],
+    [
+      "txLedR:2",
+      "txLed:A",
+      "blue",
+      []
+    ],
+    [
+      "txLed:C",
+      "esp32:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp32:TX0",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp32:RX0",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "upstreamSwitch:2",
+      "esp32:D13",
+      "blue",
+      []
+    ],
+    [
+      "upstreamSwitch:1",
+      "esp32:GND.1",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {},
+  "serialMonitor": {
+    "display": "always",
+    "newline": "lf"
+  }
+}
