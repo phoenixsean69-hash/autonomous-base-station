@@ -1578,11 +1578,16 @@ def build_network_command(
                 "BTS hardware telemetry is stale or unavailable"
             )
 
-        backhaul_available = bool(
-            snapshot[
-                "backhaul_available"
-            ]
-        )
+        link_up = snapshot.get("link_up")
+        upstream_reachable = snapshot.get("upstream_reachable")
+
+        if (
+            not isinstance(link_up, bool)
+            or not isinstance(upstream_reachable, bool)
+        ):
+            raise ValueError(
+                "BTS independent backhaul signals unavailable"
+            )
 
         return {
             "schema":
@@ -1631,9 +1636,9 @@ def build_network_command(
                     ]
                 ),
             "link_up":
-                backhaul_available,
+                link_up,
             "upstream_reachable":
-                backhaul_available,
+                upstream_reachable,
             "radio_operational":
                 bool(
                     snapshot[

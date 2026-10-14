@@ -3005,8 +3005,6 @@ bool isMajorFaultActive()
 
           electricalHealth == "FAULT" ||
 
-          backhaulCondition == "CRITICAL" ||
-          backhaulCondition == "OUTAGE" ||
 
           paTemperature >=
               PA_THERMAL_CRITICAL_C ||
@@ -3035,6 +3033,8 @@ bool isDegradedGuardrailActive()
           localSiteStatus == "DEGRADED" ||
 
           backhaulCondition == "DEGRADED" ||
+          backhaulCondition == "CRITICAL" ||
+          backhaulCondition == "OUTAGE" ||
 
           thermalRiskState == "FAST_RISE"
       );
@@ -3120,6 +3120,84 @@ String determineRequestedOperatingMode()
   // Always authoritative. Maximum service/recovery capacity
   // takes priority over an AI energy-saving recommendation.
   //
+  // Thermal equipment protection has priority over FULL demand.
+  // Critical backup-energy protection is checked earlier.
+  if (paTemperature >= PA_THERMAL_CRITICAL_C)
+  {
+    requestedOperatingModeReason =
+        "THERMAL CRITICAL - REDUCED";
+
+    guardrailStatus =
+        "THERMAL LOAD PROTECTION";
+
+    return "REDUCED";
+  }
+
+  if (
+      !fanOperational ||
+      paTemperature >= PA_THERMAL_HOT_C)
+  {
+    requestedOperatingModeReason =
+        "COOLING THERMAL - ECO";
+
+    guardrailStatus =
+        "COOLING LOAD PROTECTION";
+
+    return "ECO";
+  }
+
+  // Local radio and RF equipment protection.
+  // Critical energy and thermal protection are checked first.
+  if (
+      rfHealth == "FAULT" ||
+      rfHealth == "SEVERE FAULT")
+  {
+    requestedOperatingModeReason =
+        "RF FAULT - REDUCED";
+
+    guardrailStatus =
+        "RF LOAD PROTECTION";
+
+    return "REDUCED";
+  }
+
+  if (!radioOperational)
+  {
+    requestedOperatingModeReason =
+        "RADIO OFFLINE - ECO";
+
+    guardrailStatus =
+        "RADIO SERVICE FAULT";
+
+    return "ECO";
+  }
+
+  // Electrical and mechanical protection.
+  // Critical energy, thermal and RF checks occur earlier.
+  if (
+      !rectifierNormal ||
+      electricalHealth == "FAULT")
+  {
+    requestedOperatingModeReason =
+        "RECTIFIER / ELECTRICAL - ECO";
+
+    guardrailStatus =
+        "ELECTRICAL LOAD PROTECTION";
+
+    return "ECO";
+  }
+
+  if (dynamicVibration >= 3.0f)
+  {
+    requestedOperatingModeReason =
+        "VIBRATION - REDUCED";
+
+    guardrailStatus =
+        "MECHANICAL LOAD PROTECTION";
+
+    return "REDUCED";
+  }
+
   if (isMajorFaultActive())
   {
     requestedOperatingModeReason =
@@ -3324,6 +3402,23 @@ String determineRequestedOperatingMode()
         "FULL HOLD - TRAFFIC HYSTERESIS";
   }
 
+  // Backhaul-aware energy policy.
+  // Preserve traffic hysteresis and local safety priority.
+  if (
+      localSiteStatus == "NORMAL" &&
+      (backhaulCondition == "OUTAGE" ||
+       backhaulCondition == "CRITICAL") &&
+      trafficLoad < TRAFFIC_FULL_EXIT_PCT)
+  {
+    candidateMode = "ECO";
+
+    candidateReason =
+        "UPSTREAM PATH FAULT - ECO";
+
+    guardrailStatus =
+        "BACKHAUL ENERGY CONSERVATION";
+  }
+
   // --------------------------------------------------
   // DEGRADED-SERVICE MINIMUM MODE
   // --------------------------------------------------
@@ -3409,11 +3504,20 @@ void updateOperatingModeController(
       recoveryState =
           "VERIFYING";
 
-      requestedOperatingMode =
-          "FULL";
+      // Recovery must not force FULL merely because a fault cleared.
+      // Preserve FULL only when the normal policy requires it.
+      if (requestedOperatingMode != "FULL")
+      {
+        requestedOperatingMode = "ECO";
 
-      requestedOperatingModeReason =
-          "RECOVERY CONFIRMATION";
+        requestedOperatingModeReason =
+            "RECOVERY CONFIRMATION - ECO HOLD";
+      }
+      else
+      {
+        requestedOperatingModeReason =
+            "RECOVERY CONFIRMATION - TRAFFIC";
+      }
 
       guardrailStatus =
           "RECOVERY CONFIRMATION HOLD";
@@ -3519,8 +3623,17 @@ void updateOperatingModeController(
           )
       );
 
+  bool thermalSafetyDerate =
+      requestedOperatingModeReason == "THERMAL CRITICAL - REDUCED" ||
+      requestedOperatingModeReason == "COOLING THERMAL - ECO";
+
   if (
       criticalEnergyTransition ||
+      thermalSafetyDerate ||
+      requestedOperatingModeReason == "RF FAULT - REDUCED" ||
+      requestedOperatingModeReason == "RADIO OFFLINE - ECO" ||
+      requestedOperatingModeReason == "RECTIFIER / ELECTRICAL - ECO" ||
+      requestedOperatingModeReason == "VIBRATION - REDUCED" ||
       capacityIncrease)
   {
     operatingMode =
