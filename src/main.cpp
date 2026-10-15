@@ -1269,6 +1269,38 @@ String determineBackhaulCondition(
   return "NORMAL";
 }
 
+const char* getBackhaulRuleCause()
+{
+  if (!linkUp)
+    return "UPSTREAM_LINK_FAILURE";
+
+  if (!upstreamReachable)
+    return "UPSTREAM_OUTAGE";
+
+  if (
+      backhaulCondition == "DEGRADED" ||
+      backhaulCondition == "CRITICAL")
+    return "BACKHAUL_QUALITY_IMPAIRMENT";
+
+  return "NONE";
+}
+
+const char* getBackhaulRuleEvidence()
+{
+  if (!linkUp)
+    return "BACKHAUL_LINK_DOWN";
+
+  if (!upstreamReachable)
+    return "LINK_UP_REMOTE_UNREACHABLE";
+
+  if (
+      backhaulCondition == "DEGRADED" ||
+      backhaulCondition == "CRITICAL")
+    return "LATENCY_LOSS_OR_RSSI_LIMIT";
+
+  return "NO_BACKHAUL_ALARM";
+}
+
 // ====================================================
 // LOCAL SITE STATUS
 // ====================================================
@@ -7328,6 +7360,14 @@ void printMachineReadableTelemetry()
 
   Serial.print(",\"backhaul_status\":\"");
   Serial.print(backhaulCondition);
+  Serial.print("\"");
+
+  Serial.print(",\"backhaul_rule_cause\":\"");
+  Serial.print(getBackhaulRuleCause());
+  Serial.print("\"");
+
+  Serial.print(",\"backhaul_rule_evidence\":\"");
+  Serial.print(getBackhaulRuleEvidence());
   Serial.print("\"");
 
   Serial.print(",\"local_site_status\":\"");
