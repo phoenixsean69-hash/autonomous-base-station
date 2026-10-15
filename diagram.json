@@ -190,7 +190,7 @@
       "top": 530,
       "left": 430,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -200,7 +200,7 @@
       "top": 530,
       "left": 570,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -210,7 +210,7 @@
       "top": 530,
       "left": 710,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -237,7 +237,7 @@
       "top": 620,
       "left": 1310,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -247,7 +247,7 @@
       "top": 620,
       "left": 1440,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -257,7 +257,7 @@
       "top": 620,
       "left": 1570,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -267,7 +267,7 @@
       "top": 620,
       "left": 1700,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -285,7 +285,7 @@
       "top": 960,
       "left": 570,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -295,7 +295,7 @@
       "top": 960,
       "left": 710,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -305,7 +305,7 @@
       "top": 960,
       "left": 850,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -315,7 +315,7 @@
       "top": 960,
       "left": 990,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -650,7 +650,7 @@
       "top": 1160,
       "left": 1490,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
@@ -660,7 +660,7 @@
       "top": 530,
       "left": 850,
       "attrs": {
-        "value": "0",
+        "value": "",
         "bounce": "0"
       }
     },
