@@ -9,6 +9,8 @@
   const menuButtons = [...document.querySelectorAll(".shell-menu-btn")];
   const workspaceTabs = [...document.querySelectorAll(".workspace-tabs .tab")];
   const navButtons = [...document.querySelectorAll(".shell-nav")];
+  const sidebarButtons = [...document.querySelectorAll(".tool-rail .shell-nav")];
+  let selectedSidebar = sidebarButtons.find(b => b.classList.contains("active")) ?? null;
 
   let openMenu = null;
   let modal = null;
@@ -66,8 +68,12 @@
   function updateNavigationState() {
     const active = activeTabName();
 
+    if (selectedSidebar?.dataset.tabTarget !== active) {
+      selectedSidebar = sidebarButtons.find(b => b.dataset.tabTarget === active) ?? null;
+    }
+
     for (const button of navButtons) {
-      const selected = button.dataset.tabTarget === active;
+      const selected = button === selectedSidebar;
       button.classList.toggle("active", selected);
       button.setAttribute("aria-pressed", selected ? "true" : "false");
     }
@@ -413,6 +419,7 @@
 
   for (const button of navButtons) {
     button.addEventListener("click", () => {
+      if (sidebarButtons.includes(button)) selectedSidebar = button;
       navigate(button.dataset.tabTarget);
     });
   }

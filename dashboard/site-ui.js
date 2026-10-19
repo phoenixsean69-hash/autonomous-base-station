@@ -1808,6 +1808,16 @@ function mount() {
     return;
   }
 
+  if (view?.shell && !view.shell.isConnected) {
+    const anchor = document.querySelector(".stats-grid");
+
+    if (anchor) {
+      anchor.before(view.shell);
+      updateHud(view.shell);
+      return;
+    }
+  }
+
   const stats = document.querySelector(".stats-grid");
   const pageStack = stats?.closest(".page-stack");
   if (!stats || !pageStack) return;
@@ -2644,7 +2654,13 @@ function mount() {
   animate();
 }
 
-window.addEventListener("abs-dashboard-before-render", destroy);
+window.addEventListener("abs-dashboard-before-render", () => {
+  if (activeOverview() && view?.shell?.isConnected) {
+    view.shell.remove();
+  } else {
+    destroy();
+  }
+});
 window.addEventListener("abs-dashboard-rendered", () => {
   requestAnimationFrame(mount);
 });

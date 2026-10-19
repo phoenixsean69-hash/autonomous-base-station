@@ -1016,7 +1016,12 @@ function applyState(next) {
     history = history.slice(-MAX_HISTORY);
   }
 
-  render();
+  if (activeTab === "telemetry" && content.querySelector(".be-workspace")) {
+    window.dispatchEvent(new Event("abs-dashboard-rendered"));
+    refreshRuntimeStatus();
+  } else {
+    render();
+  }
 }
 
 tabs.forEach((button) => {

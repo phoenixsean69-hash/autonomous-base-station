@@ -18,7 +18,7 @@ const AI_FRESH_MS = 30000;
 // ABS DASHBOARD MOBILE PRESENCE V1
 const BTS_SERVICE_URL =
   process.env.DASHBOARD_BTS_SERVICE_URL ||
-  "http://[::1]:8100";
+  "http://127.0.0.1:8100";
 
 let btsPresence = null;
 let btsPresenceUpdatedMs = null;
