@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -13,6 +13,8 @@
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/telemetry-noc.css" />
   <link rel="stylesheet" href="/site-ui.css" />
+  
+  <link rel="stylesheet" href="/top-strip-only.css" />
 </head>
 <body>
   <div id="app" class="health-shell">
@@ -38,8 +40,8 @@
     <div class="workspace-tabs-bar">
       <div class="workspace-tabs" role="tablist" aria-label="Dashboard workspaces">
         <button class="tab active" data-tab="overview" type="button">Overview</button>
-        <button class="tab" data-tab="telemetry" type="button">Telemetry</button>
-        <button class="tab" data-tab="ai" type="button">AI Intelligence</button>
+        <button class="tab" data-tab="telemetry" type="button">Node Editor</button>
+        <button class="tab" data-tab="ai" type="button">Intelligence</button>
         <button class="tab" data-tab="control" type="button">Control Chain</button>
         <button class="tab" data-tab="models" type="button">Models</button>
       </div>
@@ -48,16 +50,11 @@
 
     <div class="workspace-grid">
       <aside class="tool-rail" aria-label="System layers">
-        <button type="button" class="tool-icon shell-nav active material-symbols-rounded" data-tab-target="overview" aria-label="System overview" title="System overview">dashboard</button>
-        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="telemetry" aria-label="BTS and RF telemetry" title="BTS and RF telemetry">cell_tower</button>
-        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="telemetry" aria-label="Live telemetry" title="Live telemetry">monitoring</button>
-        <span class="tool-separator"></span>
-        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="ai" aria-label="Laptop AI" title="Laptop AI">memory</button>
-        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="ai" aria-label="Pico embedded AI" title="Pico embedded AI">developer_board</button>
-        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="control" aria-label="Safety guardrails" title="Safety guardrails">shield</button>
-        <span class="tool-separator"></span>
-        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="control" aria-label="Power system" title="Power system">bolt</button>
-        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="telemetry" aria-label="Network and backhaul" title="Network and backhaul">lan</button>
+        <button type="button" class="tool-icon shell-nav active material-symbols-rounded" data-tab-target="overview" aria-label="Overview" title="Overview">dashboard</button>
+        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="telemetry" aria-label="Fault and control map" title="Fault and control map">cell_tower</button>
+        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="ai" aria-label="Intelligence and Pico" title="Intelligence and Pico">neurology</button>
+        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="control" aria-label="Control and power" title="Control and power">shield</button>
+        <button type="button" class="tool-icon shell-nav material-symbols-rounded" data-tab-target="models" aria-label="Models and performance" title="Models and performance">query_stats</button>
       </aside>
 
       <section class="health-main-pane">
@@ -71,7 +68,7 @@
             <button type="button" class="context-item shell-nav" data-tab-target="telemetry" aria-label="Open BTS backhaul telemetry">
               <span class="material-symbols-rounded">radio</span>BTS Backhaul
             </button>
-            <button type="button" class="context-item shell-nav" data-tab-target="ai" aria-label="Open dual AI intelligence">
+            <button type="button" class="context-item shell-nav" data-tab-target="ai" aria-label="Open dual Intelligence">
               <span class="material-symbols-rounded">neurology</span>Dual AI
             </button>
           </div>
@@ -154,6 +151,7 @@
   <script type="module" src="/site-ui.js"></script>
   <script src="/shell-actions.js"></script>
   <script src="/telemetry-noc.js"></script>
+  
 
 <script id="ABS_MOVE_HEADER_TOOLS">
 (() => {

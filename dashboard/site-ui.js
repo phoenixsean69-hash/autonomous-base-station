@@ -1753,7 +1753,8 @@ function updateHud(shell) {
     if (el) el.textContent = value;
   }
 
-  const bts = state.bts ?? {};
+  const btsFresh = state.meta?.btsPresenceAvailable === true;
+  const bts = btsFresh ? (state.bts ?? {}) : {};
   const online = new Set(
     Array.isArray(bts.subscriber_numbers)
       ? bts.subscriber_numbers.map(normalizeMobileNumber).filter(Boolean)
@@ -1776,20 +1777,20 @@ function updateHud(shell) {
   const mobileRows = shell.querySelector("[data-site3d-mobile-subscribers]");
   if (mobileRows) {
     mobileRows.innerHTML = DEMO_MOBILE_SUBSCRIBERS.map((number) => {
-      const status = inCall.has(number) ? "call" : online.has(number) ? "online" : "free";
-      const label = status === "call" ? "IN CALL" : status === "online" ? "ONLINE" : "FREE";
+      const status = !btsFresh ? "unknown" : inCall.has(number) ? "call" : online.has(number) ? "online" : "free";
+      const label = status === "unknown" ? "UNKNOWN" : status === "call" ? "IN CALL" : status === "online" ? "ONLINE" : "OFFLINE";
       return `<div class="site3d-mobile-row ${status}"><span class="site3d-mobile-dot"></span><strong>${formatMobileNumber(number)}</strong><small>${label}</small></div>`;
     }).join("");
   }
 
   const onlineNode = shell.querySelector("[data-site3d-mobile-online]");
-  if (onlineNode) onlineNode.textContent = `${online.size} / 6 online`;
+  if (onlineNode) onlineNode.textContent = btsFresh ? `${online.size} / 6 online` : "BTS OFFLINE";
 
   const callNode = shell.querySelector("[data-site3d-mobile-calls]");
   if (callNode) {
     callNode.innerHTML = calls.length
       ? calls.map((call) => `<div class="site3d-mobile-call"><span>${shortMobileNumber(call?.caller)}</span><i>↔</i><span>${shortMobileNumber(call?.callee)}</span><small>${String(call?.state ?? "ACTIVE").toUpperCase()}</small></div>`).join("")
-      : `<div class="site3d-mobile-call empty"><span>No active calls</span></div>`;
+      : `<div class="site3d-mobile-call empty"><span>${btsFresh ? "No active calls" : "BTS feed unavailable"}</span></div>`;
   }
 
   if (shell.dataset.selectedComponent) {

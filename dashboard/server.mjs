@@ -28,11 +28,13 @@ async function pollBtsPresence() {
   const timeout = setTimeout(() => controller.abort(), 1000);
   try {
     const response = await fetch(`${BTS_SERVICE_URL}/telemetry`, { signal: controller.signal });
-    if (!response.ok) return;
+    if (!response.ok) { btsPresence = null; btsPresenceUpdatedMs = null; return; }
     btsPresence = await response.json();
     btsPresenceUpdatedMs = Date.now();
   } catch {
-    // Keep the last known snapshot.
+    // Disconnected BTS is UNKNOWN, never displayed as live.
+    btsPresence = null;
+    btsPresenceUpdatedMs = null;
   } finally {
     clearTimeout(timeout);
   }
@@ -207,6 +209,13 @@ setInterval(async () => {
     state.ai?.runtime?.source_timestamp_ms ?? "no-ai",
     state.meta.telemetryUpdatedMs ?? "no-t-file",
     state.meta.aiUpdatedMs ?? "no-ai-file",
+    state.meta?.telemetryStatus ?? "no-esp32",
+    state.meta?.aiFresh ?? "no-ai",
+    state.meta?.btsPresenceAvailable ?? "no-bts",
+    state.bts?.active_calls ?? "no-calls",
+    state.bts?.link_up ?? "no-link",
+    state.bts?.upstream_reachable ?? "no-upstream",
+    state.bts?.radio_operational ?? "no-radio",
     JSON.stringify(state.bts?.subscriber_numbers ?? []),
     JSON.stringify((state.bts?.active_call_pairs ?? []).map((call) => [
       call?.caller ?? "",

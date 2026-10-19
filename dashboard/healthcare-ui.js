@@ -25,7 +25,7 @@
       "Engineering signals feeding the temporal AI",
     ],
     ai: [
-      "AI Intelligence",
+      "Intelligence",
       "Temporal diagnosis, anomaly detection and trust",
     ],
     control: [

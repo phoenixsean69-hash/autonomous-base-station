@@ -404,6 +404,8 @@
 
 (() => {
   "use strict";
+  // ABS_PERF_V1_OLD_INSPECTOR_DISABLED
+  return;
 
   const CONFIGS = {
     "Phone A": {
@@ -1021,6 +1023,8 @@
 
 (() => {
   "use strict";
+  // ABS_PERF_V1_OLD_NOODLES_DISABLED
+  return;
 
   const EDGES = [
     ["Phone A", "BTS-001", "idle"],
@@ -1236,22 +1240,30 @@
 (() => {
   "use strict";
 
-  const WORLD_W = 1000;
-  const WORLD_H = 650;
-  const STORAGE_KEY = "abs.telemetry.blender.nodes.v5";
+  const WORLD_W = 1430;
+  const WORLD_H = 820;
+  const STORAGE_KEY = "abs.telemetry.blender.nodes.v6.six";
 
+  // ABS SIX SUBSCRIBER NODE FIX V1. Coordinates are world-space pixels.
   const DEFAULT_POS = {
-    phoneA: [26, 115],
-    phoneB: [26, 225],
-    bts: [215, 165],
-    esp32: [415, 165],
-    ai: [610, 105],
-    pico: [610, 265],
-    guard: [815, 265],
-    grid: [205, 455],
-    generator: [375, 455],
-    battery: [545, 455],
-    load: [760, 455],
+    phoneA: [26, 65],
+    phoneB: [26, 155],
+    phoneC: [26, 245],
+    phoneD: [26, 335],
+    phoneE: [26, 425],
+    phoneF: [26, 515],
+    bts: [255, 290],
+    backhaul: [465, 145],
+    upstream: [690, 145],
+    local: [465, 345],
+    esp32: [690, 345],
+    ai: [900, 255],
+    pico: [900, 450],
+    guard: [1120, 390],
+    grid: [335, 675],
+    generator: [510, 675],
+    battery: [685, 675],
+    load: [1120, 605],
   };
 
   const DEFINITIONS = {
@@ -1273,6 +1285,13 @@
       transport: "BTS WebSocket",
       cls: "phone compact",
     },
+    phoneC: { title: "Phone C", icon: "smartphone", type: "Mobile subscriber", endpoint: "0712 000 003", role: "Subscriber C", transport: "BTS WebSocket", cls: "phone compact" },
+    phoneD: { title: "Phone D", icon: "smartphone", type: "Mobile subscriber", endpoint: "0712 000 004", role: "Subscriber D", transport: "BTS WebSocket", cls: "phone compact" },
+    phoneE: { title: "Phone E", icon: "smartphone", type: "Mobile subscriber", endpoint: "0712 000 005", role: "Subscriber E", transport: "BTS WebSocket", cls: "phone compact" },
+    phoneF: { title: "Phone F", icon: "smartphone", type: "Mobile subscriber", endpoint: "0712 000 006", role: "Subscriber F", transport: "BTS WebSocket", cls: "phone compact" },
+    backhaul: { title: "Physical backhaul", icon: "router", type: "Transport link", endpoint: "BTS-001", role: "Independent physical link", transport: "BTS hardware" },
+    upstream: { title: "Upstream network", icon: "hub", type: "Fault dimension A", endpoint: "Remote network", role: "Remote reachability and link quality", transport: "BTS backhaul" },
+    local: { title: "Local equipment", icon: "tune", type: "Fault dimension B", endpoint: "ABS hardware", role: "RF, radio, thermal and electrical faults", transport: "Site sensors" },
     bts: {
       title: "BTS-001",
       icon: "cell_tower",
@@ -1352,9 +1371,17 @@
   };
 
   const EDGES = [
-    ["phoneA", "bts", "idle"],
-    ["phoneB", "bts", "idle"],
-    ["bts", "esp32", "data"],
+    ["phoneA", "bts", "access"],
+    ["phoneB", "bts", "access"],
+    ["phoneC", "bts", "access"],
+    ["phoneD", "bts", "access"],
+    ["phoneE", "bts", "access"],
+    ["phoneF", "bts", "access"],
+    ["bts", "backhaul", "data"],
+    ["backhaul", "upstream", "data"],
+    ["bts", "local", "data"],
+    ["upstream", "esp32", "data"],
+    ["local", "esp32", "data"],
     ["esp32", "ai", "data"],
     ["ai", "pico", "data"],
     ["pico", "guard", "control"],
@@ -1372,7 +1399,7 @@
     inspector: null,
     zoomLabel: null,
     selected: "bts",
-    tab: "properties",
+    tab: "live",
     scale: 0.78,
     tx: 14,
     ty: 12,
@@ -1430,25 +1457,56 @@
     return { s, t, ai, runtime, cmd, pico };
   }
 
-  function statusFor(id) {
-    const { s, t, ai, cmd, pico } = data();
-    const telem = String(s.meta?.telemetryStatus ?? "OFFLINE").toUpperCase();
+  function btsCurrent(s) {
+    if (s.meta?.btsPresenceAvailable !== true || !s.bts) return false;
+    const ts = Number(s.meta?.btsPresenceUpdatedMs);
+    return !Number.isFinite(ts) || Date.now() - ts < 3500;
+  }
 
-    if (id === "phoneA" || id === "phoneB") {
-      return Number(t.network_active_calls ?? 0) > 0 ? "good" : "warn";
+  function telemetryCurrent(s) {
+    return String(s.meta?.telemetryStatus ?? "").toUpperCase() === "LIVE";
+  }
+
+  function aiCurrent(s) { return s.meta?.aiFresh === true; }
+  const PHONE_IDS = ["phoneA", "phoneB", "phoneC", "phoneD", "phoneE", "phoneF"];
+  function phoneNumber(id) {
+    const index = PHONE_IDS.indexOf(id);
+    return index < 0 ? "" : `071200000${index + 1}`;
+  }
+  function phoneState(s, id) {
+    if (!btsCurrent(s)) return { status: "warn", label: "UNKNOWN", info: "BTS FEED OFFLINE" };
+    const number = phoneNumber(id);
+    const online = (s.bts?.subscriber_numbers ?? []).some(n => String(n).replace(/\D/g, "") === number);
+    const calls = (s.bts?.active_call_pairs ?? []).filter(c => {
+      const state = String(c.state ?? "").toUpperCase();
+      return ["RINGING", "CONNECTED"].includes(state) &&
+        [c.caller, c.callee].some(n => String(n ?? "").replace(/\D/g, "") === number);
+    });
+    return calls.length ? { status: "good", label: "IN CALL", info: `${calls.length} session(s)` }
+      : online ? { status: "good", label: "ONLINE", info: "Registered" }
+      : { status: "warn", label: "OFFLINE", info: "Not registered" };
+  }
+
+  function statusFor(id) {
+    const { s, t, ai, cmd } = data();
+    if (PHONE_IDS.includes(id)) return phoneState(s, id).status;
+    if (id === "bts") return !btsCurrent(s) ? "warn" : s.bts.radio_operational === false ? "bad" : "good";
+    if (id === "backhaul") return !btsCurrent(s) ? "warn" : s.bts.link_up === false ? "bad" : s.bts.link_up === true ? "good" : "warn";
+    if (id === "upstream") return !btsCurrent(s) ? "warn" : s.bts.upstream_reachable === false ? "bad" : s.bts.upstream_reachable === true ? "good" : "warn";
+    if (id === "local") {
+      if (!telemetryCurrent(s)) return "warn";
+      const v = String(t.local_site_status ?? "UNKNOWN").toUpperCase();
+      return v === "FAULT" ? "bad" : v === "NORMAL" ? "good" : "warn";
     }
-    if (id === "bts") {
-      return String(t.network_input_source ?? "").toUpperCase() === "BTS_BACKHAUL"
-        ? "good"
-        : "bad";
-    }
-    if (id === "esp32") return telem === "LIVE" ? "good" : telem === "STALE" ? "warn" : "bad";
-    if (id === "ai") return s.meta?.aiFresh === true ? "good" : ai ? "warn" : "bad";
-    if (id === "pico") return cmd.pico_ai_fault_domain || pico.mode_decision ? "good" : "warn";
-    if (id === "guard") return String(t.guardrail_status ?? "").toUpperCase() === "PASSED" ? "good" : "warn";
+    if (["esp32", "guard", "grid", "generator", "battery", "load"].includes(id) && !telemetryCurrent(s)) return "warn";
+    if (["ai", "pico"].includes(id) && !aiCurrent(s)) return "warn";
+    if (id === "esp32") return "good";
+    if (id === "ai") return ai.trust?.decision === "ACCEPT" ? "good" : "warn";
+    if (id === "pico") return cmd.dual_ai_agreement === "AGREE" ? "good" : "warn";
+    if (id === "guard") return t.guardrail_status === "PASSED" ? "good" : "warn";
     if (id === "grid") return t.grid_available === true ? "good" : "bad";
-    if (id === "generator") return (t.generator_feedback_running ?? t.generator_running) === true ? "good" : "warn";
-    if (id === "battery") return Number(t.battery_soc_pct ?? 0) > 25 ? "good" : "warn";
+    if (id === "generator") return t.generator_running === true ? "good" : "warn";
+    if (id === "battery") return Number(t.battery_soc_pct) > 25 ? "good" : "warn";
     return "good";
   }
 
@@ -1465,24 +1523,44 @@
       meta: def.endpoint,
     };
 
-    if (id === "phoneA" || id === "phoneB") {
-      const calls = Number(t.network_active_calls ?? 0);
-      return {
-        ...common,
-        value: id === "phoneA" ? "0712 000 001" : "0712 000 002",
-        meta: calls > 0 ? `${calls} active call${calls === 1 ? "" : "s"}` : "Call idle",
-        statusText: calls > 0 ? "ACTIVE" : "IDLE",
-      };
+    if (PHONE_IDS.includes(id)) {
+      const ps = phoneState(s, id);
+      const n = phoneNumber(id);
+      return { ...common, status: ps.status, value: `${n.slice(0,4)} ${n.slice(4,7)} ${n.slice(7)}`,
+        meta: ps.info, statusText: ps.label };
+    }
+
+    if (id === "backhaul" || id === "upstream") {
+      const ok = btsCurrent(s);
+      const value = !ok ? "NO LIVE DATA" : id === "backhaul"
+        ? (s.bts.link_up === false ? "LINK DOWN" : s.bts.link_up === true ? "LINK UP" : "UNKNOWN")
+        : (s.bts.upstream_reachable === false ? "REMOTE OUTAGE" : s.bts.upstream_reachable === true ? "REACHABLE" : "UNKNOWN");
+      return { ...common, value, status: statusFor(id),
+        meta: !ok ? "BTS-001 telemetry unavailable" : `latency ${s.bts.latency_ms ?? "—"} ms · loss ${s.bts.packet_loss_pct ?? "—"}%`,
+        statusText: !ok ? "NO CURRENT DATA" : value };
+    }
+
+    if (id === "local") {
+      const ok = telemetryCurrent(s);
+      return { ...common, value: ok ? (t.local_site_status ?? "UNKNOWN") : "NO LIVE DATA",
+        status: statusFor(id), meta: ok ? `Fault: ${t.fault_label ?? "—"}` : "ESP32 stopped / stale",
+        statusText: ok ? (t.local_site_status ?? "UNKNOWN") : "MONITOR OFFLINE" };
+    }
+
+    if (["esp32", "guard", "grid", "generator", "battery", "load"].includes(id) && !telemetryCurrent(s)) {
+      return { ...common, status: "warn", value: "OFFLINE", meta: "No current ESP32 telemetry", statusText: "NO LIVE DATA" };
+    }
+    if (["ai", "pico"].includes(id) && !aiCurrent(s)) {
+      return { ...common, status: "warn", value: "OFFLINE", meta: "Previous AI result is historical", statusText: "NO FRESH INFERENCE" };
     }
 
     if (id === "bts") {
-      const linked = String(t.network_input_source ?? "").toUpperCase() === "BTS_BACKHAUL";
-      return {
-        ...common,
-        value: linked ? "ONLINE" : "OFFLINE",
-        meta: `:8100 / :4010 · ${Number(t.latency_ms ?? 0).toFixed(0)} ms`,
-        statusText: t.radio_operational === true ? "RADIO OK" : "RADIO FAULT",
-      };
+      const fresh = btsCurrent(s);
+      const radio = fresh ? s.bts.radio_operational : null;
+      return { ...common, status: statusFor(id),
+        value: !fresh ? "OFFLINE" : radio === false ? "RADIO FAULT" : "SERVICE ONLINE",
+        meta: fresh ? `${s.bts.active_subscribers ?? 0}/6 subscribers · ${s.bts.active_calls ?? 0} calls` : ":8100 / :4010 · disconnected",
+        statusText: !fresh ? "SERVICE UNAVAILABLE" : radio === false ? "RADIO FAULT" : "RADIO OK" };
     }
 
     if (id === "esp32") {
@@ -1566,6 +1644,25 @@
 
   function liveRows(id) {
     const { s, t, ai, cmd, pico } = data();
+    if (PHONE_IDS.includes(id)) {
+      const ps = phoneState(s, id);
+      return [["Subscriber", phoneNumber(id)], ["Registration", ps.label], ["Call status", ps.info],
+        ["BTS source", btsCurrent(s) ? "LIVE" : "UNAVAILABLE"]];
+    }
+    if (id === "backhaul" || id === "upstream") {
+      return [["Source", btsCurrent(s) ? "LIVE BTS-001" : "OFFLINE"],
+        ["Physical link", btsCurrent(s) ? String(s.bts.link_up ?? "UNKNOWN") : "—"],
+        ["Remote reachable", btsCurrent(s) ? String(s.bts.upstream_reachable ?? "UNKNOWN") : "—"],
+        ["Packet loss", btsCurrent(s) ? `${s.bts.packet_loss_pct ?? "—"}%` : "—"],
+        ["Latency", btsCurrent(s) ? `${s.bts.latency_ms ?? "—"} ms` : "—"]];
+    }
+    if (id === "local") {
+      return [["ESP32 status", s.meta?.telemetryStatus ?? "OFFLINE"],
+        ["Local site", telemetryCurrent(s) ? (t.local_site_status ?? "—") : "—"],
+        ["Fault label", telemetryCurrent(s) ? (t.fault_label ?? "—") : "—"],
+        ["RF health", telemetryCurrent(s) ? (t.rf_health ?? "—") : "—"],
+        ["Electrical", telemetryCurrent(s) ? (t.electrical_health ?? "—") : "—"]];
+    }
 
     const rows = {
       phoneA: [
@@ -1721,10 +1818,10 @@
         </div>
 
         <nav class="be-tabs" aria-label="Node inspector">
-          <button type="button" class="be-tab active" data-be-tab="properties" title="Properties">
+          <button type="button" class="be-tab" data-be-tab="properties" title="Properties">
             <span class="material-symbols-rounded">tune</span>
           </button>
-          <button type="button" class="be-tab" data-be-tab="live" title="Live values">
+          <button type="button" class="be-tab active" data-be-tab="live" title="Live values">
             <span class="material-symbols-rounded">monitoring</span>
           </button>
           <button type="button" class="be-tab" data-be-tab="links" title="Connections">
@@ -1766,22 +1863,15 @@
 
   function fitView(animate = false) {
     if (!ui.viewport) return;
-
     const rect = ui.viewport.getBoundingClientRect();
-    const sx = Math.max(.48, Math.min(.95, (rect.width - 26) / WORLD_W));
-    const sy = Math.max(.48, Math.min(.95, (rect.height - 26) / WORLD_H));
-
-    ui.scale = Math.min(sx, sy);
-    ui.tx = Math.max(10, (rect.width - WORLD_W * ui.scale) / 2);
-    ui.ty = Math.max(10, (rect.height - WORLD_H * ui.scale) / 2);
-
+    // Fit all nodes without enforcing the old 48% minimum zoom.
+    ui.scale = Math.max(0.23, Math.min(1.1, (rect.width - 28) / WORLD_W, (rect.height - 28) / WORLD_H));
+    ui.tx = (rect.width - WORLD_W * ui.scale) / 2;
+    ui.ty = (rect.height - WORLD_H * ui.scale) / 2;
     if (animate) {
       ui.world.style.transition = "transform 140ms ease";
-      window.setTimeout(() => {
-        if (ui.world) ui.world.style.transition = "";
-      }, 160);
+      window.setTimeout(() => { if (ui.world) ui.world.style.transition = ""; }, 160);
     }
-
     transform();
   }
 
@@ -2034,9 +2124,11 @@
         return;
       }
 
-      const onBackground = event.target === ui.viewport;
+      // The visible grid is the .be-world child, not the viewport itself.
+      const onBackground = Boolean(event.target.closest(".be-viewport")) &&
+        !event.target.closest(".be-node") && !event.target.closest("button");
       const wantsPan =
-        event.button === 1 ||
+        event.button === 1 || event.button === 2 ||
         (event.button === 0 && event.shiftKey);
 
       if (onBackground && wantsPan) {
@@ -2089,13 +2181,14 @@
     ui.root.addEventListener("pointerup", finishPointer);
     ui.root.addEventListener("pointercancel", finishPointer);
 
+    ui.viewport.addEventListener("contextmenu", event => event.preventDefault());
     ui.viewport.addEventListener(
       "wheel",
       (event) => {
         event.preventDefault();
 
         const old = ui.scale;
-        const next = Math.max(.48, Math.min(1.35, old * (event.deltaY < 0 ? 1.08 : .92)));
+        const next = Math.max(.23, Math.min(2.4, old * (event.deltaY < 0 ? 1.14 : .88)));
 
         const rect = ui.viewport.getBoundingClientRect();
         const px = event.clientX - rect.left;

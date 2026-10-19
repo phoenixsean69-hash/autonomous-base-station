@@ -1,0 +1,50 @@
+/* ABS TOP STRIP NAVIGATION ONLY */
+
+/* Remove left navigation from every workspace */
+.tool-rail,
+body .tool-rail {
+    display: none !important;
+}
+
+/* Default pages: workspace + right inspector */
+body .workspace-grid {
+    grid-template-columns:
+        minmax(0, 1fr) 330px !important;
+}
+
+/* Node Editor: full-width workspace */
+body.telemetry-noc .workspace-grid {
+    grid-template-columns:
+        minmax(0, 1fr) !important;
+}
+
+/* 3D Overview: preserve its narrow right inspector */
+body.site3d-overview-active .workspace-grid {
+    grid-template-columns:
+        minmax(0, 1fr) 74px !important;
+}
+
+/* Top strip spans naturally from the left edge */
+.workspace-tabs-bar {
+    padding-left: 8px !important;
+}
+
+/* Keep panels within available space */
+.health-main-pane {
+    min-width: 0 !important;
+}
+
+@media (max-width: 1050px) {
+    body.site3d-overview-active .workspace-grid {
+        grid-template-columns:
+            minmax(0, 1fr) 66px !important;
+    }
+}
+
+@media (max-width: 900px) {
+    body:not(.site3d-overview-active):not(.telemetry-noc)
+    .workspace-grid {
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+    }
+}

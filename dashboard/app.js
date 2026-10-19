@@ -717,7 +717,7 @@ function renderAI() {
     <div class="page-stack">
       <section class="page-title">
         <span class="eyebrow">TEMPORAL MODEL STACK</span>
-        <h1>AI Intelligence</h1>
+        <h1>Intelligence</h1>
         <p>Fault-domain TCN, root-cause heads, anomaly autoencoder, trust gating, and dual-AI agreement.</p>
       </section>
 

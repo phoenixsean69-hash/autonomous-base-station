@@ -2517,7 +2517,7 @@ body.telemetry-noc .health-content {
 
 
 /* ============================================================
-   TELEMETRY V6 — WIDER NODE EDITOR / NARROW PROPERTIES PANEL
+   TELEMETRY V6 ï¿½ WIDER NODE EDITOR / NARROW PROPERTIES PANEL
    ============================================================ */
 
 .be-workspace {
@@ -2576,7 +2576,7 @@ body.telemetry-noc .health-content {
   box-shadow: none !important;
 }
 
-/* Neutral text — status colour belongs primarily to the dot */
+/* Neutral text ï¿½ status colour belongs primarily to the dot */
 .pill,
 .pill.good,
 .pill.warn,
@@ -2679,7 +2679,7 @@ body.telemetry-noc .health-content {
 
 
 /* ============================================================
-   ABS STATUS LANGUAGE V2 — REMOVE DECORATIVE STATUS DOTS
+   ABS STATUS LANGUAGE V2 ï¿½ REMOVE DECORATIVE STATUS DOTS
    ============================================================ */
 
 /* Global pill/status dots */
@@ -2708,3 +2708,21 @@ body.telemetry-noc .health-content {
   gap: 0 !important;
 }
 
+
+/* ABS ORIGINAL BLENDER NODE EDITOR - SIX SUBSCRIBER REFINEMENT */
+.be-world, .be-wires { width: 1430px !important; height: 820px !important; }
+.be-viewport { touch-action: none; }
+.be-workspace { grid-template-columns: minmax(0, 1fr) 280px !important; }
+.be-inspector { min-width: 280px !important; }
+.be-node-head strong { font-size: 11px !important; }
+.be-node-value { font-size: 12px !important; }
+.be-node-meta, .be-node-status { font-size: 9px !important; }
+.be-editor-bar strong { font-size: 11px !important; }
+.be-editor-bar span { font-size: 9px !important; }
+.be-tool { height: 23px !important; font-size: 10px !important; }
+.be-wire { stroke-width: 2.1px; }
+.be-node.warn { --head: #48515a; }
+.be-node.bad { --head: #814f4a; border-color: #a2645a; }
+.be-node.good { --head: #405a53; }
+.be-viewport.is-panning { cursor: grabbing !important; }
+@media(max-width:950px) { .be-workspace { grid-template-columns: minmax(0,1fr) !important; } .be-inspector { display:none !important; } }

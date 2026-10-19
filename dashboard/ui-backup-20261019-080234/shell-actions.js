@@ -24,7 +24,7 @@
     view: [
       ["Overview", "tab:overview", "dashboard"],
       ["Telemetry", "tab:telemetry", "monitoring"],
-      ["AI Intelligence", "tab:ai", "memory"],
+      ["Intelligence", "tab:ai", "memory"],
       ["Control Chain", "tab:control", "shield"],
       ["Models", "tab:models", "query_stats"],
     ],
@@ -35,7 +35,7 @@
       ["System overview", "tab:overview", "dashboard"],
     ],
     ai: [
-      ["AI Intelligence", "tab:ai", "neurology"],
+      ["Intelligence", "tab:ai", "neurology"],
       ["Model performance", "tab:models", "query_stats"],
       ["Decision + Actuation", "tab:control", "account_tree"],
     ],
@@ -325,7 +325,7 @@
       wrap.className = "shell-help-grid";
       wrap.innerHTML = `
         <div><span class="material-symbols-rounded">mouse</span><strong>3D models</strong><p>Drag a model to orbit it, use the wheel to zoom, and use its reset-view button to recenter it.</p></div>
-        <div><span class="material-symbols-rounded">tab</span><strong>Workspaces</strong><p>Overview, Telemetry, AI Intelligence, Control Chain, and Models are live dashboard screens.</p></div>
+        <div><span class="material-symbols-rounded">tab</span><strong>Workspaces</strong><p>Overview, Telemetry, Intelligence, Control Chain, and Models are live dashboard screens.</p></div>
         <div><span class="material-symbols-rounded">download</span><strong>Exports</strong><p>Use File to export a complete live snapshot, telemetry only, or the latest AI result.</p></div>
         <div><span class="material-symbols-rounded">shield</span><strong>Authority</strong><p>Laptop AI recommends, Pico validates, and ESP32 deterministic guardrails remain final authority.</p></div>
       `;
