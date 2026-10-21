@@ -1340,61 +1340,51 @@ def send_pico_telemetry(
 
     return len(payload)
 
+# PICO SERIAL RX BUFFER V2: preserve RFC2217 partial lines across wait cycles.
+PICO_RX_BUFFER = bytearray()
+
+
+def _wait_pico_message(port, prefix: str, expected_timestamp_ms: int, timeout: float, kind: str) -> dict | None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        # Process buffered complete records before waiting for more bytes.
+        while b"\n" in PICO_RX_BUFFER:
+            raw_line, _, remainder = PICO_RX_BUFFER.partition(b"\n")
+            PICO_RX_BUFFER[:] = remainder
+            line = raw_line.rstrip(b"\r").decode("utf-8", errors="replace").strip()
+            if not line.startswith(prefix):
+                continue
+            try:
+                message = json.loads(line[len(prefix):])
+            except json.JSONDecodeError:
+                continue
+            received_timestamp = int(message.get("source_timestamp_ms", -1))
+            if received_timestamp != int(expected_timestamp_ms):
+                print(f"  [PICO SYNC] ignored stale {kind.lower()} result timestamp={received_timestamp}; expected={expected_timestamp_ms}")
+                continue
+            return message
+
+        waiting = int(getattr(port, "in_waiting", 0) or 0)
+        raw = port.read(min(waiting, 4096) if waiting > 0 else 1)
+        if raw:
+            PICO_RX_BUFFER.extend(raw)
+            if len(PICO_RX_BUFFER) > 16384 and b"\n" not in PICO_RX_BUFFER:
+                print("  [PICO RX] oversized serial fragment; resetting receive buffer")
+                PICO_RX_BUFFER.clear()
+
+    if kind == "AI":
+        print(f"  [PICO AI WAIT] TIMEOUT - no matching PICO_RESULT for timestamp={expected_timestamp_ms}")
+    else:
+        print(f"  [PICO DECISION WAIT] TIMEOUT - no matching PICO_DECISION for timestamp={expected_timestamp_ms}")
+    return None
+
+
 def wait_pico_ai_result(
     port,
     expected_timestamp_ms: int,
     timeout: float = 5.0,
 ) -> dict | None:
-    deadline = time.monotonic() + timeout
-    pending = bytearray()
-
-    while time.monotonic() < deadline:
-        waiting = int(getattr(port, "in_waiting", 0) or 0)
-        raw = port.read(waiting if waiting > 0 else 1)
-
-        if not raw:
-            continue
-
-        pending.extend(raw)
-
-        while b"\n" in pending:
-            raw_line, _, remainder = pending.partition(b"\n")
-            pending = bytearray(remainder)
-
-            line = raw_line.rstrip(b"\r").decode(
-                "utf-8",
-                errors="replace",
-            ).strip()
-
-            if not line.startswith(PICO_RESULT_PREFIX):
-                continue
-
-            try:
-                result = json.loads(
-                    line[len(PICO_RESULT_PREFIX):]
-                )
-            except json.JSONDecodeError:
-                continue
-
-            response_timestamp = int(
-                result.get("source_timestamp_ms", -1)
-            )
-
-            if response_timestamp != int(expected_timestamp_ms):
-                print(
-                    "  [PICO SYNC] ignored stale AI result "
-                    f"timestamp={response_timestamp}; "
-                    f"expected={expected_timestamp_ms}"
-                )
-                continue
-
-            return result
-
-    print(
-        "  [PICO AI WAIT] TIMEOUT - "
-        f"no matching PICO_RESULT for timestamp={expected_timestamp_ms}"
-    )
-    return None
+    return _wait_pico_message(port, PICO_RESULT_PREFIX, expected_timestamp_ms, timeout, "AI")
 
 def send_pico_recommendation(
     port,
@@ -1422,56 +1412,7 @@ def wait_pico_decision(
     expected_timestamp_ms: int,
     timeout: float = 5.0,
 ) -> dict | None:
-    deadline = time.monotonic() + timeout
-    pending = bytearray()
-
-    while time.monotonic() < deadline:
-        waiting = int(getattr(port, "in_waiting", 0) or 0)
-        raw = port.read(waiting if waiting > 0 else 1)
-
-        if not raw:
-            continue
-
-        pending.extend(raw)
-
-        while b"\n" in pending:
-            raw_line, _, remainder = pending.partition(b"\n")
-            pending = bytearray(remainder)
-
-            line = raw_line.rstrip(b"\r").decode(
-                "utf-8",
-                errors="replace",
-            ).strip()
-
-            if not line.startswith(PICO_DECISION_PREFIX):
-                continue
-
-            try:
-                decision = json.loads(
-                    line[len(PICO_DECISION_PREFIX):]
-                )
-            except json.JSONDecodeError:
-                continue
-
-            response_timestamp = int(
-                decision.get("source_timestamp_ms", -1)
-            )
-
-            if response_timestamp != int(expected_timestamp_ms):
-                print(
-                    "  [PICO SYNC] ignored stale control decision "
-                    f"timestamp={response_timestamp}; "
-                    f"expected={expected_timestamp_ms}"
-                )
-                continue
-
-            return decision
-
-    print(
-        "  [PICO DECISION WAIT] TIMEOUT - "
-        f"no matching PICO_DECISION for timestamp={expected_timestamp_ms}"
-    )
-    return None
+    return _wait_pico_message(port, PICO_DECISION_PREFIX, expected_timestamp_ms, timeout, "DECISION")
 
 def attach_pico_decision(
     ai_command: dict,
