@@ -381,6 +381,11 @@ function createView(card, kind) {
   controls.rotateSpeed = 0.65;
   controls.zoomSpeed = 0.75;
   controls.target.set(0, -0.05, 0);
+  controls.mouseButtons = {
+  LEFT: THREE.MOUSE.PAN,
+  MIDDLE: THREE.MOUSE.DOLLY,
+  RIGHT: THREE.MOUSE.ROTATE
+};
 
   function renderView() {
     const rect = viewport.getBoundingClientRect();

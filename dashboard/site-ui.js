@@ -1978,6 +1978,11 @@ function mount() {
   controls.minDistance = 4.5;
   controls.maxDistance = 44;
   controls.target.set(-3.0, 2.2, 0);
+  controls.mouseButtons = {
+  LEFT: THREE.MOUSE.PAN,
+  MIDDLE: THREE.MOUSE.DOLLY,
+  RIGHT: THREE.MOUSE.ROTATE
+};
 
   // ABS SITE 3D — NOC VIEWPORT NAVIGATION V9
   // Network-operations-style viewport navigation without adding dependencies.
